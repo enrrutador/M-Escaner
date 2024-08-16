@@ -1,8 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const loginModal = document.getElementById('login-modal');
-    const loginButton = document.getElementById('login-button');
-    const loginError = document.getElementById('login-error');
-    const appContainer = document.getElementById('app-container');
+
 
 // Array de usuarios permitidos
 const usuariosPermitidos = [
