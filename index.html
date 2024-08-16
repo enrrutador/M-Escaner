@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M-Scanner 2.0</title>
+    <link rel="stylesheet" href="styles.css">
+    <script defer data-domain="escaner.tiiny.site" src="https://analytics.tiiny.site/js/plausible.js"></script>
+    <script type="text/javascript" src="https://tiiny.host/ad-script.js"></script>
+<script defer data-domain="escaner.tiiny.site" src="https://analytics.tiiny.site/js/plausible.js"></script><script type="text/javascript" src="https://tiiny.host/ad-script.js"></script></head>
+<body>
+    <div class="container">
+        <header>
+            <h1>M-Scanner 2.0</h1>
+        </header>
+        
+        <div class="scanner-section">
+            <button id="scan-button" class="action-button">Escanear Código de Barras</button>
+            <button id="search-button" class="action-button">Buscar Producto</button>
+            <input type="text" id="barcode" placeholder="Código de Barras">
+        </div>
+        
+        <div class="form-section">
+            <input type="text" id="description" placeholder="Descripción del Producto">
+            <input type="number" id="stock" placeholder="Stock">
+            <input type="number" id="price" placeholder="Precio de Venta">
+        </div>
+        
+        <div class="action-section">
+            <button id="save-button" class="action-button">Guardar</button>
+            <button id="clear-button" class="action-button">Borrar</button>
+            <button id="export-button" class="action-button">Exportar a Excel</button>
+            <button id="low-stock-button" class="action-button low-stock-button">Ver Productos con Stock Bajo</button>
+        </div>
+        
+        <div id="product-image-container" class="image-section">
+            <img id="product-image" src="" alt="Imagen del Producto" style="display: none;">
+        </div>
+        
+        <div id="scanner-container" class="scanner-overlay" style="display: none;">
+            <video id="video" autoplay></video>
+            <div id="viewfinder"></div>
+        </div>
+        
+        <div id="search-results" class="results-section" style="display: none;">
+            <h2>Resultados de la Búsqueda</h2>
+            <ul id="results-list"></ul>
+        </div>
+        
+        <div id="low-stock-results" class="results-section low-stock-results" style="display: none;">
+            <h2>Productos con Stock Bajo</h2>
+            <ul id="low-stock-list"></ul>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/@zxing/library@0.19.1"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
