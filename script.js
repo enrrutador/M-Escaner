@@ -10,7 +10,7 @@ class ProductDatabase {
         return new Promise((resolve, reject) => {
             const request = indexedDB.open(this.dbName, this.dbVersion);
 
-            request.onerror = event => reject('Error opening database:', event.target.error);
+            request.onerror = event => reject(`Error opening database: ${event.target.error}`);
 
             request.onsuccess = event => {
                 this.db = event.target.result;
@@ -28,7 +28,7 @@ class ProductDatabase {
         return new Promise((resolve, reject) => {
             const transaction = this.db.transaction([this.storeName], 'readwrite');
             transaction.objectStore(this.storeName).put(product).onsuccess = () => resolve();
-            transaction.onerror = event => reject('Error adding product:', event.target.error);
+            transaction.onerror = event => reject(`Error adding product: ${event.target.error}`);
         });
     }
 
@@ -38,7 +38,7 @@ class ProductDatabase {
             const request = transaction.objectStore(this.storeName).get(barcode);
 
             request.onsuccess = event => resolve(event.target.result);
-            request.onerror = event => reject('Error getting product:', event.target.error);
+            request.onerror = event => reject(`Error getting product: ${event.target.error}`);
         });
     }
 
@@ -59,7 +59,7 @@ class ProductDatabase {
                     resolve(results);
                 }
             };
-            store.onerror = event => reject('Error searching products:', event.target.error);
+            store.onerror = event => reject(`Error searching products: ${event.target.error}`);
         });
     }
 
@@ -69,7 +69,7 @@ class ProductDatabase {
             const request = transaction.objectStore(this.storeName).getAll();
 
             request.onsuccess = event => resolve(event.target.result);
-            request.onerror = event => reject('Error getting all products:', event.target.error);
+            request.onerror = event => reject(`Error getting all products: ${event.target.error}`);
         });
     }
 }
@@ -100,6 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function handleScan() {
+        // Asegúrate de que la página esté servida sobre HTTPS para permitir el acceso a la cámara
         if (!barcodeDetector) {
             barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'upc_a'] });
         }
