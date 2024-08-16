@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginError = document.getElementById('login-error');
     const appContainer = document.getElementById('app-container');
 
+    // Mostrar el modal de inicio de sesión
     loginModal.classList.add('show');
 
     loginButton.addEventListener('click', () => {
@@ -20,89 +21,82 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Código existente para el manejo de productos, escaneo, etc.
-    const db = new ProductDatabase();
-    db.init();
+    class ProductDatabase {
+        constructor() {
+            this.dbName = 'MScannerDB';
+            this.dbVersion = 1;
+            this.storeName = 'products';
+            this.db = null;
+        }
 
-    // ... código de tu aplicación ...
-});
+        async init() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(this.dbName, this.dbVersion);
 
-class ProductDatabase {
-    constructor() {
-        this.dbName = 'MScannerDB';
-        this.dbVersion = 1;
-        this.storeName = 'products';
-        this.db = null;
-    }
+                request.onerror = event => reject('Error opening database:', event.target.error);
 
-    async init() {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(this.dbName, this.dbVersion);
+                request.onsuccess = event => {
+                    this.db = event.target.result;
+                    resolve();
+                };
 
-            request.onerror = event => reject('Error opening database:', event.target.error);
+                request.onupgradeneeded = event => {
+                    const db = event.target.result;
+                    db.createObjectStore(this.storeName, { keyPath: 'barcode' });
+                };
+            });
+        }
 
-            request.onsuccess = event => {
-                this.db = event.target.result;
-                resolve();
-            };
+        async addProduct(product) {
+            return new Promise((resolve, reject) => {
+                const transaction = this.db.transaction([this.storeName], 'readwrite');
+                transaction.objectStore(this.storeName).put(product).onsuccess = () => resolve();
+                transaction.onerror = event => reject('Error adding product:', event.target.error);
+            });
+        }
 
-            request.onupgradeneeded = event => {
-                const db = event.target.result;
-                db.createObjectStore(this.storeName, { keyPath: 'barcode' });
-            };
-        });
-    }
+        async getProduct(barcode) {
+            return new Promise((resolve, reject) => {
+                const transaction = this.db.transaction([this.storeName], 'readonly');
+                const request = transaction.objectStore(this.storeName).get(barcode);
 
-    async addProduct(product) {
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction([this.storeName], 'readwrite');
-            transaction.objectStore(this.storeName).put(product).onsuccess = () => resolve();
-            transaction.onerror = event => reject('Error adding product:', event.target.error);
-        });
-    }
+                request.onsuccess = event => resolve(event.target.result);
+                request.onerror = event => reject('Error getting product:', event.target.error);
+            });
+        }
 
-    async getProduct(barcode) {
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction([this.storeName], 'readonly');
-            const request = transaction.objectStore(this.storeName).get(barcode);
-
-            request.onsuccess = event => resolve(event.target.result);
-            request.onerror = event => reject('Error getting product:', event.target.error);
-        });
-    }
-
-    async searchProducts(query) {
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction([this.storeName], 'readonly');
-            const store = transaction.objectStore(this.storeName);
-            const results = [];
-            store.openCursor().onsuccess = event => {
-                const cursor = event.target.result;
-                if (cursor) {
-                    const product = cursor.value;
-                    if (product.barcode.includes(query) || product.description.toLowerCase().includes(query.toLowerCase())) {
-                        results.push(product);
+        async searchProducts(query) {
+            return new Promise((resolve, reject) => {
+                const transaction = this.db.transaction([this.storeName], 'readonly');
+                const store = transaction.objectStore(this.storeName);
+                const results = [];
+                store.openCursor().onsuccess = event => {
+                    const cursor = event.target.result;
+                    if (cursor) {
+                        const product = cursor.value;
+                        if (product.barcode.includes(query) || product.description.toLowerCase().includes(query.toLowerCase())) {
+                            results.push(product);
+                        }
+                        cursor.continue();
+                    } else {
+                        resolve(results);
                     }
-                    cursor.continue();
-                } else {
-                    resolve(results);
-                }
-            };
-            store.onerror = event => reject('Error searching products:', event.target.error);
-        });
+                };
+                store.onerror = event => reject('Error searching products:', event.target.error);
+            });
+        }
+
+        async getAllProducts() {
+            return new Promise((resolve, reject) => {
+                const transaction = this.db.transaction([this.storeName], 'readonly');
+                const request = transaction.objectStore(this.storeName).getAll();
+
+                request.onsuccess = event => resolve(event.target.result);
+                request.onerror = event => reject('Error getting all products:', event.target.error);
+            });
+        }
     }
 
-    async getAllProducts() {
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction([this.storeName], 'readonly');
-            const request = transaction.objectStore(this.storeName).getAll();
-
-            request.onsuccess = event => resolve(event.target.result);
-            request.onerror = event => reject('Error getting all products:', event.target.error);
-        });
-    }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
     const db = new ProductDatabase();
     db.init();
 

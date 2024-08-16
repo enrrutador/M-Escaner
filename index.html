@@ -10,16 +10,20 @@
     <script defer src="script.js"></script>
 </head>
 <body>
+    <!-- Modal de Inicio de Sesión -->
     <div id="login-modal" class="login-modal">
         <div class="login-container">
             <h2>Iniciar Sesión</h2>
             <input type="text" id="username" placeholder="Usuario" required>
             <input type="password" id="password" placeholder="Contraseña" required>
             <button id="login-button">Iniciar Sesión</button>
-            <p id="login-error" class="error-message" style="display:none;">Usuario o contraseña incorrectos.</p>
+            <p id="login-error" class="error-message" style="display:none;">
+                Tus datos no son válidos. Comunícate con un representante de SysMarkethm.
+            </p>
         </div>
     </div>
     
+    <!-- Contenido Principal de la Aplicación -->
     <div class="container" id="app-container" style="display:none;">
         <header>
             <h1>M-Scanner 2.0</h1>
