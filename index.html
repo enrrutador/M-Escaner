@@ -5,9 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>M-Scanner 2.0</title>
     <link rel="stylesheet" href="styles.css">
+    <script defer data-domain="escaner.tiiny.site" src="https://analytics.tiiny.site/js/plausible.js"></script>
+    <script type="text/javascript" src="https://tiiny.host/ad-script.js"></script>
+    <script defer src="script.js"></script>
 </head>
 <body>
-    <div class="container">
+    <div id="login-modal" class="login-modal">
+        <div class="login-container">
+            <h2>Iniciar Sesión</h2>
+            <input type="text" id="username" placeholder="Usuario" required>
+            <input type="password" id="password" placeholder="Contraseña" required>
+            <button id="login-button">Iniciar Sesión</button>
+            <p id="login-error" class="error-message" style="display:none;">Usuario o contraseña incorrectos.</p>
+        </div>
+    </div>
+    
+    <div class="container" id="app-container" style="display:none;">
         <header>
             <h1>M-Scanner 2.0</h1>
         </header>
@@ -50,10 +63,5 @@
             <ul id="low-stock-list"></ul>
         </div>
     </div>
-
-    <!-- Mantén las referencias a los scripts en el mismo nivel de la estructura de archivos -->
-    <script src="https://unpkg.com/@zxing/library@0.19.1"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
-    <script src="script.js"></script>
 </body>
 </html>
