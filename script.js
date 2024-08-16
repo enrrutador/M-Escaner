@@ -292,3 +292,29 @@ document.addEventListener('DOMContentLoaded', () => {
         alert('BarcodeDetector no soportado en este navegador.');
     }
 });
+// Array de usuarios permitidos
+const usuariosPermitidos = [
+    { usuario: 'admin', contraseña: 'admin123' },
+    
+    
+];
+
+// Función para validar el inicio de sesión
+function validarInicioSesion(usuario, contraseña) {
+    const usuarioValido = usuariosPermitidos.find(u => u.usuario === usuario && u.contraseña === contraseña);
+    return usuarioValido !== undefined;
+}
+
+// Modificar la función de inicio de sesión
+document.getElementById('login-form').addEventListener('submit', function(event) {
+    event.preventDefault();
+    const usuario = document.getElementById('username').value;
+    const contraseña = document.getElementById('password').value;
+
+    if (validarInicioSesion(usuario, contraseña)) {
+        document.getElementById('login-modal').style.display = 'none'; // Oculta el modal de inicio de sesión
+        document.getElementById('app-content').style.display = 'block'; // Muestra el contenido de la app
+    } else {
+        alert('Tus datos no son válidos. Comunícate con un representante de SysMarketHM');
+    }
+});
