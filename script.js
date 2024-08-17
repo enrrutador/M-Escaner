@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', function() {
             appContainer.style.display = 'block';
         } else {
             // Si las credenciales son incorrectas, muestra un mensaje de error
-            errorMessage.textContent = 'Usuario o contraseña incorrectos.';
+            errorMessage.textContent = 'Datos incorrectos. Contacte a un representante de SYSMARKETHM.';
             errorMessage.style.display = 'block';
             loginForm.reset(); // Limpia los campos del formulario
         }
