@@ -94,6 +94,15 @@ document.addEventListener('DOMContentLoaded', () => {
     let productNotFoundAlertShown = false;
 
     const cache = new Map();
+navigator.mediaDevices.getUserMedia({ video: true })
+  .then(function(stream) {
+    // Mostrar el flujo de video en un elemento de video
+    var video = document.querySelector('video');
+    video.srcObject = stream;
+  })
+  .catch(function(err) {
+    console.error('Error accessing the camera: ', err);
+  });
 
     async function startScanner() {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
