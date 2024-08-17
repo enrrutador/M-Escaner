@@ -4,27 +4,36 @@ document.addEventListener('DOMContentLoaded', function() {
     const appContainer = document.getElementById('app-container');
     const errorMessage = document.getElementById('error-message');
 
+    // Lista de usuarios permitidos
+    const allowedUsers = [
+        { username: 'hernan', password: 'kiosco1.' },
+        { username: 'usuario2', password: 'sarasa1.' },
+       
+        // Agrega más usuarios aquí
+    ];
+
     loginForm.addEventListener('submit', function(event) {
         event.preventDefault();
         
         const username = document.getElementById('username').value;
         const password = document.getElementById('password').value;
 
-        // Aquí defines los credenciales permitidos
-        const allowedUsername = 'hernan' ;
-        const allowedPassword = 'kiosco1.';
-        const allowedUsername = 'atenciafab@gmail.com';
-        const allowedPassword = 'Sarasa1.';
+        // Verificar si las credenciales ingresadas coinciden con alguna en la lista de usuarios permitidos
+        const userFound = allowedUsers.find(user => user.username === username && user.password === password);
 
-        if (username === allowedUsername && password === allowedPassword) {
+        if (userFound) {
             // Muestra la aplicación principal y oculta el formulario de inicio de sesión
             loginContainer.style.display = 'none';
             appContainer.style.display = 'block';
         } else {
-            errorMessage.textContent = 'Datos incorrectos. Comunicate con un representante de SYSMARKETHM';
+            errorMessage.textContent = 'Usuario o contraseña incorrectos.';
             errorMessage.style.display = 'block';
         }
     });
+
+    // Aquí seguiría el resto de tu código JavaScript para la funcionalidad de la aplicación
+});
+
 
     // Aquí seguiría el resto de tu código JavaScript para la funcionalidad de la aplicación
 });
