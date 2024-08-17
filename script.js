@@ -76,7 +76,7 @@ class ProductDatabase {
 
 document.addEventListener('DOMContentLoaded', () => {
     const db = new ProductDatabase();
-    db.init();
+    db.init().catch(error => console.error(error));
 
     const barcodeInput = document.getElementById('barcode');
     const descriptionInput = document.getElementById('description');
@@ -132,28 +132,32 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('search-button').addEventListener('click', async () => {
         const query = barcodeInput.value || descriptionInput.value;
         if (!query) return alert('Por favor, ingrese un código de barras o descripción para buscar');
-        const products = await db.searchProducts(query);
-        if (products.length > 0) {
-            searchResults.style.display = 'block';
-            resultsList.innerHTML = '';
-            products.forEach(product => {
-                const li = document.createElement('li');
-                li.textContent = `${product.description} - ${product.barcode}`;
-                li.addEventListener('click', () => {
-                    barcodeInput.value = product.barcode;
-                    descriptionInput.value = product.description;
-                    stockInput.value = product.stock;
-                    priceInput.value = product.price;
-                    if (product.image) {
-                        productImage.src = product.image;
-                        productImage.style.display = 'block';
-                    }
-                    searchResults.style.display = 'none';
+        try {
+            const products = await db.searchProducts(query);
+            if (products.length > 0) {
+                searchResults.style.display = 'block';
+                resultsList.innerHTML = '';
+                products.forEach(product => {
+                    const li = document.createElement('li');
+                    li.textContent = `${product.description} - ${product.barcode}`;
+                    li.addEventListener('click', () => {
+                        barcodeInput.value = product.barcode;
+                        descriptionInput.value = product.description;
+                        stockInput.value = product.stock;
+                        priceInput.value = product.price;
+                        if (product.image) {
+                            productImage.src = product.image;
+                            productImage.style.display = 'block';
+                        }
+                        searchResults.style.display = 'none';
+                    });
+                    resultsList.appendChild(li);
                 });
-                resultsList.appendChild(li);
-            });
-        } else {
-            alert('Producto no encontrado');
+            } else {
+                alert('Producto no encontrado');
+            }
+        } catch (err) {
+            console.error(err);
         }
     });
 
@@ -175,19 +179,27 @@ document.addEventListener('DOMContentLoaded', () => {
             image: productImage.src || ''
         };
 
-        await db.addProduct(product);
-        alert('Producto Guardado');
-        clearForm();
+        try {
+            await db.addProduct(product);
+            alert('Producto Guardado');
+            clearForm();
+        } catch (err) {
+            console.error('Error saving product:', err);
+        }
     });
 
     document.getElementById('clear-button').addEventListener('click', clearForm);
 
     document.getElementById('export-button').addEventListener('click', async () => {
-        const products = await db.getAllProducts();
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.json_to_sheet(products);
-        XLSX.utils.book_append_sheet(wb, ws, 'Productos');
-        XLSX.writeFile(wb, 'productos.xlsx');
+        try {
+            const products = await db.getAllProducts();
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(products);
+            XLSX.utils.book_append_sheet(wb, ws, 'Productos');
+            XLSX.writeFile(wb, 'productos.xlsx');
+        } catch (err) {
+            console.error('Error exporting products:', err);
+        }
     });
 
     lowStockButton.addEventListener('click', async () => {
@@ -196,19 +208,23 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const products = await db.getAllProducts();
-        const lowStockProducts = products.filter(p => p.stock < 10); // Ajusta el límite de stock bajo si es necesario
+        try {
+            const products = await db.getAllProducts();
+            const lowStockProducts = products.filter(p => p.stock < 10); // Ajusta el límite de stock bajo si es necesario
 
-        if (lowStockProducts.length > 0) {
-            lowStockResults.style.display = 'block';
-            lowStockList.innerHTML = '';
-            lowStockProducts.forEach(product => {
-                const li = document.createElement('li');
-                li.textContent = `${product.description} - Stock: ${product.stock}`;
-                lowStockList.appendChild(li);
-            });
-        } else {
-            alert('No hay productos con stock bajo');
+            if (lowStockProducts.length > 0) {
+                lowStockResults.style.display = 'block';
+                lowStockList.innerHTML = '';
+                lowStockProducts.forEach(product => {
+                    const li = document.createElement('li');
+                    li.textContent = `${product.description} - Stock: ${product.stock}`;
+                    lowStockList.appendChild(li);
+                });
+            } else {
+                alert('No hay productos con stock bajo');
+            }
+        } catch (err) {
+            console.error('Error fetching low stock products:', err);
         }
     });
 });
