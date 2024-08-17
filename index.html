@@ -66,33 +66,8 @@
     </div>
 
     <!-- Scripts de Firebase -->
-    <script type="module">
-        // Importa las funciones necesarias desde los SDKs de Firebase
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-analytics.js";
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-
-        // Configuración de tu aplicación Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyCMv--zL7er-80cFO4kE4BjEaU5HoAT4xM",
-            authDomain: "autenticacion-escaner.firebaseapp.com",
-            projectId: "autenticacion-escaner",
-            storageBucket: "autenticacion-escaner.appspot.com",
-            messagingSenderId: "425593572191",
-            appId: "1:425593572191:web:ffc9141ff393d17e3f04ea",
-            measurementId: "G-BN79XGDJW5"
-        };
-
-        // Inicializa Firebase
-        const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
-        const auth = getAuth(app);
-    </script>
-
-    <!-- Script principal -->
-    <script src="https://unpkg.com/@zxing/library@0.19.1"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
-    <script src="script.js"></script>
+    <script type="module" src="firebaseConfig.js"></script>
+    <script type="module" src="script.js"></script>
 </body>
 </html>
 
