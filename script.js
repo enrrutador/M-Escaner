@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch((error) => {
                 // Si las credenciales son incorrectas, muestra un mensaje de error
                 console.error('Error al iniciar sesión:', error);
-                errorMessage.textContent = 'Usuario o contraseña incorrectos.';
+                errorMessage.textContent = 'Comunicate con un representante de SYSMARKETHM.';
                 errorMessage.style.display = 'block';
                 loginForm.reset(); // Limpia los campos del formulario
             });
