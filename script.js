@@ -7,14 +7,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Lista de usuarios permitidos
     const allowedUsers = [
         { username: 'hernan', password: 'kiosco1.' },
-        { username: 'usuario2', password: 'sarasa1.' },
-       
+        { username: 'usuario2', password: 'contraseña2' },
+        { username: 'usuario3', password: 'contraseña3' }
         // Agrega más usuarios aquí
     ];
 
     loginForm.addEventListener('submit', function(event) {
-        event.preventDefault();
-        
+        event.preventDefault(); // Previene que el formulario se envíe y recargue la página
+
         const username = document.getElementById('username').value;
         const password = document.getElementById('password').value;
 
@@ -22,19 +22,18 @@ document.addEventListener('DOMContentLoaded', function() {
         const userFound = allowedUsers.find(user => user.username === username && user.password === password);
 
         if (userFound) {
-            // Muestra la aplicación principal y oculta el formulario de inicio de sesión
+            // Si se encuentra un usuario válido, oculta el formulario de inicio de sesión y muestra la aplicación principal
             loginContainer.style.display = 'none';
             appContainer.style.display = 'block';
         } else {
+            // Si las credenciales son incorrectas, muestra un mensaje de error
             errorMessage.textContent = 'Usuario o contraseña incorrectos.';
             errorMessage.style.display = 'block';
+            loginForm.reset(); // Limpia los campos del formulario
         }
     });
 
-    // Aquí seguiría el resto de tu código JavaScript para la funcionalidad de la aplicación
-});
-
-
+ 
     // Aquí seguiría el resto de tu código JavaScript para la funcionalidad de la aplicación
 });
 
