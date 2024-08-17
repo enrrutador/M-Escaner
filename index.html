@@ -56,6 +56,23 @@
             <ul id="low-stock-list"></ul>
         </div>
     </div>
+<script src="https://unpkg.com/@zxing/library@latest"></script>
+<video id="video" width="300" height="200"></video>
+<script>
+  const codeReader = new ZXing.BrowserBarcodeReader();
+  const videoInputDevices = await codeReader.getVideoInputDevices();
+  const selectedDeviceId = videoInputDevices[0].deviceId;
+
+  codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
+    if (result) {
+      console.log(result.text);
+      alert(`Scanned code: ${result.text}`);
+    }
+    if (err && !(err instanceof ZXing.NotFoundException)) {
+      console.error(err);
+    }
+  });
+</script>
 
     <script src="https://unpkg.com/@zxing/library@0.19.1"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
