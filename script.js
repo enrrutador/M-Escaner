@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
             appContainer.style.display = 'block';
         } else {
             // Mostrar mensaje de error
-            errorMessage.textContent = 'Datos incorrectos, contacta un representante de SYSMARKETHM.';
+            errorMessage.textContent = 'Usuario o contraseña incorrectos.';
             errorMessage.style.display = 'block';
         }
     });
@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Aquí puedes incluir el resto del código de tu aplicación
     // Por ejemplo, para manejar la base de datos y las acciones de la aplicación
 });
+
 
     // Aquí seguiría el resto de tu código JavaScript para la funcionalidad de la aplicación
 });
