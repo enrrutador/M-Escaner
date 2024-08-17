@@ -270,6 +270,3 @@ document.addEventListener('DOMContentLoaded', () => {
         alert('BarcodeDetector no soportado en este navegador.');
     }
 });
-const videoInputDevices = await codeReader.getVideoInputDevices();
-const rearCamera = videoInputDevices.find(device => device.label.toLowerCase().includes('back'));
-const selectedDeviceId = rearCamera ? rearCamera.deviceId : videoInputDevices[0].deviceId;

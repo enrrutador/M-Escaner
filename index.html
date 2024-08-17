@@ -1,16 +1,13 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   
     <title>M-Scanner 2.0</title>
     <link rel="stylesheet" href="styles.css">
-
-
-
-</head>
+    <script defer data-domain="escaner.tiiny.site" src="https://analytics.tiiny.site/js/plausible.js"></script>
+    <script type="text/javascript" src="https://tiiny.host/ad-script.js"></script>
+<script defer data-domain="escaner.tiiny.site" src="https://analytics.tiiny.site/js/plausible.js"></script><script type="text/javascript" src="https://tiiny.host/ad-script.js"></script></head>
 <body>
     <div class="container">
         <header>
@@ -18,7 +15,6 @@
         </header>
         
         <div class="scanner-section">
-            
             <button id="scan-button" class="action-button">Escanear Código de Barras</button>
             <button id="search-button" class="action-button">Buscar Producto</button>
             <input type="text" id="barcode" placeholder="Código de Barras">
@@ -56,23 +52,6 @@
             <ul id="low-stock-list"></ul>
         </div>
     </div>
-<script src="https://unpkg.com/@zxing/library@latest"></script>
-<video id="video" width="300" height="200"></video>
-<script>
-  const codeReader = new ZXing.BrowserBarcodeReader();
-  const videoInputDevices = await codeReader.getVideoInputDevices();
-  const selectedDeviceId = videoInputDevices[0].deviceId;
-
-  codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
-    if (result) {
-      console.log(result.text);
-      alert(`Scanned code: ${result.text}`);
-    }
-    if (err && !(err instanceof ZXing.NotFoundException)) {
-      console.error(err);
-    }
-  });
-</script>
 
     <script src="https://unpkg.com/@zxing/library@0.19.1"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
