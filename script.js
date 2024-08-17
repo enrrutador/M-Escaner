@@ -35,7 +35,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
     // Aquí seguiría el resto de tu código JavaScript para la funcionalidad de la aplicación
-});
 
 class ProductDatabase {
     constructor() {
