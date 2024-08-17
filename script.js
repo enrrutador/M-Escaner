@@ -1,3 +1,32 @@
+document.addEventListener('DOMContentLoaded', function() {
+    const loginForm = document.getElementById('login-form');
+    const loginContainer = document.getElementById('login-container');
+    const appContainer = document.getElementById('app-container');
+    const errorMessage = document.getElementById('error-message');
+
+    loginForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+
+        // Aquí defines los credenciales permitidos
+        const allowedUsername = 'atenciafab@gmail.com';
+        const allowedPassword = 'Sarasa1.';
+
+        if (username === allowedUsername && password === allowedPassword) {
+            // Muestra la aplicación principal y oculta el formulario de inicio de sesión
+            loginContainer.style.display = 'none';
+            appContainer.style.display = 'block';
+        } else {
+            errorMessage.textContent = 'Datos incorrectos. Comunicate con un representante de SYSMARKETHM';
+            errorMessage.style.display = 'block';
+        }
+    });
+
+    // Aquí seguiría el resto de tu código JavaScript para la funcionalidad de la aplicación
+});
+
 class ProductDatabase {
     constructor() {
         this.dbName = 'MScannerDB';

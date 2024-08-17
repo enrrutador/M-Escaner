@@ -18,6 +18,54 @@ body, html {
     align-items: center;
 }
 
+/* Estilos para la Página de Inicio de Sesión */
+.login-container {
+    background-color: #FFFFFF;
+    color: var(--primary-color);
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.login-container h1 {
+    margin-bottom: 20px;
+}
+
+.login-container input {
+    width: calc(100% - 20px);
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+    border: 1px solid var(--primary-color);
+    font-size: 1em;
+}
+
+.login-container button {
+    background-color: var(--primary-color);
+    color: #FFFFFF;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    width: 100%;
+}
+
+.login-container button:hover {
+    background-color: var(--secondary-color);
+}
+
+.error-message {
+    color: red;
+    font-size: 0.9em;
+    margin-top: 10px;
+    display: none;
+}
+
+/* Estilos para la Aplicación Principal */
 .container {
     width: 90%;
     max-width: 400px;
