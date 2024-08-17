@@ -5,16 +5,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const errorMessage = document.getElementById('error-message');
     const logoutButton = document.getElementById('logout-button'); // Asume que tienes un botón de logout
 
-    // Inicializa Firebase con la configuración proporcionada
-    const firebaseConfig = {
-        apiKey: "YOUR_API_KEY",
-        authDomain: "YOUR_AUTH_DOMAIN",
-        projectId: "YOUR_PROJECT_ID",
-        storageBucket: "YOUR_STORAGE_BUCKET",
-        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-        appId: "YOUR_APP_ID"
-    };
-    firebase.initializeApp(firebaseConfig);
+    // Obtén la referencia de autenticación de Firebase
+    const auth = getAuth();
 
     loginForm.addEventListener('submit', function(event) {
         event.preventDefault(); // Previene que el formulario se envíe y recargue la página
@@ -23,7 +15,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const password = document.getElementById('password').value;
 
         // Autenticación con Firebase
-        firebase.auth().signInWithEmailAndPassword(email, password)
+        signInWithEmailAndPassword(auth, email, password)
             .then((userCredential) => {
                 // Inicio de sesión exitoso
                 console.log('Usuario autenticado:', userCredential.user);
@@ -40,7 +32,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Verifica el estado de autenticación del usuario
-    firebase.auth().onAuthStateChanged((user) => {
+    onAuthStateChanged(auth, (user) => {
         if (user) {
             // Si el usuario está autenticado, muestra la aplicación principal
             loginContainer.style.display = 'none';
@@ -55,7 +47,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Función para cerrar sesión
     if (logoutButton) {
         logoutButton.addEventListener('click', function() {
-            firebase.auth().signOut()
+            signOut(auth)
                 .then(() => {
                     console.log('Sesión cerrada');
                     loginContainer.style.display = 'block';
@@ -68,9 +60,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-
-
-    // Aquí seguiría el resto de tu código JavaScript para la funcionalidad de la aplicación
+//código JavaScript para la funcionalidad de la aplicación
 
 class ProductDatabase {
     constructor() {
