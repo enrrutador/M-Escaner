@@ -3,36 +3,72 @@ document.addEventListener('DOMContentLoaded', function() {
     const loginContainer = document.getElementById('login-container');
     const appContainer = document.getElementById('app-container');
     const errorMessage = document.getElementById('error-message');
+    const logoutButton = document.getElementById('logout-button'); // Asume que tienes un botón de logout
 
-    // Lista de usuarios permitidos
-    const allowedUsers = [
-        { username: 'hernan', password: 'kiosco1.' },
-        { username: 'usuario2', password: 'contraseña2' },
-        { username: 'usuario3', password: 'contraseña3' }
-        // Agrega más usuarios aquí
-    ];
+    // Inicializa Firebase con la configuración proporcionada
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_AUTH_DOMAIN",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_STORAGE_BUCKET",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
+    firebase.initializeApp(firebaseConfig);
 
     loginForm.addEventListener('submit', function(event) {
         event.preventDefault(); // Previene que el formulario se envíe y recargue la página
 
-        const username = document.getElementById('username').value;
+        const email = document.getElementById('username').value;
         const password = document.getElementById('password').value;
 
-        // Verificar si las credenciales ingresadas coinciden con alguna en la lista de usuarios permitidos
-        const userFound = allowedUsers.find(user => user.username === username && user.password === password);
+        // Autenticación con Firebase
+        firebase.auth().signInWithEmailAndPassword(email, password)
+            .then((userCredential) => {
+                // Inicio de sesión exitoso
+                console.log('Usuario autenticado:', userCredential.user);
+                loginContainer.style.display = 'none';
+                appContainer.style.display = 'block';
+            })
+            .catch((error) => {
+                // Si las credenciales son incorrectas, muestra un mensaje de error
+                console.error('Error al iniciar sesión:', error);
+                errorMessage.textContent = 'Usuario o contraseña incorrectos.';
+                errorMessage.style.display = 'block';
+                loginForm.reset(); // Limpia los campos del formulario
+            });
+    });
 
-        if (userFound) {
-            // Si se encuentra un usuario válido, oculta el formulario de inicio de sesión y muestra la aplicación principal
+    // Verifica el estado de autenticación del usuario
+    firebase.auth().onAuthStateChanged((user) => {
+        if (user) {
+            // Si el usuario está autenticado, muestra la aplicación principal
             loginContainer.style.display = 'none';
             appContainer.style.display = 'block';
         } else {
-            // Si las credenciales son incorrectas, muestra un mensaje de error
-            errorMessage.textContent = 'Usuario o contraseña incorrectos.';
-            errorMessage.style.display = 'block';
-            loginForm.reset(); // Limpia los campos del formulario
+            // Si no hay usuario autenticado, muestra el formulario de inicio de sesión
+            loginContainer.style.display = 'block';
+            appContainer.style.display = 'none';
         }
     });
+
+    // Función para cerrar sesión
+    if (logoutButton) {
+        logoutButton.addEventListener('click', function() {
+            firebase.auth().signOut()
+                .then(() => {
+                    console.log('Sesión cerrada');
+                    loginContainer.style.display = 'block';
+                    appContainer.style.display = 'none';
+                })
+                .catch((error) => {
+                    console.error('Error al cerrar sesión:', error);
+                });
+        });
+    }
 });
+
+
 
     // Aquí seguiría el resto de tu código JavaScript para la funcionalidad de la aplicación
 
