@@ -32,6 +32,8 @@ document.addEventListener('DOMContentLoaded', function() {
             loginForm.reset(); // Limpia los campos del formulario
         }
     });
+});
+
 
  
     // Aquí seguiría el resto de tu código JavaScript para la funcionalidad de la aplicación
