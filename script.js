@@ -11,8 +11,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const password = document.getElementById('password').value;
 
         // Aquí defines los credenciales permitidos
-        const allowedUsername = 'atenciafab@gmail.com'; 'hernanatencia' ;
-        const allowedPassword = 'Sarasa1.'; 'kiosco1.';
+        const allowedUsername = 'hernan' ;
+        const allowedPassword = 'kiosco1.';
+        const allowedUsername = 'atenciafab@gmail.com';
+        const allowedPassword = 'Sarasa1.';
 
         if (username === allowedUsername && password === allowedPassword) {
             // Muestra la aplicación principal y oculta el formulario de inicio de sesión
