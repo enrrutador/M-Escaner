@@ -1,5 +1,6 @@
 import { auth } from './firebaseConfig.js';
 import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import * as XLSX from 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.2/xlsx.full.min.js'; // Asegúrate de que este URL sea accesible
 
 // Manejar el formulario de inicio de sesión
 const loginForm = document.getElementById('loginForm');
@@ -46,7 +47,7 @@ class ProductDatabase {
         return new Promise((resolve, reject) => {
             const request = indexedDB.open(this.dbName, this.dbVersion);
 
-            request.onerror = event => reject('Error abriendo la base de datos:', event.target.error);
+            request.onerror = event => reject('Error abriendo la base de datos: ' + event.target.error);
 
             request.onsuccess = event => {
                 this.db = event.target.result;
@@ -67,7 +68,7 @@ class ProductDatabase {
             const request = store.put(product);
 
             request.onsuccess = () => resolve();
-            request.onerror = event => reject('Error al agregar producto:', event.target.error);
+            request.onerror = event => reject('Error al agregar producto: ' + event.target.error);
         });
     }
 
@@ -78,7 +79,7 @@ class ProductDatabase {
             const request = store.get(barcode);
 
             request.onsuccess = () => resolve(request.result);
-            request.onerror = event => reject('Error al obtener producto:', event.target.error);
+            request.onerror = event => reject('Error al obtener producto: ' + event.target.error);
         });
     }
 
@@ -89,7 +90,7 @@ class ProductDatabase {
             const request = store.getAll();
 
             request.onsuccess = () => resolve(request.result);
-            request.onerror = event => reject('Error al obtener todos los productos:', event.target.error);
+            request.onerror = event => reject('Error al obtener todos los productos: ' + event.target.error);
         });
     }
 }
@@ -116,7 +117,6 @@ function startScanner() {
                         if (barcodes.length > 0) {
                             const barcode = barcodes[0].rawValue;
                             console.log('Código de barras escaneado:', barcode);
-                            // Aquí podrías manejar el resultado del escaneo, por ejemplo:
                             populateFormFromBarcode(barcode);
                             scannerOverlay.style.display = 'none';
                             stream.getTracks().forEach(track => track.stop());
@@ -136,7 +136,9 @@ function startScanner() {
     // Cerrar el escáner cuando se haga clic fuera del área del escáner
     scannerOverlay.addEventListener('click', () => {
         scannerOverlay.style.display = 'none';
-        video.srcObject.getTracks().forEach(track => track.stop());
+        if (video.srcObject) {
+            video.srcObject.getTracks().forEach(track => track.stop());
+        }
     });
 }
 
@@ -158,21 +160,26 @@ document.getElementById('search-button').addEventListener('click', async () => {
     const resultsList = document.getElementById('results-list');
     resultsList.innerHTML = '';
 
-    if (barcode) {
-        const product = await db.getProduct(barcode);
-        if (product) {
-            displayProduct(product);
-        } else {
-            displayNotFound();
+    try {
+        if (barcode) {
+            const product = await db.getProduct(barcode);
+            if (product) {
+                displayProduct(product);
+            } else {
+                displayNotFound();
+            }
+        } else if (description) {
+            const products = await db.getAllProducts();
+            const filteredProducts = products.filter(p => p.description.toLowerCase().includes(description.toLowerCase()));
+            if (filteredProducts.length > 0) {
+                filteredProducts.forEach(product => displayProduct(product));
+            } else {
+                displayNotFound();
+            }
         }
-    } else if (description) {
-        const products = await db.getAllProducts();
-        const filteredProducts = products.filter(p => p.description.toLowerCase().includes(description.toLowerCase()));
-        if (filteredProducts.length > 0) {
-            filteredProducts.forEach(product => displayProduct(product));
-        } else {
-            displayNotFound();
-        }
+    } catch (error) {
+        console.error('Error al buscar productos:', error);
+        displayNotFound();
     }
 });
 
@@ -209,18 +216,30 @@ document.getElementById('save-button').addEventListener('click', async () => {
 
     if (barcode && description && stock && price) {
         const product = { barcode, description, stock, price };
-        await db.addProduct(product);
-        alert('Producto Guardado');
-        clearForm();
+        try {
+            await db.addProduct(product);
+            alert('Producto Guardado');
+            clearForm();
+        } catch (error) {
+            console.error('Error al guardar el producto:', error);
+            alert('Error al guardar el producto. Inténtalo de nuevo.');
+        }
+    } else {
+        alert('Por favor, completa todos los campos antes de guardar.');
     }
 });
 
 document.getElementById('export-button').addEventListener('click', async () => {
-    const products = await db.getAllProducts();
-    const ws = XLSX.utils.json_to_sheet(products);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Productos');
-    XLSX.writeFile(wb, 'productos.xlsx');
+    try {
+        const products = await db.getAllProducts();
+        const ws = XLSX.utils.json_to_sheet(products);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Productos');
+        XLSX.writeFile(wb, 'productos.xlsx');
+    } catch (error) {
+        console.error('Error al exportar productos:', error);
+        alert('Error al exportar productos. Inténtalo de nuevo.');
+    }
 });
 
 document.getElementById('clear-button').addEventListener('click', () => {
