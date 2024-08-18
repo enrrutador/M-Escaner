@@ -1,39 +1,6 @@
 import { auth } from './firebaseConfig.js';
 import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
-// Manejar el formulario de inicio de sesión
-const loginForm = document.getElementById('loginForm');
-const loginContainer = document.getElementById('login-container');
-const appContainer = document.getElementById('app-container');
-const loginError = document.getElementById('login-error');
-
-loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-
-    try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        console.log('Usuario autenticado:', userCredential.user);
-    } catch (error) {
-        console.error('Error de autenticación:', error.code, error.message);
-        loginError.textContent = 'Error al iniciar sesión. Verifica tu correo y contraseña.';
-    }
-});
-
-// Manejar el estado de autenticación
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        loginContainer.style.display = 'none';
-        appContainer.style.display = 'block';
-    } else {
-        loginContainer.style.display = 'block';
-        appContainer.style.display = 'none';
-    }
-});
-
-
 // Manejo de la base de datos en IndexedDB
 class ProductDatabase {
     constructor() {
@@ -109,7 +76,17 @@ function startScanner() {
             video.srcObject = stream;
             video.setAttribute('playsinline', true); // necesario para iOS
             video.play();
-            // Aquí se puede agregar la lógica de escaneo con una librería como QuaggaJS o ZXing
+            
+            // Agregar la lógica de escaneo con ZXing
+            import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/library@0.18.7/esm/index.js';
+            const codeReader = new BrowserMultiFormatReader();
+            
+            codeReader.decodeFromVideoDevice(null, video)
+                .then(result => {
+                    console.log('Código de barras detectado:', result.text);
+                    document.getElementById('barcode').value = result.text;
+                })
+                .catch(err => console.error('Error al escanear el código de barras:', err));
         })
         .catch(err => {
             console.error('Error al acceder a la cámara:', err);
@@ -139,18 +116,28 @@ document.getElementById('search-button').addEventListener('click', async () => {
     resultsList.innerHTML = '';
 
     if (barcode) {
-        const product = await db.getProduct(barcode);
-        if (product) {
-            displayProduct(product);
-        } else {
+        try {
+            const product = await db.getProduct(barcode);
+            if (product) {
+                displayProduct(product);
+            } else {
+                displayNotFound();
+            }
+        } catch (error) {
+            console.error('Error en la búsqueda del producto:', error);
             displayNotFound();
         }
     } else if (description) {
-        const products = await db.getAllProducts();
-        const filteredProducts = products.filter(p => p.description.toLowerCase().includes(description.toLowerCase()));
-        if (filteredProducts.length > 0) {
-            filteredProducts.forEach(product => displayProduct(product));
-        } else {
+        try {
+            const products = await db.getAllProducts();
+            const filteredProducts = products.filter(p => p.description.toLowerCase().includes(description.toLowerCase()));
+            if (filteredProducts.length > 0) {
+                filteredProducts.forEach(product => displayProduct(product));
+            } else {
+                displayNotFound();
+            }
+        } catch (error) {
+            console.error('Error en la búsqueda de productos:', error);
             displayNotFound();
         }
     }
