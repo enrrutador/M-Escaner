@@ -86,7 +86,7 @@ class ProductDatabase {
                 const cursor = event.target.result;
                 if (cursor) {
                     const product = cursor.value;
-                    if (product.description.toLowerCase().includes(query.toLowerCase())) {
+                    if (product.barcode.includes(query) || product.description.toLowerCase().includes(query.toLowerCase())) {
                         results.push(product);
                     }
                     cursor.continue();
@@ -166,54 +166,71 @@ document.addEventListener('DOMContentLoaded', () => {
         let product = await db.getProduct(query);
 
         if (!product) {
-            const results = await db.searchProducts(query);
-            if (results.length > 0) {
-                product =
-            // Continúa desde donde se quedó
-
-            if (results.length > 0) {
-                product = results[0];  // Usa el primer resultado de la búsqueda
-                cache.set(query, product);  // Cachear el producto
-            } else {
-                if (!productNotFoundAlertShown) {
-                    alert('Producto no encontrado');
-                    productNotFoundAlertShown = true;
-                }
-                return;
-            }
-        } else {
-            cache.set(query, product);  // Cachear el producto
+           
+            product = await db.searchProducts(query);
         }
 
-        fillForm(product);
+        if (product.length === 0) {
+            if (!productNotFoundAlertShown) {
+                alert('Producto no encontrado');
+                productNotFoundAlertShown = true;
+            }
+            return;
+        }
+
+        productNotFoundAlertShown = false;
+
+        // Cargar el primer producto encontrado
+        const result = product[0];
+        fillForm(result);
+        cache.set(result.barcode, result);
     }
 
     function fillForm(product) {
         descriptionInput.value = product.description || '';
         stockInput.value = product.stock || '';
         priceInput.value = product.price || '';
-        if (product.image) {
-            productImage.src = product.image;
-            productImage.style.display = 'block';
-        } else {
-            productImage.style.display = 'none';
-        }
+        productImage.src = product.image || '';
+        productImage.style.display = product.image ? 'block' : 'none';
     }
 
-    document.getElementById('scan-button').addEventListener('click', startScanner);
+    document.getElementById('scan-button').addEventListener('click', () => {
+        barcodeDetector = new BarcodeDetector({ formats: ['qr_code', 'ean_13'] });
+        startScanner();
+    });
+
+    document.getElementById('search-button').addEventListener('click', async () => {
+        const query = barcodeInput.value.trim();
+        if (query) {
+            await searchProduct(query);
+        }
+    });
 
     document.getElementById('save-button').addEventListener('click', async () => {
-        const product = {
-            barcode: barcodeInput.value,
-            description: descriptionInput.value,
-            stock: stockInput.value,
-            price: priceInput.value,
-            image: productImage.src
-        };
+        const barcode = barcodeInput.value.trim();
+        const description = descriptionInput.value.trim();
+        const stock = stockInput.value.trim();
+        const price = priceInput.value.trim();
+        const image = productImage.src || '';
 
-        await db.addProduct(product);
-        alert('Producto Guardado');
-        clearForm();
+        if (barcode) {
+            await db.addProduct({
+                barcode,
+                description,
+                stock,
+                price,
+                image
+            });
+
+            barcodeInput.value = '';
+            descriptionInput.value = '';
+            stockInput.value = '';
+            priceInput.value = '';
+            productImage.src = '';
+            productImage.style.display = 'none';
+
+            alert('Producto Guardado');
+        }
     });
 
     document.getElementById('export-button').addEventListener('click', async () => {
@@ -226,22 +243,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     lowStockButton.addEventListener('click', async () => {
         const allProducts = await db.getAllProducts();
-        const lowStockProducts = allProducts.filter(product => product.stock < 10); // Ajusta el umbral según sea necesario
-        lowStockList.innerHTML = '';
-        lowStockProducts.forEach(product => {
-            const li = document.createElement('li');
-            li.textContent = `${product.description} - Stock: ${product.stock}`;
-            lowStockList.appendChild(li);
-        });
+        const lowStockProducts = allProducts.filter(product => product.stock && product.stock < 10); // Cambiar el valor según el criterio de stock bajo
+        lowStockList.innerHTML = lowStockProducts.map(product =>
+            `<li>${product.description} - Stock: ${product.stock}</li>`
+        ).join('');
         lowStockResults.style.display = lowStockResults.style.display === 'none' ? 'block' : 'none';
     });
-
-    function clearForm() {
-        barcodeInput.value = '';
-        descriptionInput.value = '';
-        stockInput.value = '';
-        priceInput.value = '';
-        productImage.src = '';
-        productImage.style.display = 'none';
-    }
 });
