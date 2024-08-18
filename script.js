@@ -1,5 +1,38 @@
-import { auth } from './firebaseConfig.js';
+ import { auth } from './firebaseConfig.js';
 import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+
+// Manejar el formulario de inicio de sesión
+const loginForm = document.getElementById('loginForm');
+const loginContainer = document.getElementById('login-container');
+const appContainer = document.getElementById('app-container');
+const loginError = document.getElementById('login-error');
+
+loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+
+    try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        console.log('Usuario autenticado:', userCredential.user);
+    } catch (error) {
+        console.error('Error de autenticación:', error.code, error.message);
+        loginError.textContent = 'Error al iniciar sesión. Verifica tu correo y contraseña.';
+    }
+});
+
+// Manejar el estado de autenticación
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        loginContainer.style.display = 'none';
+        appContainer.style.display = 'block';
+    } else {
+        loginContainer.style.display = 'block';
+        appContainer.style.display = 'none';
+    }
+});
+
 
 // Manejo de la base de datos en IndexedDB
 class ProductDatabase {
@@ -76,19 +109,7 @@ function startScanner() {
             video.srcObject = stream;
             video.setAttribute('playsinline', true); // necesario para iOS
             video.play();
-            
-            // Agregar la lógica de escaneo con ZXing
-            import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/library@0.18.7/esm/index.js';
-            const codeReader = new BrowserMultiFormatReader();
-            
-            codeReader.decodeFromVideoDevice(null, video)
-                .then(result => {
-                    console.log('Código de barras detectado:', result.text);
-                    document.getElementById('barcode').value = result.text;
-                    scannerOverlay.style.display = 'none'; // Cerrar escáner después de escanear
-                    video.srcObject.getTracks().forEach(track => track.stop()); // Detener el flujo de video
-                })
-                .catch(err => console.error('Error al escanear el código de barras:', err));
+            // Aquí se puede agregar la lógica de escaneo con una librería como QuaggaJS o ZXing
         })
         .catch(err => {
             console.error('Error al acceder a la cámara:', err);
@@ -118,28 +139,18 @@ document.getElementById('search-button').addEventListener('click', async () => {
     resultsList.innerHTML = '';
 
     if (barcode) {
-        try {
-            const product = await db.getProduct(barcode);
-            if (product) {
-                displayProduct(product);
-            } else {
-                displayNotFound();
-            }
-        } catch (error) {
-            console.error('Error en la búsqueda del producto:', error);
+        const product = await db.getProduct(barcode);
+        if (product) {
+            displayProduct(product);
+        } else {
             displayNotFound();
         }
     } else if (description) {
-        try {
-            const products = await db.getAllProducts();
-            const filteredProducts = products.filter(p => p.description.toLowerCase().includes(description.toLowerCase()));
-            if (filteredProducts.length > 0) {
-                filteredProducts.forEach(product => displayProduct(product));
-            } else {
-                displayNotFound();
-            }
-        } catch (error) {
-            console.error('Error en la búsqueda de productos:', error);
+        const products = await db.getAllProducts();
+        const filteredProducts = products.filter(p => p.description.toLowerCase().includes(description.toLowerCase()));
+        if (filteredProducts.length > 0) {
+            filteredProducts.forEach(product => displayProduct(product));
+        } else {
             displayNotFound();
         }
     }
@@ -148,7 +159,7 @@ document.getElementById('search-button').addEventListener('click', async () => {
 function displayProduct(product) {
     const resultsList = document.getElementById('results-list');
     const listItem = document.createElement('li');
-    listItem.textContent = `Código: ${product.barcode}, Descripción: ${product.description}, Stock: ${product.stock}, Precio: ${product.price}`;
+    listItem.textContent = Código: ${product.barcode}, Descripción: ${product.description}, Stock: ${product.stock}, Precio: ${product.price};
     listItem.addEventListener('click', () => populateForm(product));
     resultsList.appendChild(listItem);
 }
@@ -184,6 +195,32 @@ document.getElementById('save-button').addEventListener('click', async () => {
     }
 });
 
+document.getElementById('export-button').addEventListener('click', async () => {
+    const products = await db.getAllProducts();
+    const ws = XLSX.utils.json_to_sheet(products);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Productos');
+    XLSX.writeFile(wb, 'productos.xlsx');
+});
+
+document.getElementById('low-stock-button').addEventListener('click', async () => {
+    const lowStockResults = document.getElementById('low-stock-results');
+    const lowStockList = document.getElementById('low-stock-list');
+
+    lowStockList.innerHTML = '';
+    lowStockResults.style.display = lowStockResults.style.display === 'none' ? 'block' : 'none';
+
+    if (lowStockResults.style.display === 'block') {
+        const products = await db.getAllProducts();
+        const lowStockProducts = products.filter(p => p.stock < 5);
+        lowStockProducts.forEach(product => {
+            const listItem = document.createElement('li');
+            listItem.textContent = Código: ${product.barcode}, Descripción: ${product.description}, Stock: ${product.stock}, Precio: ${product.price};
+            lowStockList.appendChild(listItem);
+        });
+    }
+});
+
 document.getElementById('clear-search-results').addEventListener('click', () => {
     const resultsList = document.getElementById('results-list');
     resultsList.innerHTML = '';
@@ -198,4 +235,3 @@ function clearForm() {
     document.getElementById('product-image').src = '';
     document.getElementById('product-image').style.display = 'none';
 }
-
