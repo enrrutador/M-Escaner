@@ -133,7 +133,11 @@ input {
     background-color: red;
 }
 
-.low-stock-results ul, .low-stock-results li {
+.low-stock-results ul {
+    color: #000;
+}
+
+.low-stock-results li {
     color: #000;
 }
 
@@ -147,3 +151,4 @@ input {
     font-size: 0.9em;
     margin-top: 10px;
 }
+
