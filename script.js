@@ -1,3 +1,40 @@
+import { auth } from './firebaseConfig.js';
+import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+
+// Manejar el formulario de inicio de sesión
+const loginForm = document.getElementById('loginForm');
+const loginContainer = document.getElementById('login-container');
+const appContainer = document.getElementById('app-container');
+const loginError = document.getElementById('login-error');
+
+loginForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    
+    signInWithEmailAndPassword(auth, email, password)
+        .then((userCredential) => {
+            console.log('Usuario autenticado:', userCredential.user);
+        })
+        .catch((error) => {
+            console.error('Error de autenticación:', error.code, error.message);
+            loginError.textContent = 'Error al iniciar sesión. Verifica tu correo y contraseña.';
+        });
+});
+
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        loginContainer.style.display = 'none';
+        appContainer.style.display = 'block';
+    } else {
+        loginContainer.style.display = 'block';
+        appContainer.style.display = 'none';
+    }
+});
+
+// Tu código existente aquí...
+
 class ProductDatabase {
     constructor() {
         this.dbName = 'MScannerDB';
