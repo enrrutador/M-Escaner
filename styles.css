@@ -12,17 +12,25 @@ body, html {
     font-family: Arial, sans-serif;
     background-color: var(--background-color);
     color: var(--text-color);
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-.container {
-    max-width: 600px;
-    margin: 0 auto;
+.container, .login-container {
+    width: 90%;
+    max-width: 400px;
+    margin: auto;
     padding: 20px;
     text-align: center;
+    background-color: var(--background-color);
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
 header h1 {
-    font-size: 2em;
+    font-size: 1.5em;
     margin-bottom: 20px;
     color: var(--primary-color);
 }
@@ -35,12 +43,13 @@ header h1 {
     background-color: var(--primary-color);
     border: none;
     color: white;
-    padding: 15px 20px;
-    margin: 5px;
+    padding: 12px 15px;
+    margin: 5px 0;
     cursor: pointer;
     border-radius: 5px;
     transition: background-color 0.3s ease;
     width: 100%;
+    font-size: 1em;
 }
 
 .action-button:hover {
@@ -50,14 +59,16 @@ header h1 {
 input {
     width: calc(100% - 20px);
     padding: 10px;
-    margin: 10px;
+    margin: 10px 0;
     border-radius: 5px;
     border: 1px solid var(--secondary-color);
+    font-size: 1em;
 }
 
 .image-section img {
     max-width: 100%;
     margin-top: 20px;
+    border-radius: 5px;
 }
 
 .scanner-overlay {
@@ -76,6 +87,7 @@ input {
 #video {
     width: 80%;
     border: 2px solid var(--primary-color);
+    border-radius: 10px;
 }
 
 #viewfinder {
@@ -86,6 +98,7 @@ input {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+    border-radius: 10px;
 }
 
 .results-section {
@@ -106,6 +119,8 @@ input {
     background-color: var(--background-color);
     padding: 10px;
     border-bottom: 1px solid var(--secondary-color);
+    border-radius: 5px;
+    margin-bottom: 5px;
 }
 
 .results-section li:hover {
@@ -119,11 +134,22 @@ input {
 }
 
 .low-stock-results ul {
-    color: #000; /* Color negro para el texto */
+    color: #000;
 }
 
 .low-stock-results li {
-    color: #000; /* Color negro para el texto */
+    color: #000;
+}
+
+.login-container h2 {
+    color: var(--primary-color);
+    margin-bottom: 20px;
+}
+
+.error-message {
+    color: red;
+    font-size: 0.9em;
+    margin-top: 10px;
 }
 
 
