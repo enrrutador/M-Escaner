@@ -31,37 +31,31 @@
         <div class="form-section">
             <input type="text" id="description" placeholder="Descripción del Producto">
             <input type="number" id="stock" placeholder="Stock">
-            <input type="number" id="price" placeholder="Precio de Venta">
+            <input type="number" id="price" placeholder="Precio">
         </div>
-        
+
         <div class="action-section">
-            <button id="save-button" class="action-button">Guardar</button>
+            <button id="save-button" class="action-button">Guardar Producto</button>
             <button id="export-button" class="action-button">Exportar a Excel</button>
             <button id="low-stock-button" class="action-button low-stock-button">Ver Productos con Stock Bajo</button>
         </div>
-        
-        <div id="product-image-container" class="image-section">
-            <img id="product-image" src="" alt="Imagen del Producto" style="display: none;">
-        </div>
-        
-        <div id="scanner-container" class="scanner-overlay" style="display: none;">
-            <video id="video" autoplay></video>
-            <div id="viewfinder"></div>
-        </div>
-        
+
         <div id="search-results" class="results-section" style="display: none;">
             <h2>Resultados de la Búsqueda</h2>
             <ul id="results-list"></ul>
         </div>
-        
-        <div id="low-stock-results" class="results-section low-stock-results" style="display: none;">
+
+        <div id="low-stock-results" class="results-section" style="display: none;">
             <h2>Productos con Stock Bajo</h2>
             <ul id="low-stock-list"></ul>
         </div>
+
+        <div class="image-section">
+            <img id="product-image" src="" alt="Imagen del producto" style="display: none;">
+        </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
-    <script type="module" src="firebaseConfig.js"></script>
     <script type="module" src="script.js"></script>
 </body>
 </html>
+
