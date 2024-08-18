@@ -1,100 +1,63 @@
-body {
-    font-family: Arial, sans-serif;
+:root {
+    --primary-color: #0288D1;
+    --secondary-color: #0277BD;
+    --accent-color: #FF5722;
+    --text-color: #FFFFFF;
+    --background-color: #ECEFF1;
+}
+
+body, html {
     margin: 0;
     padding: 0;
-    background-color: #f4f4f4;
-    color: #333;
-}
-
-.login-container {
-    width: 300px;
-    margin: 100px auto;
-    background-color: #fff;
-    padding: 20px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    text-align: center;
-}
-
-.login-container h2 {
-    margin-bottom: 20px;
-}
-
-.login-container form {
-    display: flex;
-    flex-direction: column;
-}
-
-.login-container input {
-    padding: 10px;
-    margin: 10px 0;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-}
-
-.login-container button {
-    padding: 10px;
-    border: none;
-    background-color: #007bff;
-    color: #fff;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-.login-container button:hover {
-    background-color: #0056b3;
-}
-
-.error-message {
-    color: red;
-    margin-top: 10px;
+    font-family: Arial, sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
 }
 
 .container {
-    max-width: 900px;
-    margin: 20px auto;
+    max-width: 600px;
+    margin: 0 auto;
     padding: 20px;
-    background-color: #fff;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
 }
 
 header h1 {
-    text-align: center;
+    font-size: 2em;
     margin-bottom: 20px;
+    color: var(--primary-color);
 }
 
-.scanner-section,
-.form-section,
-.action-section {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+.scanner-section, .form-section, .action-section {
     margin-bottom: 20px;
 }
 
 .action-button {
-    padding: 10px 20px;
-    margin: 10px 0;
+    background-color: var(--primary-color);
     border: none;
-    background-color: #007bff;
-    color: #fff;
-    border-radius: 5px;
+    color: white;
+    padding: 15px 20px;
+    margin: 5px;
     cursor: pointer;
-    transition: background-color 0.3s;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+    width: 100%;
 }
 
 .action-button:hover {
-    background-color: #0056b3;
+    background-color: var(--accent-color);
 }
 
-.image-section {
-    text-align: center;
-    margin-bottom: 20px;
+input {
+    width: calc(100% - 20px);
+    padding: 10px;
+    margin: 10px;
+    border-radius: 5px;
+    border: 1px solid var(--secondary-color);
 }
 
 .image-section img {
     max-width: 100%;
-    height: auto;
+    margin-top: 20px;
 }
 
 .scanner-overlay {
@@ -103,37 +66,64 @@ header h1 {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.8);
     display: flex;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
     z-index: 1000;
+}
+
+#video {
+    width: 80%;
+    border: 2px solid var(--primary-color);
+}
+
+#viewfinder {
+    position: absolute;
+    width: 60%;
+    height: 40%;
+    border: 2px solid var(--accent-color);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
 
 .results-section {
     margin-top: 20px;
-    text-align: center;
+    text-align: left;
+}
+
+.results-section h2 {
+    color: var(--primary-color);
 }
 
 .results-section ul {
-    list-style: none;
-    padding: 0;
+    list-style-type: none;
+    padding-left: 0;
 }
 
-.results-section ul li {
+.results-section li {
+    background-color: var(--background-color);
     padding: 10px;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid var(--secondary-color);
+}
+
+.results-section li:hover {
+    background-color: var(--accent-color);
+    color: var(--text-color);
+    cursor: pointer;
 }
 
 .low-stock-button {
-    background-color: #f39c12;
+    background-color: red;
 }
 
-.low-stock-button:hover {
-    background-color: #e67e22;
+.low-stock-results ul {
+    color: #000; /* Color negro para el texto */
 }
 
-.low-stock-results ul li {
-    color: black;
+.low-stock-results li {
+    color: #000; /* Color negro para el texto */
 }
+
 
