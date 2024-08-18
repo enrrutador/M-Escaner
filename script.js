@@ -90,7 +90,111 @@ document.addEventListener('DOMContentLoaded', () => {
     const lowStockResults = document.getElementById('low-stock-results');
     const lowStockList = document.getElementById('low-stock-list');
 
-    function clearFields() {
+    let scanner;
+
+    document.getElementById('scan-button').addEventListener('click', () => startScanner());
+    document.getElementById('search-button').addEventListener('click', () => searchProduct());
+    document.getElementById('save-button').addEventListener('click', () => saveProduct());
+    document.getElementById('low-stock-button').addEventListener('click', () => toggleLowStock());
+
+    async function startScanner() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+            video.srcObject = stream;
+            scannerContainer.style.display = 'flex';
+            video.play();
+            scan();
+        } catch (error) {
+            if (error.name === 'NotAllowedError' || error.name === 'SecurityError') {
+                alert('Permiso de cámara denegado. Por favor, habilita el acceso a la cámara en la configuración del navegador.');
+            } else if (error.name === 'NotFoundError') {
+                alert('No se ha encontrado una cámara disponible.');
+            } else {
+                alert('Error accediendo a la cámara: ' + error.message);
+            }
+        }
+    }
+
+    async function scan() {
+        const codeReader = new ZXing.BrowserBarcodeReader();
+        scanner = codeReader;
+        try {
+            const result = await codeReader.decodeFromVideoDevice(null, 'video');
+            if (result) {
+                video.pause();
+                scannerContainer.style.display = 'none';
+                barcodeInput.value = result.text;
+                fetchProduct(result.text);
+            }
+        } catch (err) {
+            console.error('Error decoding barcode:', err);
+        }
+    }
+
+    async function searchProduct() {
+        const query = barcodeInput.value.trim() || descriptionInput.value.trim();
+        if (query) {
+            const results = await db.searchProducts(query);
+            resultsList.innerHTML = '';
+            if (results.length > 0) {
+                results.forEach(product => {
+                    const li = document.createElement('li');
+                    li.textContent = `${product.description} - ${product.stock} en stock`;
+                    resultsList.appendChild(li);
+                });
+                searchResults.style.display = 'block';
+            } else {
+                alert('Producto no encontrado');
+            }
+        }
+    }
+
+    async function saveProduct() {
+        const barcode = barcodeInput.value.trim();
+        const description = descriptionInput.value.trim();
+        const stock = stockInput.value;
+        const price = priceInput.value;
+        const product = { barcode, description, stock, price };
+
+        if (barcode && description && stock && price) {
+            await db.addProduct(product);
+            alert('Producto guardado');
+            clearForm();
+        } else {
+            alert('Por favor, complete todos los campos antes de guardar.');
+        }
+    }
+
+    async function fetchProduct(barcode) {
+        const product = await db.getProduct(barcode);
+        if (product) {
+            descriptionInput.value = product.description;
+            stockInput.value = product.stock;
+            priceInput.value = product.price;
+            productImage.src = `https://world.openfoodfacts.org/images/products/${barcode}.jpg`;
+            productImage.style.display = 'block';
+        } else {
+            alert('Producto no encontrado');
+        }
+    }
+
+    async function toggleLowStock() {
+        if (lowStockResults.style.display === 'none') {
+            const products = await db.getAllProducts();
+            const lowStockProducts = products.filter(product => product.stock < 5);
+            lowStockList.innerHTML = '';
+            lowStockProducts.forEach(product => {
+                const li = document.createElement('li');
+                li.textContent = `${product.description} - ${product.stock} en stock`;
+                lowStockList.appendChild(li);
+            });
+            lowStockResults.style.display = 'block';
+        } else {
+            lowStockResults.style.display = 'none';
+        }
+    }
+
+    function clearForm() {
         barcodeInput.value = '';
         descriptionInput.value = '';
         stockInput.value = '';
@@ -98,99 +202,4 @@ document.addEventListener('DOMContentLoaded', () => {
         productImage.src = '';
         productImage.style.display = 'none';
     }
-
-    function saveProduct() {
-        const product = {
-            barcode: barcodeInput.value,
-            description: descriptionInput.value,
-            stock: parseInt(stockInput.value),
-            price: parseFloat(priceInput.value)
-        };
-
-        db.addProduct(product)
-            .then(() => {
-                alert('Producto guardado correctamente.');
-                clearFields();
-            })
-            .catch(error => console.error(error));
-    }
-
-    document.getElementById('scan-button').addEventListener('click', () => {
-        scannerContainer.style.display = 'flex';
-
-        const codeReader = new ZXing.BrowserBarcodeReader();
-        codeReader.decodeOnceFromVideoDevice(undefined, 'video')
-            .then(result => {
-                barcodeInput.value = result.text;
-                scannerContainer.style.display = 'none';
-            })
-            .catch(err => {
-                console.error(err);
-                scannerContainer.style.display = 'none';
-            });
-    });
-
-    document.getElementById('search-button').addEventListener('click', () => {
-        const query = barcodeInput.value || descriptionInput.value;
-        if (query) {
-            db.searchProducts(query)
-                .then(results => {
-                    resultsList.innerHTML = '';
-                    searchResults.style.display = results.length > 0 ? 'block' : 'none';
-                    if (results.length > 0) {
-                        results.forEach(product => {
-                            const li = document.createElement('li');
-                            li.textContent = `${product.description} - Stock: ${product.stock} - Precio: ${product.price}`;
-                            li.addEventListener('click', () => {
-                                barcodeInput.value = product.barcode;
-                                descriptionInput.value = product.description;
-                                stockInput.value = product.stock;
-                                priceInput.value = product.price;
-                                searchResults.style.display = 'none';
-                            });
-                            resultsList.appendChild(li);
-                        });
-                    } else {
-                        alert('Producto no encontrado.');
-                    }
-                })
-                .catch(error => console.error(error));
-        } else {
-            alert('Por favor, ingrese un código de barras o descripción para buscar.');
-        }
-    });
-
-    document.getElementById('save-button').addEventListener('click', saveProduct);
-
-    document.getElementById('export-button').addEventListener('click', () => {
-        db.getAllProducts()
-            .then(products => {
-                const ws = XLSX.utils.json_to_sheet(products);
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, 'Productos');
-                XLSX.writeFile(wb, 'productos.xlsx');
-            })
-            .catch(error => console.error(error));
-    });
-
-    document.getElementById('low-stock-button').addEventListener('click', () => {
-        db.getAllProducts()
-            .then(products => {
-                lowStockList.innerHTML = '';
-                const lowStockProducts = products.filter(product => product.stock < 5);
-                lowStockResults.style.display = lowStockProducts.length > 0 ? 'block' : 'none';
-                if (lowStockProducts.length > 0) {
-                    lowStockProducts.forEach(product => {
-                        const li = document.createElement('li');
-                        li.textContent = `${product.description} - Stock: ${product.stock} - Precio: ${product.price}`;
-                        lowStockList.appendChild(li);
-                    });
-                } else {
-                    alert('No hay productos con stock bajo.');
-                }
-            })
-            .catch(error => console.error(error));
-    });
-
-    document.getElementById('clear-button').addEventListener('click', clearFields);
 });
