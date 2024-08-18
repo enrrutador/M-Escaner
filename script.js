@@ -126,7 +126,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const lowStockResults = document.getElementById('low-stock-results');
     const lowStockList = document.getElementById('low-stock-list');
     let barcodeDetector;
-    let productNotFoundAlertShown = false;
 
     const cache = new Map();
 
@@ -144,11 +143,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function scan() {
         if (barcodeDetector && video.readyState === video.HAVE_ENOUGH_DATA) {
-            const barcodes = await barcodeDetector.detect(video);
-            if (barcodes.length > 0) {
-                barcodeInput.value = barcodes[0].rawValue;
-                stopScanner();
-                searchProduct(barcodes[0].rawValue);
+            try {
+                const barcodes = await barcodeDetector.detect(video);
+                if (barcodes.length > 0) {
+                    barcodeInput.value = barcodes[0].rawValue;
+                    stopScanner();
+                    searchProduct(barcodes[0].rawValue);
+                }
+            } catch (error) {
+                console.error('Error detectando el código de barras:', error);
             }
         }
         requestAnimationFrame(scan);
@@ -175,8 +178,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     async function searchProduct(barcode) {
+        const cachedProduct = cache.get(barcode);
+        if (cachedProduct) {
+            displayProduct(cachedProduct);
+            return;
+        }
         const product = await db.getProduct(barcode);
         if (product) {
+            cache.set(barcode, product);
             displayProduct(product);
         } else {
             const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
@@ -189,6 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     price: 'No disponible',
                     image: data.product.image_url || ''
                 };
+                cache.set(barcode, product);
                 displayProduct(product);
                 await db.addProduct(product);
             } else {
