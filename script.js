@@ -7,20 +7,21 @@ const loginContainer = document.getElementById('login-container');
 const appContainer = document.getElementById('app-container');
 const loginError = document.getElementById('login-error');
 
-loginForm.addEventListener('submit', (e) => {
+loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
     
-    signInWithEmailAndPassword(auth, email, password)
-        .then((userCredential) => {
-            console.log('Usuario autenticado:', userCredential.user);
-        })
-        .catch((error) => {
-            console.error('Error de autenticación:', error.code, error.message);
-            loginError.textContent = 'Error al iniciar sesión. Verifica tu correo y contraseña.';
-        });
+    try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        console.log('Usuario autenticado:', userCredential.user);
+        loginContainer.style.display = 'none';
+        appContainer.style.display = 'block';
+    } catch (error) {
+        console.error('Error de autenticación:', error.code, error.message);
+        loginError.textContent = 'Error al iniciar sesión. Verifica tu correo y contraseña.';
+    }
 });
 
 onAuthStateChanged(auth, (user) => {
@@ -233,30 +234,6 @@ function clearForm() {
     document.getElementById('price').value = '';
     document.getElementById('product-image').src = '';
     document.getElementById('product-image').style.display = 'none';
-}
-
-function startScanner() {
-    const video = document.getElementById('video');
-    const scannerOverlay = document.getElementById('scanner-container');
-    
-    // Configuración del video y la cámara
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-        .then(stream => {
-            video.srcObject = stream;
-            video.setAttribute('playsinline', true); // necesario para iOS
-            video.play();
-            // Aquí se puede agregar la lógica de escaneo con una librería como QuaggaJS o ZXing
-        })
-        .catch(err => {
-            console.error('Error al acceder a la cámara:', err);
-            alert('No se pudo acceder a la cámara.');
-        });
-
-    // Cerrar el escáner cuando se haga clic fuera del área del escáner
-    scannerOverlay.addEventListener('click', () => {
-        scannerOverlay.style.display = 'none';
-        video.srcObject.getTracks().forEach(track => track.stop());
-    });
 }
 
 
