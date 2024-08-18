@@ -1,4 +1,4 @@
- import { auth } from './firebaseConfig.js';
+import { auth } from './firebaseConfig.js';
 import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
 // Manejar el formulario de inicio de sesión
@@ -32,7 +32,6 @@ onAuthStateChanged(auth, (user) => {
         appContainer.style.display = 'none';
     }
 });
-
 
 // Manejo de la base de datos en IndexedDB
 class ProductDatabase {
@@ -159,7 +158,7 @@ document.getElementById('search-button').addEventListener('click', async () => {
 function displayProduct(product) {
     const resultsList = document.getElementById('results-list');
     const listItem = document.createElement('li');
-    listItem.textContent = Código: ${product.barcode}, Descripción: ${product.description}, Stock: ${product.stock}, Precio: ${product.price};
+    listItem.textContent = `Código: ${product.barcode}, Descripción: ${product.description}, Stock: ${product.stock}, Precio: ${product.price}`;
     listItem.addEventListener('click', () => populateForm(product));
     resultsList.appendChild(listItem);
 }
@@ -215,7 +214,7 @@ document.getElementById('low-stock-button').addEventListener('click', async () =
         const lowStockProducts = products.filter(p => p.stock < 5);
         lowStockProducts.forEach(product => {
             const listItem = document.createElement('li');
-            listItem.textContent = Código: ${product.barcode}, Descripción: ${product.description}, Stock: ${product.stock}, Precio: ${product.price};
+            listItem.textContent = `Código: ${product.barcode}, Descripción: ${product.description}, Stock: ${product.stock}, Precio: ${product.price}`;
             lowStockList.appendChild(listItem);
         });
     }
@@ -235,3 +234,4 @@ function clearForm() {
     document.getElementById('product-image').src = '';
     document.getElementById('product-image').style.display = 'none';
 }
+
