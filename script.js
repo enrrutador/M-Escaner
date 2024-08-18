@@ -156,102 +156,103 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('search-button').addEventListener('click', async () => {
-        const barcode = document.getElementById('barcode').value;
-        const description = document.getElementById('description').value;
-        const resultsList = document.getElementById('results-list');
-        resultsList.innerHTML = '';
+        const barcode = document.getElementById('barcode').value.trim();
+        if (!barcode) {
+            alert('Por favor, ingrese un código de barras o descripción.');
+            return;
+        }
 
         try {
-            if (barcode) {
-                const product = await db.getProduct(barcode);
-                if (product) {
-                    displayProduct(product);
-                } else {
-                    displayNotFound();
-                }
-            } else if (description) {
-                const products = await db.getAllProducts();
-                const filteredProducts = products.filter(p => p.description.toLowerCase().includes(description.toLowerCase()));
-                if (filteredProducts.length > 0) {
-                    filteredProducts.forEach(product => displayProduct(product));
-                } else {
-                    displayNotFound();
-                }
+            const product = await db.getProduct(barcode);
+            if (product) {
+                document.getElementById('description').value = product.description;
+                document.getElementById('stock').value = product.stock;
+                document.getElementById('price').value = product.price;
+                alert('Producto encontrado en la base de datos.');
+            } else {
+                alert('Producto no encontrado.');
             }
         } catch (error) {
-            console.error('Error al buscar productos:', error);
-            displayNotFound();
+            console.error(error);
+            alert('Error buscando el producto.');
         }
     });
-
-    function displayProduct(product) {
-        const resultsList = document.getElementById('results-list');
-        const listItem = document.createElement('li');
-        listItem.textContent = `Código: ${product.barcode}, Descripción: ${product.description}, Stock: ${product.stock}, Precio: ${product.price}`;
-        listItem.addEventListener('click', () => populateForm(product));
-        resultsList.appendChild(listItem);
-    }
-
-    function displayNotFound() {
-        const resultsList = document.getElementById('results-list');
-        const listItem = document.createElement('li');
-        listItem.textContent = 'Producto no encontrado';
-        resultsList.appendChild(listItem);
-    }
-
-    function populateForm(product) {
-        document.getElementById('barcode').value = product.barcode;
-        document.getElementById('description').value = product.description;
-        document.getElementById('stock').value = product.stock;
-        document.getElementById('price').value = product.price;
-        document.getElementById('product-image').src = product.image || '';
-        document.getElementById('product-image').style.display = product.image ? 'block' : 'none';
-        document.getElementById('search-results').style.display = 'none';
-    }
 
     document.getElementById('save-button').addEventListener('click', async () => {
-        const barcode = document.getElementById('barcode').value;
-        const description = document.getElementById('description').value;
-        const stock = document.getElementById('stock').value;
-        const price = document.getElementById('price').value;
-        const image = document.getElementById('product-image').src;
+        const barcode = document.getElementById('barcode').value.trim();
+        const description = document.getElementById('description').value.trim();
+        const stock = document.getElementById('stock').value.trim();
+        const price = document.getElementById('price').value.trim();
 
-        if (barcode && description) {
-            try {
-                await db.addProduct({ barcode, description, stock, price, image });
-                alert('Producto guardado');
-                clearForm();
-            } catch (error) {
-                console.error('Error al guardar producto:', error);
-                alert('Error al guardar producto');
-            }
-        } else {
-            alert('Código de barras y descripción son obligatorios');
+        if (!barcode || !description || !stock || !price) {
+            alert('Por favor, complete todos los campos.');
+            return;
+        }
+
+        const product = {
+            barcode,
+            description,
+            stock: parseInt(stock),
+            price: parseFloat(price)
+        };
+
+        try {
+            await db.addProduct(product);
+            alert('Producto guardado.');
+            clearForm();
+        } catch (error) {
+            console.error(error);
+            alert('Error guardando el producto.');
         }
     });
-
-    document.getElementById('clear-button').addEventListener('click', () => clearForm());
 
     function clearForm() {
         document.getElementById('barcode').value = '';
         document.getElementById('description').value = '';
         document.getElementById('stock').value = '';
         document.getElementById('price').value = '';
-        document.getElementById('product-image').src = '';
-        document.getElementById('product-image').style.display = 'none';
-        document.getElementById('search-results').style.display = 'none';
     }
 
     document.getElementById('export-button').addEventListener('click', async () => {
         try {
             const products = await db.getAllProducts();
-            const worksheet = XLSX.utils.json_to_sheet(products);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, 'Productos');
-            XLSX.writeFile(workbook, 'productos.xlsx');
+            exportToExcel(products);
         } catch (error) {
-            console.error('Error al exportar productos:', error);
-            alert('Error al exportar productos');
+            console.error(error);
+            alert('Error exportando los productos.');
         }
+    });
+
+    function exportToExcel(products) {
+        const worksheet = XLSX.utils.json_to_sheet(products);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Productos');
+        XLSX.writeFile(workbook, 'productos.xlsx');
+    }
+
+    document.getElementById('low-stock-button').addEventListener('click', async () => {
+        try {
+            const products = await db.getAllProducts();
+            const lowStockProducts = products.filter(product => product.stock < 10); 
+
+            const lowStockList = document.getElementById('low-stock-list');
+            lowStockList.innerHTML = '';
+            lowStockProducts.forEach(product => {
+                const listItem = document.createElement('li');
+                listItem.textContent = `${product.description} - Stock: ${product.stock}`;
+                lowStockList.appendChild(listItem);
+            });
+
+            const lowStockResults = document.getElementById('low-stock-results');
+            lowStockResults.style.display = lowStockResults.style.display === 'none' ? 'block' : 'none';
+        } catch (error) {
+            console.error(error);
+            alert('Error obteniendo productos con stock bajo.');
+        }
+    });
+
+    document.getElementById('clear-search-results').addEventListener('click', () => {
+        document.getElementById('results-list').innerHTML = '';
+        document.getElementById('search-results').style.display = 'none';
     });
 });
