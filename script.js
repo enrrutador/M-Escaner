@@ -102,13 +102,31 @@ function startScanner() {
     const video = document.getElementById('video');
     const scannerOverlay = document.getElementById('scanner-container');
     
-    // Configuración del video y la cámara
     navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
         .then(stream => {
             video.srcObject = stream;
-            video.setAttribute('playsinline', true); // necesario para iOS
+            video.setAttribute('playsinline', true); 
             video.play();
-            // Aquí se puede agregar la lógica de escaneo con una librería como QuaggaJS o ZXing
+
+            const barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'ean_8'] });
+
+            const scanBarcode = () => {
+                barcodeDetector.detect(video)
+                    .then(barcodes => {
+                        if (barcodes.length > 0) {
+                            const barcode = barcodes[0].rawValue;
+                            console.log('Código de barras escaneado:', barcode);
+                            // Aquí podrías manejar el resultado del escaneo, por ejemplo:
+                            populateFormFromBarcode(barcode);
+                            scannerOverlay.style.display = 'none';
+                            stream.getTracks().forEach(track => track.stop());
+                        } else {
+                            requestAnimationFrame(scanBarcode);
+                        }
+                    })
+                    .catch(err => console.error('Error al escanear:', err));
+            };
+            scanBarcode();
         })
         .catch(err => {
             console.error('Error al acceder a la cámara:', err);
@@ -122,6 +140,11 @@ function startScanner() {
     });
 }
 
+function populateFormFromBarcode(barcode) {
+    document.getElementById('barcode').value = barcode;
+    document.getElementById('search-button').click(); 
+}
+
 // Manejo de los eventos de botones
 document.getElementById('scan-button').addEventListener('click', () => {
     const scannerOverlay = document.getElementById('scanner-container');
@@ -132,9 +155,7 @@ document.getElementById('scan-button').addEventListener('click', () => {
 document.getElementById('search-button').addEventListener('click', async () => {
     const barcode = document.getElementById('barcode').value;
     const description = document.getElementById('description').value;
-    const searchResults = document.getElementById('search-results');
     const resultsList = document.getElementById('results-list');
-
     resultsList.innerHTML = '';
 
     if (barcode) {
@@ -202,28 +223,8 @@ document.getElementById('export-button').addEventListener('click', async () => {
     XLSX.writeFile(wb, 'productos.xlsx');
 });
 
-document.getElementById('low-stock-button').addEventListener('click', async () => {
-    const lowStockResults = document.getElementById('low-stock-results');
-    const lowStockList = document.getElementById('low-stock-list');
-
-    lowStockList.innerHTML = '';
-    lowStockResults.style.display = lowStockResults.style.display === 'none' ? 'block' : 'none';
-
-    if (lowStockResults.style.display === 'block') {
-        const products = await db.getAllProducts();
-        const lowStockProducts = products.filter(p => p.stock < 5);
-        lowStockProducts.forEach(product => {
-            const listItem = document.createElement('li');
-            listItem.textContent = `Código: ${product.barcode}, Descripción: ${product.description}, Stock: ${product.stock}, Precio: ${product.price}`;
-            lowStockList.appendChild(listItem);
-        });
-    }
-});
-
-document.getElementById('clear-search-results').addEventListener('click', () => {
-    const resultsList = document.getElementById('results-list');
-    resultsList.innerHTML = '';
-    document.getElementById('search-results').style.display = 'none';
+document.getElementById('clear-button').addEventListener('click', () => {
+    clearForm();
 });
 
 function clearForm() {
@@ -234,4 +235,5 @@ function clearForm() {
     document.getElementById('product-image').src = '';
     document.getElementById('product-image').style.display = 'none';
 }
+
 
