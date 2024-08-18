@@ -85,6 +85,8 @@ function startScanner() {
                 .then(result => {
                     console.log('Código de barras detectado:', result.text);
                     document.getElementById('barcode').value = result.text;
+                    scannerOverlay.style.display = 'none'; // Cerrar escáner después de escanear
+                    video.srcObject.getTracks().forEach(track => track.stop()); // Detener el flujo de video
                 })
                 .catch(err => console.error('Error al escanear el código de barras:', err));
         })
@@ -182,32 +184,6 @@ document.getElementById('save-button').addEventListener('click', async () => {
     }
 });
 
-document.getElementById('export-button').addEventListener('click', async () => {
-    const products = await db.getAllProducts();
-    const ws = XLSX.utils.json_to_sheet(products);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Productos');
-    XLSX.writeFile(wb, 'productos.xlsx');
-});
-
-document.getElementById('low-stock-button').addEventListener('click', async () => {
-    const lowStockResults = document.getElementById('low-stock-results');
-    const lowStockList = document.getElementById('low-stock-list');
-
-    lowStockList.innerHTML = '';
-    lowStockResults.style.display = lowStockResults.style.display === 'none' ? 'block' : 'none';
-
-    if (lowStockResults.style.display === 'block') {
-        const products = await db.getAllProducts();
-        const lowStockProducts = products.filter(p => p.stock < 5);
-        lowStockProducts.forEach(product => {
-            const listItem = document.createElement('li');
-            listItem.textContent = `Código: ${product.barcode}, Descripción: ${product.description}, Stock: ${product.stock}, Precio: ${product.price}`;
-            lowStockList.appendChild(listItem);
-        });
-    }
-});
-
 document.getElementById('clear-search-results').addEventListener('click', () => {
     const resultsList = document.getElementById('results-list');
     resultsList.innerHTML = '';
@@ -222,5 +198,4 @@ function clearForm() {
     document.getElementById('product-image').src = '';
     document.getElementById('product-image').style.display = 'none';
 }
-
 
