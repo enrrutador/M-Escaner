@@ -70,22 +70,24 @@ class ProductDatabase {
     async getProduct(barcode) {
         return new Promise((resolve, reject) => {
             const transaction = this.db.transaction([this.storeName], 'readonly');
-            transaction.objectStore(this.storeName).get(barcode).onsuccess = event => resolve(event.target.result);
-            transaction.onerror = event => reject('Error getting product:', event.target.error);
+            const request = transaction.objectStore(this.storeName).get(barcode);
+
+            request.onsuccess = event => resolve(event.target.result);
+            request.onerror = event => reject('Error getting product:', event.target.error);
         });
     }
 
-    async getLowStockProducts(threshold = 5) {
+    async getProductsByDescription(description) {
         return new Promise((resolve, reject) => {
-            const products = [];
             const transaction = this.db.transaction([this.storeName], 'readonly');
-            const store = transaction.objectStore(this.storeName);
-            const request = store.openCursor();
+            const objectStore = transaction.objectStore(this.storeName);
+            const products = [];
+            const index = objectStore.index('description');
 
-            request.onsuccess = event => {
+            index.openCursor().onsuccess = event => {
                 const cursor = event.target.result;
                 if (cursor) {
-                    if (cursor.value.stock <= threshold) {
+                    if (cursor.value.description.toLowerCase().includes(description.toLowerCase())) {
                         products.push(cursor.value);
                     }
                     cursor.continue();
@@ -94,187 +96,130 @@ class ProductDatabase {
                 }
             };
 
-            request.onerror = event => reject('Error retrieving low stock products:', event.target.error);
+            transaction.onerror = event => reject('Error searching products:', event.target.error);
         });
     }
 
-    async getAllProducts() {
+    async getLowStockProducts(threshold = 10) {
         return new Promise((resolve, reject) => {
-            const products = [];
             const transaction = this.db.transaction([this.storeName], 'readonly');
-            const store = transaction.objectStore(this.storeName);
-            const request = store.openCursor();
+            const objectStore = transaction.objectStore(this.storeName);
+            const products = [];
 
-            request.onsuccess = event => {
+            objectStore.openCursor().onsuccess = event => {
                 const cursor = event.target.result;
                 if (cursor) {
-                    products.push(cursor.value);
+                    if (cursor.value.stock < threshold) {
+                        products.push(cursor.value);
+                    }
                     cursor.continue();
                 } else {
                     resolve(products);
                 }
             };
 
-            request.onerror = event => reject('Error retrieving all products:', event.target.error);
+            transaction.onerror = event => reject('Error getting low stock products:', event.target.error);
         });
     }
 }
 
 const productDB = new ProductDatabase();
-await productDB.init();
+productDB.init();
 
 const scanButton = document.getElementById('scan-button');
 const searchButton = document.getElementById('search-button');
 const saveButton = document.getElementById('save-button');
 const exportButton = document.getElementById('export-button');
 const lowStockButton = document.getElementById('low-stock-button');
-const searchResults = document.getElementById('search-results');
-const lowStockResults = document.getElementById('low-stock-results');
+
 const barcodeInput = document.getElementById('barcode');
 const descriptionInput = document.getElementById('description');
 const stockInput = document.getElementById('stock');
 const priceInput = document.getElementById('price');
-const resultsList = document.getElementById('results-list');
-const lowStockList = document.getElementById('low-stock-list');
-const productImage = document.getElementById('product-image');
 
-scanButton.addEventListener('click', startBarcodeScanner);
+const searchResults = document.getElementById('search-results');
+const resultsList = document.getElementById('results-list');
+const lowStockResults = document.getElementById('low-stock-results');
+const lowStockList = document.getElementById('low-stock-list');
+
+scanButton.addEventListener('click', startScanning);
 searchButton.addEventListener('click', searchProduct);
 saveButton.addEventListener('click', saveProduct);
-exportButton.addEventListener('click', exportToExcel);
 lowStockButton.addEventListener('click', toggleLowStockProducts);
 
-async function startBarcodeScanner() {
-    // Lógica para iniciar el escáner de código de barras
+function startScanning() {
+    // Lógica para abrir la cámara y escanear el código de barras
+    console.log('Escaneando código de barras...');
 }
 
 async function searchProduct() {
-    const barcode = barcodeInput.value.trim();
     const description = descriptionInput.value.trim();
+    if (description === '') return;
 
-    if (barcode === '' && description === '') {
-        alert('Por favor, ingresa un código de barras o una descripción del producto.');
-        return;
-    }
+    const products = await productDB.getProductsByDescription(description);
+    resultsList.innerHTML = '';
+    searchResults.style.display = 'block';
 
-    try {
-        let product = null;
-
-        if (barcode !== '') {
-            product = await productDB.getProduct(barcode);
-        }
-
-        if (!product && description !== '') {
-            const allProducts = await productDB.getAllProducts();
-            product = allProducts.find(p => p.description.toLowerCase() === description.toLowerCase());
-        }
-
-        if (product) {
-            displayProductDetails(product);
-            displaySearchResults([product]);
-        } else {
-            alert('Producto no encontrado.');
-        }
-    } catch (error) {
-        console.error('Error searching product:', error);
+    if (products.length > 0) {
+        products.forEach(product => {
+            const listItem = document.createElement('li');
+            listItem.textContent = `${product.description} - Stock: ${product.stock} - Precio: ${product.price}`;
+            listItem.addEventListener('click', () => {
+                descriptionInput.value = product.description;
+                stockInput.value = product.stock;
+                priceInput.value = product.price;
+                searchResults.style.display = 'none';
+            });
+            resultsList.appendChild(listItem);
+        });
+    } else {
+        const listItem = document.createElement('li');
+        listItem.textContent = 'Producto no encontrado';
+        resultsList.appendChild(listItem);
     }
 }
 
 async function saveProduct() {
     const barcode = barcodeInput.value.trim();
     const description = descriptionInput.value.trim();
-    const stock = parseInt(stockInput.value.trim());
-    const price = parseFloat(priceInput.value.trim());
+    const stock = parseInt(stockInput.value);
+    const price = parseFloat(priceInput.value);
 
     if (barcode === '' || description === '' || isNaN(stock) || isNaN(price)) {
-        alert('Por favor, completa todos los campos.');
+        alert('Por favor, complete todos los campos.');
         return;
     }
 
-    try {
-        const product = { barcode, description, stock, price };
-        await productDB.addProduct(product);
+    const product = { barcode, description, stock, price };
+    await productDB.addProduct(product);
 
-        alert('Producto guardado correctamente.');
-        clearFormFields();
-    } catch (error) {
-        console.error('Error saving product:', error);
-    }
-}
+    barcodeInput.value = '';
+    descriptionInput.value = '';
+    stockInput.value = '';
+    priceInput.value = '';
 
-async function exportToExcel() {
-    try {
-        const products = await productDB.getAllProducts();
-        if (products.length === 0) {
-            alert('No hay productos para exportar.');
-            return;
-        }
-
-        const ws = XLSX.utils.json_to_sheet(products);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Productos');
-        XLSX.writeFile(wb, 'productos.xlsx');
-    } catch (error) {
-        console.error('Error exporting to Excel:', error);
-    }
+    alert('Producto guardado');
 }
 
 async function toggleLowStockProducts() {
     if (lowStockResults.style.display === 'block') {
         lowStockResults.style.display = 'none';
-        return;
-    }
-
-    try {
-        const products = await productDB.getLowStockProducts();
-
-        if (products.length === 0) {
-            alert('No hay productos con stock bajo.');
-            return;
-        }
-
-        displayLowStockProducts(products);
+    } else {
+        const lowStockProducts = await productDB.getLowStockProducts();
+        lowStockList.innerHTML = '';
         lowStockResults.style.display = 'block';
-    } catch (error) {
-        console.error('Error retrieving low stock products:', error);
+
+        if (lowStockProducts.length > 0) {
+            lowStockProducts.forEach(product => {
+                const listItem = document.createElement('li');
+                listItem.textContent = `${product.description} - Stock: ${product.stock}`;
+                lowStockList.appendChild(listItem);
+            });
+        } else {
+            const listItem = document.createElement('li');
+            listItem.textContent = 'No hay productos con stock bajo';
+            lowStockList.appendChild(listItem);
+        }
     }
 }
 
-function displayProductDetails(product) {
-    barcodeInput.value = product.barcode;
-    descriptionInput.value = product.description;
-    stockInput.value = product.stock;
-    priceInput.value = product.price;
-    productImage.src = ''; // Ruta de la imagen del producto, si está disponible
-    productImage.style.display = 'block';
-}
-
-function displaySearchResults(products) {
-    resultsList.innerHTML = '';
-    searchResults.style.display = 'block';
-
-    products.forEach(product => {
-        const li = document.createElement('li');
-        li.textContent = `${product.description} - Stock: ${product.stock} - Precio: ${product.price}`;
-        resultsList.appendChild(li);
-    });
-}
-
-function displayLowStockProducts(products) {
-    lowStockList.innerHTML = '';
-
-    products.forEach(product => {
-        const li = document.createElement('li');
-        li.textContent = `${product.description} - Stock: ${product.stock}`;
-        lowStockList.appendChild(li);
-    });
-}
-
-function clearFormFields() {
-    barcodeInput.value = '';
-    descriptionInput.value = '';
-    stockInput.value = '';
-    priceInput.value = '';
-    productImage.style.display = 'none';
-    searchResults.style.display = 'none';
-}
