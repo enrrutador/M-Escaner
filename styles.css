@@ -1,74 +1,100 @@
-:root {
-    --primary-color: #0288D1;
-    --secondary-color: #0277BD;
-    --accent-color: #FF5722;
-    --text-color: #FFFFFF;
-    --background-color: #ECEFF1;
-}
-
-body, html {
+body {
+    font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
-    font-family: Arial, sans-serif;
-    background-color: var(--background-color);
-    color: var(--text-color);
-    height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    background-color: #f4f4f4;
+    color: #333;
 }
 
-.container, .login-container {
-    width: 90%;
-    max-width: 400px;
-    margin: auto;
+.login-container {
+    width: 300px;
+    margin: 100px auto;
+    background-color: #fff;
     padding: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     text-align: center;
-    background-color: var(--background-color);
-    border-radius: 10px;
+}
+
+.login-container h2 {
+    margin-bottom: 20px;
+}
+
+.login-container form {
+    display: flex;
+    flex-direction: column;
+}
+
+.login-container input {
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.login-container button {
+    padding: 10px;
+    border: none;
+    background-color: #007bff;
+    color: #fff;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.login-container button:hover {
+    background-color: #0056b3;
+}
+
+.error-message {
+    color: red;
+    margin-top: 10px;
+}
+
+.container {
+    max-width: 900px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #fff;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
 header h1 {
-    font-size: 1.5em;
+    text-align: center;
     margin-bottom: 20px;
-    color: var(--primary-color);
 }
 
-.scanner-section, .form-section, .action-section {
+.scanner-section,
+.form-section,
+.action-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     margin-bottom: 20px;
 }
 
 .action-button {
-    background-color: var(--primary-color);
+    padding: 10px 20px;
+    margin: 10px 0;
     border: none;
-    color: white;
-    padding: 12px 15px;
-    margin: 5px 0;
-    cursor: pointer;
+    background-color: #007bff;
+    color: #fff;
     border-radius: 5px;
-    transition: background-color 0.3s ease;
-    width: 100%;
-    font-size: 1em;
+    cursor: pointer;
+    transition: background-color 0.3s;
 }
 
 .action-button:hover {
-    background-color: var(--accent-color);
+    background-color: #0056b3;
 }
 
-input {
-    width: calc(100% - 20px);
-    padding: 10px;
-    margin: 10px 0;
-    border-radius: 5px;
-    border: 1px solid var(--secondary-color);
-    font-size: 1em;
+.image-section {
+    text-align: center;
+    margin-bottom: 20px;
 }
 
 .image-section img {
     max-width: 100%;
-    margin-top: 20px;
-    border-radius: 5px;
+    height: auto;
 }
 
 .scanner-overlay {
@@ -77,78 +103,37 @@ input {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.8);
+    background-color: rgba(0, 0, 0, 0.8);
     display: flex;
-    align-items: center;
     justify-content: center;
+    align-items: center;
     z-index: 1000;
-}
-
-#video {
-    width: 80%;
-    border: 2px solid var(--primary-color);
-    border-radius: 10px;
-}
-
-#viewfinder {
-    position: absolute;
-    width: 60%;
-    height: 40%;
-    border: 2px solid var(--accent-color);
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    border-radius: 10px;
 }
 
 .results-section {
     margin-top: 20px;
-    text-align: left;
-}
-
-.results-section h2 {
-    color: var(--primary-color);
+    text-align: center;
 }
 
 .results-section ul {
-    list-style-type: none;
-    padding-left: 0;
+    list-style: none;
+    padding: 0;
 }
 
-.results-section li {
-    background-color: var(--background-color);
+.results-section ul li {
     padding: 10px;
-    border-bottom: 1px solid var(--secondary-color);
-    border-radius: 5px;
-    margin-bottom: 5px;
-}
-
-.results-section li:hover {
-    background-color: var(--accent-color);
-    color: var(--text-color);
-    cursor: pointer;
+    border-bottom: 1px solid #ddd;
 }
 
 .low-stock-button {
-    background-color: red;
+    background-color: #f39c12;
 }
 
-.low-stock-results ul {
-    color: #000;
+.low-stock-button:hover {
+    background-color: #e67e22;
 }
 
-.low-stock-results li {
-    color: #000;
-}
-
-.login-container h2 {
-    color: var(--primary-color);
-    margin-bottom: 20px;
-}
-
-.error-message {
-    color: red;
-    font-size: 0.9em;
-    margin-top: 10px;
+.low-stock-results ul li {
+    color: black;
 }
 
