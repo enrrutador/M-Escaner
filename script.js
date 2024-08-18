@@ -12,18 +12,17 @@ loginForm.addEventListener('submit', async (e) => {
     
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
-    
+
     try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         console.log('Usuario autenticado:', userCredential.user);
-        loginContainer.style.display = 'none';
-        appContainer.style.display = 'block';
     } catch (error) {
         console.error('Error de autenticación:', error.code, error.message);
         loginError.textContent = 'Error al iniciar sesión. Verifica tu correo y contraseña.';
     }
 });
 
+// Manejar el estado de autenticación
 onAuthStateChanged(auth, (user) => {
     if (user) {
         loginContainer.style.display = 'none';
@@ -33,6 +32,7 @@ onAuthStateChanged(auth, (user) => {
         appContainer.style.display = 'none';
     }
 });
+
 
 // Manejo de la base de datos en IndexedDB
 class ProductDatabase {
