@@ -236,7 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('search-button').addEventListener('click', () => {
-        const query = descriptionInput.value.trim(); // Cambiado de barcodeInput a descriptionInput
+        const query = descriptionInput.value.trim(); // Usar el valor del campo descripción
         if (query) {
             searchProduct(query);
         } else {
@@ -273,11 +273,11 @@ document.addEventListener('DOMContentLoaded', () => {
         
         products.forEach(product => {
             const row = [
-                product.barcode,
-                product.description,
-                product.stock,
-                product.price,
-                product.image
+                product.barcode || '',
+                product.description || '',
+                product.stock || 0,
+                product.price || 0,
+                product.image || ''
             ].join(",");
             csvContent += row + "\n";
         });
@@ -304,3 +304,4 @@ document.addEventListener('DOMContentLoaded', () => {
         lowStockResults.style.display = 'block';
     });
 });
+
