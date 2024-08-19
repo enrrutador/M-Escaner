@@ -210,10 +210,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function fillForm(product) {
-        barcodeInput.value = product.barcode;
-        descriptionInput.value = product.description;
-        stockInput.value = product.stock;
-        priceInput.value = product.price;
+        barcodeInput.value = product.barcode || '';
+        descriptionInput.value = product.description || '';
+        stockInput.value = product.stock || 0;
+        priceInput.value = product.price || 0;
         if (product.image) {
             productImage.src = product.image;
             productImage.style.display = 'block';
@@ -248,7 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const product = {
             barcode: barcodeInput.value.trim(),
             description: descriptionInput.value.trim(),
-            stock: parseInt(stockInput.value),
+            stock: parseInt(stockInput.value, 10),
             price: parseFloat(priceInput.value),
             image: productImage.src || ''
         };
@@ -304,5 +304,3 @@ document.addEventListener('DOMContentLoaded', () => {
         lowStockResults.style.display = 'block';
     });
 });
-
-
