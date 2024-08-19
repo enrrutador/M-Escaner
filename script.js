@@ -1,3 +1,10 @@
+/**
+ * Copyright © [SYSMARKETHM] [2024]. Todos los derechos reservados.
+ * 
+ * Este código está protegido por derechos de autor. No está permitido copiar, distribuir
+ * o modificar este código sin el permiso explícito del autor.
+ */
+
 import { auth } from './firebaseConfig.js';
 import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
@@ -86,8 +93,7 @@ class ProductDatabase {
                 const cursor = event.target.result;
                 if (cursor) {
                     const product = cursor.value;
-                    const lowerCaseQuery = query.toLowerCase(); // Convertir la consulta a minúsculas
-                    if (product.barcode.includes(lowerCaseQuery) || product.description.toLowerCase().includes(lowerCaseQuery)) {
+                    if (product.barcode.includes(query) || product.description.toLowerCase().includes(query.toLowerCase())) {
                         results.push(product);
                     }
                     cursor.continue();
@@ -223,78 +229,49 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    document.getElementById('scan-button').addEventListener('click', async () => {
-        if (!('BarcodeDetector' in window)) {
-            alert('API de detección de códigos de barras no soportada en este navegador.');
-            return;
-        }
+    document.getElementById('scan-button').addEventListener('click', startScanner);
 
-        if (!barcodeDetector) {
-            barcodeDetector = new BarcodeDetector({ formats: ['ean_13'] });
-        }
-
-        startScanner();
-    });
-
-    document.getElementById('search-button').addEventListener('click', () => {
-        const barcode = barcodeInput.value.trim();
-        const description = descriptionInput.value.trim();
-        const query = barcode || description; // Usa el código de barras si está disponible, de lo contrario, usa la descripción
-
+    document.getElementById('search-button').addEventListener('click', async () => {
+        const query = barcodeInput.value.trim() || descriptionInput.value.trim();
         if (query) {
-            searchProduct(query);
+            if (cache.has(query)) {
+                fillForm(cache.get(query));
+            } else {
+                searchProduct(query);
+            }
         } else {
-            alert('Por favor, introduce un nombre o código de barras para buscar.');
+            alert('Introduce un código de barras o una descripción del producto.');
         }
-    });
-
-    document.getElementById('save-button').addEventListener('click', async () => {
-        const product = {
-            barcode: barcodeInput.value.trim(),
-            description: descriptionInput.value.trim(),
-            stock: parseInt(stockInput.value, 10),
-            price: parseFloat(priceInput.value),
-            image: productImage.src || ''
-        };
-
-        await db.addProduct(product);
-        alert('Producto guardado.');
     });
 
     document.getElementById('clear-button').addEventListener('click', () => {
         barcodeInput.value = '';
         descriptionInput.value = '';
-        stockInput.value = '';
-        priceInput.value = '';
-        productImage.src = '';
+        stockInput.value = 0;
+        priceInput.value = 0;
         productImage.style.display = 'none';
     });
 
-    document.getElementById('export-button').addEventListener('click', async () => {
-        const products = await db.getAllProducts();
-        const csvContent = 'data:text/csv;charset=utf-8,' +
-            'Código de barras,Descripción,Stock,Precio\n' +
-            products.map(product => `${product.barcode},${product.description},${product.stock},${product.price}`).join('\n');
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement('a');
-        link.setAttribute('href', encodedUri);
-        link.setAttribute('download', 'productos.csv');
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    });
-
     lowStockButton.addEventListener('click', async () => {
-        const products = await db.getAllProducts();
-        const lowStockProducts = products.filter(product => product.stock < 5); // Suponiendo que el stock bajo es menor a 5
-        lowStockList.innerHTML = '';
-        lowStockProducts.forEach(product => {
-            const li = document.createElement('li');
-            li.textContent = `Producto: ${product.description} (Código: ${product.barcode}) - Stock: ${product.stock}`;
-            lowStockList.appendChild(li);
-        });
-        lowStockResults.style.display = 'block';
+        if (lowStockResults.style.display === 'block') {
+            lowStockResults.style.display = 'none';
+        } else {
+            const products = await db.getAllProducts();
+            const lowStockProducts = products.filter(p => p.stock < 5); // Por ejemplo, productos con stock menor a 5
+
+            lowStockList.innerHTML = '';
+            lowStockProducts.forEach(product => {
+                const listItem = document.createElement('li');
+                listItem.textContent = `${product.description} (Stock: ${product.stock})`;
+                lowStockList.appendChild(listItem);
+            });
+
+            lowStockResults.style.display = 'block';
+        }
     });
 });
+
+
+
 
 
