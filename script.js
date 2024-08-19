@@ -14,20 +14,19 @@ const loginContainer = document.getElementById('login-container');
 const appContainer = document.getElementById('app-container');
 const loginError = document.getElementById('login-error');
 
-loginForm.addEventListener('submit', (e) => {
+loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
     
-    signInWithEmailAndPassword(auth, email, password)
-        .then((userCredential) => {
-            console.log('Usuario autenticado:', userCredential.user);
-        })
-        .catch((error) => {
-            console.error('Error de autenticación:', error.code, error.message);
-            loginError.textContent = 'Error al iniciar sesión. Verifica tu correo y contraseña.';
-        });
+    try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        console.log('Usuario autenticado:', userCredential.user);
+    } catch (error) {
+        console.error('Error de autenticación:', error.code, error.message);
+        loginError.textContent = 'Error al iniciar sesión. Verifica tu correo y contraseña.';
+    }
 });
 
 onAuthStateChanged(auth, (user) => {
@@ -52,7 +51,7 @@ class ProductDatabase {
         return new Promise((resolve, reject) => {
             const request = indexedDB.open(this.dbName, this.dbVersion);
 
-            request.onerror = event => reject('Error opening database:', event.target.error);
+            request.onerror = event => reject('Error abriendo la base de datos:', event.target.error);
 
             request.onsuccess = event => {
                 this.db = event.target.result;
@@ -70,7 +69,7 @@ class ProductDatabase {
         return new Promise((resolve, reject) => {
             const transaction = this.db.transaction([this.storeName], 'readwrite');
             transaction.objectStore(this.storeName).put(product).onsuccess = () => resolve();
-            transaction.onerror = event => reject('Error adding product:', event.target.error);
+            transaction.onerror = event => reject('Error al agregar producto:', event.target.error);
         });
     }
 
@@ -80,7 +79,7 @@ class ProductDatabase {
             const request = transaction.objectStore(this.storeName).get(barcode);
 
             request.onsuccess = event => resolve(event.target.result);
-            request.onerror = event => reject('Error getting product:', event.target.error);
+            request.onerror = event => reject('Error al obtener producto:', event.target.error);
         });
     }
 
@@ -101,7 +100,7 @@ class ProductDatabase {
                     resolve(results);
                 }
             };
-            store.onerror = event => reject('Error searching products:', event.target.error);
+            store.onerror = event => reject('Error al buscar productos:', event.target.error);
         });
     }
 
@@ -111,7 +110,7 @@ class ProductDatabase {
             const request = transaction.objectStore(this.storeName).getAll();
 
             request.onsuccess = event => resolve(event.target.result);
-            request.onerror = event => reject('Error getting all products:', event.target.error);
+            request.onerror = event => reject('Error al obtener todos los productos:', event.target.error);
         });
     }
 }
@@ -229,46 +228,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    document.getElementById('scan-button').addEventListener('click', startScanner);
-
-    document.getElementById('search-button').addEventListener('click', async () => {
-        const query = barcodeInput.value.trim() || descriptionInput.value.trim();
-        if (query) {
-            if (cache.has(query)) {
-                fillForm(cache.get(query));
-            } else {
-                searchProduct(query);
+    async function updateLowStockDisplay() {
+        const products = await db.getAllProducts();
+        lowStockList.innerHTML = '';
+        products.forEach(product => {
+            if (product.stock < 5) {
+                const listItem = document.createElement('li');
+                listItem.textContent = `${product.description} - ${product.stock} unidades`;
+                lowStockList.appendChild(listItem);
             }
-        } else {
-            alert('Introduce un código de barras o una descripción del producto.');
-        }
-    });
+        });
+    }
 
-    document.getElementById('clear-button').addEventListener('click', () => {
-        barcodeInput.value = '';
-        descriptionInput.value = '';
-        stockInput.value = 0;
-        priceInput.value = 0;
-        productImage.style.display = 'none';
-    });
-
-    lowStockButton.addEventListener('click', async () => {
+    lowStockButton.addEventListener('click', () => {
         if (lowStockResults.style.display === 'block') {
             lowStockResults.style.display = 'none';
         } else {
-            const products = await db.getAllProducts();
-            const lowStockProducts = products.filter(p => p.stock < 5); // Por ejemplo, productos con stock menor a 5
-
-            lowStockList.innerHTML = '';
-            lowStockProducts.forEach(product => {
-                const listItem = document.createElement('li');
-                listItem.textContent = `${product.description} (Stock: ${product.stock})`;
-                lowStockList.appendChild(listItem);
-            });
-
+            updateLowStockDisplay();
             lowStockResults.style.display = 'block';
         }
     });
+
+    document.getElementById('scan-button').addEventListener('click', startScanner);
 });
 
 
