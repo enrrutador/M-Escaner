@@ -236,7 +236,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('search-button').addEventListener('click', () => {
-        const query = descriptionInput.value.trim(); // Usar el valor del campo descripción
+        const barcode = barcodeInput.value.trim();
+        const description = descriptionInput.value.trim();
+        const query = barcode || description; // Usa el código de barras si está disponible, de lo contrario, usa la descripción
+
         if (query) {
             searchProduct(query);
         } else {
