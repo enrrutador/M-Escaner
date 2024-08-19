@@ -1,10 +1,3 @@
-/**
- * Copyright © [SYSMARKETHM] [2024]. Todos los derechos reservados.
- * 
- * Este código está protegido por derechos de autor. No está permitido copiar, distribuir
- * o modificar este código sin el permiso explícito del autor.
- */
-
 import { auth, db } from './firebaseConfig.js';
 import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
@@ -33,6 +26,7 @@ loginForm.addEventListener('submit', async (e) => {
         if (deviceDoc.exists()) {
             const deviceData = deviceDoc.data();
             if (deviceData.deviceId !== deviceId) {
+                alert('No puedes iniciar sesión en este dispositivo.');
                 throw new Error('El inicio de sesión está restringido a un solo dispositivo.');
             }
         } else {
@@ -40,12 +34,10 @@ loginForm.addEventListener('submit', async (e) => {
         }
 
         console.log('Usuario autenticado:', user);
+        loginForm.reset(); // Limpiar campos después del inicio de sesión exitoso
     } catch (error) {
         console.error('Error de autenticación:', error.code, error.message);
         loginError.textContent = 'Error al iniciar sesión. Verifica tu correo y contraseña.';
-        if (error.message.includes('dispositivo')) {
-            alert('No puedes iniciar sesión en este dispositivo.');
-        }
     }
 });
 
@@ -223,6 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     description: data.product.product_name || 'No disponible',
                     stock: 0,
                     price: 0,
+                    image: data.product.image_url || ''
                 };
                 return product;
             }
@@ -289,41 +282,73 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function generateCSV(products) {
-        const header = ['Código de barras', 'Descripción del producto', 'Stock', 'Precio'];
-        const rows = products.map(product => [product.barcode, product.description, product.stock, product.price]);
-        return [header, ...rows].map(row => row.join(',')).join('\n');
+    function generateCSV(data) {
+        const headers = ['Código de Barras', 'Descripción', 'Stock', 'Precio'];
+        const rows = data.map(product => [
+            product.barcode,
+            product.description,
+            product.stock,
+            product.price
+        ]);
+        const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n');
+        return csvContent;
     }
 
-    function downloadCSV(csv, filename) {
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    function downloadCSV(csvContent, filename) {
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);
         link.setAttribute('download', filename);
+        link.style.display = 'none';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
     }
 
-    document.getElementById('scan-button').addEventListener('click', startScanner);
-    document.getElementById('save-button').addEventListener('click', saveProduct);
-    document.getElementById('export-button').addEventListener('click', exportToCSV);
+    function searchLowStock() {
+        db.getAllProducts().then(products => {
+            const lowStockProducts = products.filter(product => product.stock <= 5);
+            displayLowStockProducts(lowStockProducts);
+        });
+    }
+
+    function displayLowStockProducts(products) {
+        lowStockResults.style.display = 'block';
+        lowStockList.innerHTML = '';
+        products.forEach(product => {
+            const li = document.createElement('li');
+            li.textContent = `${product.description} (Stock: ${product.stock})`;
+            lowStockList.appendChild(li);
+        });
+    }
 
     document.getElementById('search-button').addEventListener('click', () => {
-        searchProduct(barcodeInput.value.trim());
+        const query = barcodeInput.value || descriptionInput.value;
+        searchProduct(query);
+    });
+
+    document.getElementById('scan-button').addEventListener('click', () => {
+        startScanner();
+    });
+
+    document.getElementById('save-button').addEventListener('click', () => {
+        saveProduct();
+    });
+
+    document.getElementById('clear-button').addEventListener('click', () => {
+        clearForm();
+    });
+
+    document.getElementById('export-button').addEventListener('click', () => {
+        exportToCSV();
     });
 
     lowStockButton.addEventListener('click', () => {
-        db.getAllProducts().then(products => {
-            const lowStockProducts = products.filter(product => product.stock <= 5);
-            lowStockList.innerHTML = '';
-            lowStockProducts.forEach(product => {
-                const listItem = document.createElement('li');
-                listItem.textContent = `${product.description} (Stock: ${product.stock})`;
-                lowStockList.appendChild(listItem);
-            });
-            lowStockResults.style.display = 'block';
-        });
+        searchLowStock();
     });
+
+    stockInput.addEventListener('input', updateStockColors);
+    searchLowStock();
 });
+
