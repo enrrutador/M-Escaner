@@ -7,6 +7,7 @@
 
 import { auth } from './firebaseConfig.js';
 import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import * as XLSX from "https://cdn.sheetjs.com/xlsx-latest/package/xlsx.mjs";
 
 // Manejar el formulario de inicio de sesión
 const loginForm = document.getElementById('loginForm');
@@ -131,6 +132,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const lowStockButton = document.getElementById('low-stock-button');
     const lowStockResults = document.getElementById('low-stock-results');
     const lowStockList = document.getElementById('low-stock-list');
+    const importButton = document.getElementById('import-button');
+    const exportButton = document.getElementById('export-button');
     let barcodeDetector;
     let productNotFoundAlertShown = false;
 
@@ -269,7 +272,55 @@ document.addEventListener('DOMContentLoaded', () => {
             lowStockResults.style.display = 'block';
         }
     });
+
+    // Funcionalidad de Importar desde Excel
+    importButton.addEventListener('change', async (event) => {
+        const file = event.target.files[0];
+        const reader = new FileReader();
+        
+        reader.onload = async function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: "array" });
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+            
+            for (let i = 1; i < jsonData.length; i++) {
+                const [barcode, description, price, stock] = jsonData[i];
+                
+                if (barcode && description && price !== undefined && stock !== undefined) {
+                    const product = {
+                        barcode: String(barcode),
+                        description: String(description),
+                        price: Number(price),
+                        stock: Number(stock),
+                        image: '' // O agregar la lógica para manejar imágenes si es necesario
+                    };
+                    await db.addProduct(product);
+                }
+            }
+            alert('Datos importados correctamente.');
+        };
+        
+        reader.readAsArrayBuffer(file);
+    });
+
+    // Funcionalidad de Exportar a Excel
+    exportButton.addEventListener('click', async () => {
+        const products = await db.getAllProducts();
+        const data = products.map(product => [product.barcode, product.description, product.price, product.stock]);
+        data.unshift(['Código de Barras', 'Descripción', 'Precio Venta', 'Stock']);
+
+        const worksheet = XLSX.utils.aoa_to_sheet(data);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Productos');
+
+        XLSX.writeFile(workbook, 'productos.xlsx');
+    });
+
 });
+
+
 
 
 
