@@ -86,7 +86,8 @@ class ProductDatabase {
                 const cursor = event.target.result;
                 if (cursor) {
                     const product = cursor.value;
-                    if (product.barcode.includes(query) || product.description.toLowerCase().includes(query.toLowerCase())) {
+                    const lowerCaseQuery = query.toLowerCase(); // Convertir la consulta a minúsculas
+                    if (product.barcode.includes(lowerCaseQuery) || product.description.toLowerCase().includes(lowerCaseQuery)) {
                         results.push(product);
                     }
                     cursor.continue();
@@ -271,40 +272,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('export-button').addEventListener('click', async () => {
         const products = await db.getAllProducts();
-        let csvContent = "data:text/csv;charset=utf-8,";
-        csvContent += "Barcode,Description,Stock,Price,Image\n";
-        
-        products.forEach(product => {
-            const row = [
-                product.barcode || '',
-                product.description || '',
-                product.stock || 0,
-                product.price || 0,
-                product.image || ''
-            ].join(",");
-            csvContent += row + "\n";
-        });
-
+        const csvContent = 'data:text/csv;charset=utf-8,' +
+            'Código de barras,Descripción,Stock,Precio\n' +
+            products.map(product => `${product.barcode},${product.description},${product.stock},${product.price}`).join('\n');
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement('a');
         link.setAttribute('href', encodedUri);
-        link.setAttribute('download', 'products.csv');
+        link.setAttribute('download', 'productos.csv');
         document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link);
     });
 
-    document.getElementById('low-stock-button').addEventListener('click', async () => {
+    lowStockButton.addEventListener('click', async () => {
         const products = await db.getAllProducts();
-        const lowStockProducts = products.filter(p => p.stock < 5); // Por ejemplo, productos con stock menor a 5
-
+        const lowStockProducts = products.filter(product => product.stock < 5); // Suponiendo que el stock bajo es menor a 5
         lowStockList.innerHTML = '';
         lowStockProducts.forEach(product => {
-            const listItem = document.createElement('li');
-            listItem.textContent = `${product.description} (Stock: ${product.stock})`;
-            lowStockList.appendChild(listItem);
+            const li = document.createElement('li');
+            li.textContent = `Producto: ${product.description} (Código: ${product.barcode}) - Stock: ${product.stock}`;
+            lowStockList.appendChild(li);
         });
-
         lowStockResults.style.display = 'block';
     });
 });
+
 
