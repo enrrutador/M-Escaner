@@ -6,7 +6,7 @@
  */
 
 import { auth } from './firebaseConfig.js';
-import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import { signInWithEmailAndPassword, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
 // Manejar el formulario de inicio de sesión
 const loginForm = document.getElementById('loginForm');
@@ -14,20 +14,35 @@ const loginContainer = document.getElementById('login-container');
 const appContainer = document.getElementById('app-container');
 const loginError = document.getElementById('login-error');
 
-loginForm.addEventListener('submit', (e) => {
+loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
-    
-    signInWithEmailAndPassword(auth, email, password)
-        .then((userCredential) => {
-            console.log('Usuario autenticado:', userCredential.user);
-        })
-        .catch((error) => {
-            console.error('Error de autenticación:', error.code, error.message);
+    const deviceId = localStorage.getItem('deviceId') || generateDeviceId();
+    localStorage.setItem('deviceId', deviceId);
+
+    try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        if (user.displayName && user.displayName !== deviceId) {
+            throw new Error('La cuenta ya está en uso en otro dispositivo.');
+        }
+
+        if (!user.displayName) {
+            await updateProfile(user, { displayName: deviceId });
+        }
+
+        console.log('Usuario autenticado:', user);
+    } catch (error) {
+        console.error('Error de autenticación:', error.code, error.message);
+        if (error.message.includes('otro dispositivo')) {
+            loginError.textContent = 'Error: La cuenta ya está en uso en otro dispositivo.';
+        } else {
             loginError.textContent = 'Error al iniciar sesión. Verifica tu correo y contraseña.';
-        });
+        }
+    }
 });
 
 onAuthStateChanged(auth, (user) => {
@@ -39,6 +54,11 @@ onAuthStateChanged(auth, (user) => {
         appContainer.style.display = 'none';
     }
 });
+
+function generateDeviceId() {
+    return 'device-' + Math.random().toString(36).substr(2, 9);
+}
+
 class ProductDatabase {
     constructor() {
         this.dbName = 'MScannerDB';
@@ -192,7 +212,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-
     function fillForm(product) {
         barcodeInput.value = product.barcode;
         descriptionInput.value = product.description;
@@ -253,46 +272,81 @@ document.addEventListener('DOMContentLoaded', () => {
             }));
 
             const headers = ['Código de barras', 'Descripción', 'Rubro', 'Precio Costo', '% IVA', '% Utilidad', 'Precio Venta', 'Proveedor', 'Stock', 'Stock mínimo', 'Stock máximo', 'Control Stock', 'Activo'];
-            const worksheet = XLSX.utils.json_to_sheet(filteredProducts, { header: headers });
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, 'Productos');
-            XLSX.writeFile(workbook, 'productos_exportados.xlsx');
+            const csvData = convertToCSV(filteredProducts, headers);
+            downloadCSV(csvData, 'productos.csv');
         });
     }
 
-    async function showLowStockProducts() {
-        const products = await db.getAllProducts();
-        const lowStockProducts = products.filter(p => p.stock < 6);
-
-        lowStockList.innerHTML = '';
-        lowStockProducts.forEach(product => {
-            const li = document.createElement('li');
-            li.textContent = `${product.description} (Stock: ${product.stock})`;
-            lowStockList.appendChild(li);
-        });
-
-        lowStockResults.style.display = lowStockResults.style.display === 'none' ? 'block' : 'none';
+    function convertToCSV(data, headers) {
+        const headerString = headers.join(',');
+        const rowString = data.map(row => Object.values(row).join(',')).join('\n');
+        return `${headerString}\n${rowString}`;
     }
 
-    document.getElementById('scan-button').addEventListener('click', startScanner);
-    document.getElementById('search-button').addEventListener('click', () => {
-        const query = barcodeInput.value || descriptionInput.value;
-        searchProduct(query);
-    });
-    document.getElementById('save-button').addEventListener('click', saveProduct);
-    document.getElementById('clear-button').addEventListener('click', clearForm);
-    document.getElementById('export-button').addEventListener('click', exportProducts);
-    lowStockButton.addEventListener('click', showLowStockProducts);
+    function downloadCSV(csv, filename) {
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    function toggleLowStockProducts() {
+        if (lowStockResults.style.display === 'block') {
+            lowStockResults.style.display = 'none';
+        } else {
+            db.getAllProducts().then(products => {
+                const lowStockProducts = products.filter(product => product.stock <= 5);
+                lowStockList.innerHTML = '';
+                lowStockProducts.forEach(product => {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = `Código de barras: ${product.barcode}, Descripción: ${product.description}, Stock: ${product.stock}`;
+                    listItem.style.color = 'black';
+                    lowStockList.appendChild(listItem);
+                });
+                lowStockResults.style.display = 'block';
+            });
+        }
+    }
+
+    async function searchInOpenFoodFacts(query) {
+        const url = `https://world.openfoodfacts.org/api/v0/product/${query}.json`;
+
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data.status === 1) {
+                const product = {
+                    barcode: data.product.code,
+                    description: data.product.product_name,
+                    stock: '',
+                    price: '',
+                    image: data.product.image_url || ''
+                };
+                return product;
+            } else {
+                return null;
+            }
+        } catch (error) {
+            console.error('Error fetching data from Open Food Facts:', error);
+            return null;
+        }
+    }
+
+    document.getElementById('search').addEventListener('click', () => searchProduct(barcodeInput.value || descriptionInput.value));
+    document.getElementById('save').addEventListener('click', saveProduct);
+    document.getElementById('scan').addEventListener('click', startScanner);
+    document.getElementById('export').addEventListener('click', exportProducts);
+    lowStockButton.addEventListener('click', toggleLowStockProducts);
 
     if ('BarcodeDetector' in window) {
-        barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'code_128', 'code_39'] });
+        barcodeDetector = new BarcodeDetector({ formats: ['ean_13'] });
     } else {
-        alert('BarcodeDetector no soportado en este navegador.');
+        console.warn('BarcodeDetector is not supported by this browser.');
     }
 });
-
-
-
-
-
-
