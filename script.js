@@ -23,6 +23,8 @@ loginForm.addEventListener('submit', async (e) => {
     const deviceId = localStorage.getItem('deviceId') || generateDeviceId();
     localStorage.setItem('deviceId', deviceId);
 
+    console.log('Intentando iniciar sesión con:', email, password, deviceId); // Mensaje de depuración
+
     try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
@@ -48,7 +50,7 @@ loginForm.addEventListener('submit', async (e) => {
         loginContainer.style.display = 'none';
         appContainer.style.display = 'block';
     } catch (error) {
-        console.error('Error de autenticación:', error.code, error.message);
+        console.error('Error de autenticación:', error.code, error.message); // Mensaje de depuración
         if (error.message.includes('otro dispositivo')) {
             loginError.textContent = 'Error: La cuenta ya está en uso en otro dispositivo.';
         } else {
@@ -58,6 +60,7 @@ loginForm.addEventListener('submit', async (e) => {
 });
 
 onAuthStateChanged(auth, async (user) => {
+    console.log('Estado de autenticación cambiado. Usuario:', user); // Mensaje de depuración
     const sessionToken = localStorage.getItem('sessionToken');
     if (user) {
         const userRef = doc(firestore, `users/${user.uid}`);
@@ -237,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
             productNotFoundAlertShown = false;
         } else {
             if (!productNotFoundAlertShown) {
-                alert('Producto no encontrado.');
+                alert('Producto no encontrado');
                 productNotFoundAlertShown = true;
             }
             clearForm();
