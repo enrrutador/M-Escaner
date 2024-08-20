@@ -131,6 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const toggleLowStockResults = document.getElementById('toggle-low-stock-results');
     let barcodeDetector;
     let productNotFoundAlertShown = false;
+    let lowStockVisible = false;
 
     const cache = new Map();
 
@@ -221,17 +222,22 @@ document.addEventListener('DOMContentLoaded', () => {
         reader.readAsArrayBuffer(file);
     });
 
-    document.getElementById('search-button').addEventListener('click', () => {
-        const query = barcodeInput.value;
-        db.searchProducts(query).then(results => {
-            resultsList.innerHTML = '';
+    document.getElementById('search-button').addEventListener('click', async () => {
+        const query = barcodeInput.value || descriptionInput.value;
+        const results = await db.searchProducts(query);
+
+        resultsList.innerHTML = '';
+        if (results.length > 0) {
             results.forEach(product => {
                 const li = document.createElement('li');
                 li.textContent = `Código: ${product.barcode}, Descripción: ${product.description}, Stock: ${product.stock}, Precio: ${product.price}`;
                 resultsList.appendChild(li);
             });
             searchResults.style.display = 'block';
-        });
+        } else {
+            searchResults.style.display = 'none';
+            alert('No se encontraron productos.');
+        }
     });
 
     toggleSearchResults.addEventListener('click', () => {
@@ -239,17 +245,24 @@ document.addEventListener('DOMContentLoaded', () => {
         resultsList.style.display = display;
     });
 
-    lowStockButton.addEventListener('click', () => {
-        db.getAllProducts().then(products => {
+    lowStockButton.addEventListener('click', async () => {
+        if (lowStockVisible) {
+            lowStockResults.style.display = 'none';
+            lowStockVisible = false;
+        } else {
+            const products = await db.getAllProducts();
             const lowStockProducts = products.filter(product => product.stock < 10);
+            
             lowStockList.innerHTML = '';
             lowStockProducts.forEach(product => {
                 const li = document.createElement('li');
                 li.textContent = `Código: ${product.barcode}, Descripción: ${product.description}, Stock: ${product.stock}, Precio: ${product.price}`;
                 lowStockList.appendChild(li);
             });
+
             lowStockResults.style.display = 'block';
-        });
+            lowStockVisible = true;
+        }
     });
 
     toggleLowStockResults.addEventListener('click', () => {
