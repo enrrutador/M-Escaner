@@ -5,19 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>M-Scanner 2.0</title>
     <link rel="stylesheet" href="styles.css">
-</head>
+    </head>
 <body>
-    <div id="login-container" class="login-container">
-        <h2>Iniciar Sesión</h2>
-        <form id="loginForm">
-            <input type="email" id="email" placeholder="Correo Electrónico" required>
-            <input type="password" id="password" placeholder="Contraseña" required>
-            <button type="submit" class="action-button">Iniciar Sesión</button>
-            <div id="login-error" class="error-message"></div>
-        </form>
-    </div>
-
-    <div id="app-container" class="container" style="display: none;">
+    <div class="container">
         <header>
             <h1>M-Scanner 2.0</h1>
         </header>
@@ -60,9 +50,10 @@
             <ul id="low-stock-list"></ul>
         </div>
     </div>
+
     <script src="https://unpkg.com/@zxing/library@0.19.1"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
     <script type="module" src="firebaseConfig.js"></script>
-    <script type="module" src="script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
