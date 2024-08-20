@@ -171,4 +171,25 @@ input {
 #clear-results-button:hover {
     background-color: #E64A19;
 }
+.low-stock-button {
+    background-color: red;
+}
 
+.low-stock-results ul {
+    color: #000;
+}
+
+.low-stock-results li {
+    color: #000;
+}
+
+.login-container h2 {
+    color: var(--primary-color);
+    margin-bottom: 20px;
+}
+
+.error-message {
+    color: red;
+    font-size: 0.9em;
+    margin-top: 10px;
+}
