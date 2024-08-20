@@ -90,6 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const lowStockButton = document.getElementById('low-stock-button');
     const lowStockResults = document.getElementById('low-stock-results');
     const lowStockList = document.getElementById('low-stock-list');
+    const fileInput = document.getElementById('fileInput');
     let barcodeDetector;
     let productNotFoundAlertShown = false;
 
@@ -241,6 +242,30 @@ document.addEventListener('DOMContentLoaded', () => {
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Products');
         XLSX.writeFile(workbook, 'productos.xlsx');
+    });
+
+    document.getElementById('import-button').addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            importFromExcel(file);
+        }
+    });
+
+    async function importFromExcel(file) {
+        const data = await file.arrayBuffer();
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(sheet);
+
+        for (const product of json) {
+            await db.addProduct(product);
+        }
+        alert('Productos importados.');
     });
 
     lowStockButton.addEventListener('click', async () => {
