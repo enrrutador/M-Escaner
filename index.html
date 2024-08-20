@@ -24,8 +24,8 @@
         </header>
         
         <div class="scanner-section">
-            <button id="scan-button" class="action-button">Escanear Código de Barras</button>
-            <button id="search-button" class="action-button">Buscar Producto</button>
+            <button id="scan-button" class="action-button">Escanear</button>
+            <button id="search-button" class="action-button">Buscar</button>
             <input type="text" id="barcode" placeholder="Código de Barras">
         </div>
         
@@ -39,7 +39,8 @@
             <button id="save-button" class="action-button">Guardar</button>
             <button id="export-button" class="action-button">Exportar</button>
             <button id="import-button" class="action-button">Importar</button>
-            <button id="low-stock-button" class="action-button low-stock-button">Ver Productos con Stock Bajo</button>
+            <button id="low-stock-button" class="action-button low-stock-button">Stock Bajo</button>
+            <button id="clear-button" class="action-button">Borrar Campos</button>
         </div>
         
         <div id="product-image-container" class="image-section">
@@ -53,11 +54,13 @@
         
         <div id="search-results" class="results-section" style="display: none;">
             <h2>Resultados de la Búsqueda</h2>
+            <button id="toggle-search-results" class="action-button">Mostrar/Ocultar</button>
             <ul id="results-list"></ul>
         </div>
         
         <div id="low-stock-results" class="results-section low-stock-results" style="display: none;">
             <h2>Productos con Stock Bajo</h2>
+            <button id="toggle-low-stock-results" class="action-button">Mostrar/Ocultar</button>
             <ul id="low-stock-list"></ul>
         </div>
     </div>
@@ -68,4 +71,3 @@
     <script type="module" src="script.js"></script>
 </body>
 </html>
-
