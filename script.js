@@ -319,7 +319,4 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
-/*
-    Copyright (c) 2024 SYSMARKETHM.
-    Todos los derechos reservados.
-*/
+
