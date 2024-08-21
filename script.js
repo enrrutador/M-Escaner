@@ -2,6 +2,9 @@ import { auth } from './firebaseConfig.js';
 import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import * as XLSX from 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js';
 
+// Incluir ZXing para el escaneo de códigos de barras
+import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/library@latest/dist/index.min.js';
+
 // Manejar el formulario de inicio de sesión
 const loginForm = document.getElementById('loginForm');
 const loginContainer = document.getElementById('login-container');
@@ -125,12 +128,39 @@ class ProductDatabase {
 const productDb = new ProductDatabase();
 productDb.init();
 
-document.getElementById('scan-button').addEventListener('click', () => {
-    const scannerContainer = document.getElementById('scanner-container');
-    scannerContainer.style.display = 'flex';
-    startScanner();
+// Manejar el botón de importar desde Excel
+document.getElementById('import-button').addEventListener('click', () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.xlsx, .xls';
+    input.style.display = 'none';
+    document.body.appendChild(input);
+    input.addEventListener('change', handleFile);
+    input.click();
 });
 
+function handleFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(worksheet);
+
+        json.forEach(async (product) => {
+            await productDb.saveProduct(product);
+        });
+
+        alert('Productos importados');
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+// Manejar el botón de buscar producto
 document.getElementById('search-button').addEventListener('click', async () => {
     const barcode = document.getElementById('barcode').value;
     const description = document.getElementById('description').value;
@@ -192,27 +222,6 @@ document.getElementById('export-button').addEventListener('click', async () => {
     XLSX.writeFile(wb, 'productos_stock_bajo.xlsx');
 });
 
-document.getElementById('import-button').addEventListener('change', (event) => {
-    const file = event.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const sheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[sheetName];
-            const json = XLSX.utils.sheet_to_json(worksheet);
-
-            json.forEach(async (product) => {
-                await productDb.saveProduct(product);
-            });
-
-            alert('Productos importados');
-        };
-        reader.readAsArrayBuffer(file);
-    }
-});
-
 document.getElementById('low-stock-button').addEventListener('click', async () => {
     const lowStockProducts = await productDb.getLowStockProducts();
     const list = document.getElementById('low-stock-list');
@@ -230,6 +239,7 @@ document.getElementById('low-stock-button').addEventListener('click', async () =
 function startScanner() {
     const video = document.getElementById('video');
     const scannerContainer = document.getElementById('scanner-container');
+    const codeReader = new BrowserMultiFormatReader();
 
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
@@ -237,8 +247,16 @@ function startScanner() {
                 video.srcObject = stream;
                 video.setAttribute('playsinline', true);
                 video.play();
-                // Implementar el código del escáner aquí
-                // Ejemplo: inicializar la biblioteca de escaneo y procesar el video
+
+                codeReader.decodeFromVideoDevice(null, 'video', (result, error) => {
+                    if (result) {
+                        document.getElementById('barcode').value = result.text;
+                        codeReader.reset(); // Detener el escaneo después de leer un código
+                    }
+                    if (error) {
+                        console.error('Error en el escaneo: ', error);
+                    }
+                });
             })
             .catch((err) => {
                 console.error('Error al acceder a la cámara: ', err);
