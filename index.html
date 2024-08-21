@@ -38,7 +38,7 @@
             <button id="save-button" class="action-button">Guardar</button>
             <button id="clear-button" class="action-button">Borrar</button>
             <button id="export-button" class="action-button">Exportar a Excel</button>
-            <input type="file" id="import-button" accept=".xlsx" class="action-button" />
+            <button id="import-button" class="action-button">Importar desde Excel</button>
             <button id="low-stock-button" class="action-button low-stock-button">Ver Productos con Stock Bajo</button>
         </div>
         
@@ -62,7 +62,8 @@
         </div>
     </div>
 
-    <!-- Incluye la biblioteca XLSX antes del script principal -->
+    <script src="https://cdn.jsdelivr.net/npm/@zxing/library@latest/dist/index.min.js"></script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
     
     <!-- Tu configuración de Firebase -->
