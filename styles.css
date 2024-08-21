@@ -140,13 +140,3 @@ input {
 .low-stock-results li {
     color: #000;
 }
-footer {
-    text-align: center;
-    font-size: 0.8em;
-    color: #666;
-    padding: 20px;
-}
-
-footer p {
-    margin: 0;
-}
