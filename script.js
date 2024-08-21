@@ -298,3 +298,32 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+// Agrega esto al final del script JavaScript
+document.getElementById('import-button').addEventListener('change', async (event) => {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0]; // Asume que los datos están en la primera hoja
+                const sheet = workbook.Sheets[sheetName];
+                const products = XLSX.utils.sheet_to_json(sheet);
+                
+                // Validar y agregar productos
+                for (const product of products) {
+                    if (product.barcode && product.description && product.stock !== undefined && product.price !== undefined) {
+                        await db.addProduct(product);
+                    }
+                }
+                
+                alert('Productos importados correctamente.');
+            } catch (error) {
+                console.error('Error al importar productos:', error);
+                alert('Error al importar productos.');
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+});
