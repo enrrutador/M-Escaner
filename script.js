@@ -11,20 +11,19 @@ const loginContainer = document.getElementById('login-container');
 const appContainer = document.getElementById('app-container');
 const loginError = document.getElementById('login-error');
 
-loginForm.addEventListener('submit', (e) => {
+loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
     
-    signInWithEmailAndPassword(auth, email, password)
-        .then((userCredential) => {
-            console.log('Usuario autenticado:', userCredential.user);
-        })
-        .catch((error) => {
-            console.error('Error de autenticación:', error.code, error.message);
-            loginError.textContent = 'Error al iniciar sesión. Verifica tu correo y contraseña.';
-        });
+    try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        console.log('Usuario autenticado:', userCredential.user);
+    } catch (error) {
+        console.error('Error de autenticación:', error.code, error.message);
+        loginError.textContent = 'Error al iniciar sesión. Verifica tu correo y contraseña.';
+    }
 });
 
 onAuthStateChanged(auth, (user) => {
