@@ -1,8 +1,6 @@
 import { auth } from './firebaseConfig.js';
 import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import * as XLSX from 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js';
-
-// Incluir ZXing para el escaneo de códigos de barras
 import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/library@latest/dist/index.min.js';
 
 // Manejar el formulario de inicio de sesión
@@ -192,6 +190,7 @@ document.getElementById('search-button').addEventListener('click', async () => {
     }
 });
 
+// Manejar el botón de guardar producto
 document.getElementById('save-button').addEventListener('click', async () => {
     const barcode = document.getElementById('barcode').value;
     const description = document.getElementById('description').value;
@@ -205,6 +204,7 @@ document.getElementById('save-button').addEventListener('click', async () => {
     }
 });
 
+// Manejar el botón de borrar formulario
 document.getElementById('clear-button').addEventListener('click', () => {
     document.getElementById('barcode').value = '';
     document.getElementById('description').value = '';
@@ -213,6 +213,7 @@ document.getElementById('clear-button').addEventListener('click', () => {
     document.getElementById('product-image').style.display = 'none';
 });
 
+// Manejar el botón de exportar productos
 document.getElementById('export-button').addEventListener('click', async () => {
     const products = await productDb.getLowStockProducts();
     const ws = XLSX.utils.json_to_sheet(products);
@@ -221,6 +222,7 @@ document.getElementById('export-button').addEventListener('click', async () => {
     XLSX.writeFile(wb, 'productos_stock_bajo.xlsx');
 });
 
+// Manejar el botón de productos con stock bajo
 document.getElementById('low-stock-button').addEventListener('click', async () => {
     const lowStockProducts = await productDb.getLowStockProducts();
     const list = document.getElementById('low-stock-list');
@@ -235,6 +237,7 @@ document.getElementById('low-stock-button').addEventListener('click', async () =
     document.getElementById('low-stock-results').style.display = 'block';
 });
 
+// Iniciar el escáner de códigos de barras
 function startScanner() {
     const video = document.getElementById('video');
     const scannerContainer = document.getElementById('scanner-container');
@@ -262,3 +265,4 @@ function startScanner() {
             });
     }
 }
+
