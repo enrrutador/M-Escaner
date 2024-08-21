@@ -32,6 +32,9 @@ onAuthStateChanged(auth, (user) => {
         appContainer.style.display = 'none';
     }
 });
+
+// Código de manejo de la base de datos y otras funciones...
+
 class ProductDatabase {
     constructor() {
         this.dbName = 'MScannerDB';
