@@ -188,15 +188,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function searchProduct() {
-        const query = barcodeInput.value || descriptionInput.value.trim();
-        if (!query) {
-            alert('Por favor, ingresa un código de barras o una descripción para buscar.');
+        const query = barcodeInput.value || descriptionInput.value;
+        if (query.trim() === '') {
+            alert('Por favor, ingresa un código de barras o una descripción.');
             return;
         }
 
         const products = await db.searchProducts(query);
-        resultsList.innerHTML = ''; // Limpiar resultados previos
         if (products.length > 0) {
+            resultsList.innerHTML = '';
             products.forEach(product => {
                 const item = document.createElement('li');
                 item.textContent = `${product.barcode} - ${product.description} - ${product.stock} - ${product.price}`;
@@ -246,19 +246,29 @@ document.addEventListener('DOMContentLoaded', () => {
         for (const product of json) {
             await db.addProduct(product);
         }
-        alert('Productos importados');
+        alert('Productos importados exitosamente');
     }
 
+    fileInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        importFromExcel(file);
+    });
+
     document.getElementById('scan-button').addEventListener('click', startScanner);
-    document.getElementById('search-button').addEventListener('click', searchProduct);
     document.getElementById('save-button').addEventListener('click', saveProduct);
-    document.getElementById('low-stock-button').addEventListener('click', loadProducts);
+    document.getElementById('search-button').addEventListener('click', searchProduct);
     document.getElementById('export-button').addEventListener('click', exportToExcel);
-    fileInput.addEventListener('change', (e) => importFromExcel(e.target.files[0]));
+    lowStockButton.addEventListener('click', () => {
+        if (lowStockResults.style.display === 'block') {
+            lowStockResults.style.display = 'none';
+        } else {
+            loadProducts();
+        }
+    });
 
     if ('BarcodeDetector' in window) {
-        barcodeDetector = new BarcodeDetector({ formats: ['ean_13'] });
+        barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'upc_a', 'ean_8'] });
     } else {
-        alert('Barcode Detector no es compatible con este navegador.');
+        alert('Barcode Detector no está disponible en este navegador.');
     }
 });
