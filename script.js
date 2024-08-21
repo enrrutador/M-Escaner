@@ -266,7 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await db.addProduct(product);
         }
         alert('Productos importados.');
-    });
+    }
 
     lowStockButton.addEventListener('click', async () => {
         const products = await db.getAllProducts();
