@@ -18,7 +18,7 @@ body, html {
     align-items: center;
 }
 
-.container {
+.container, .login-container {
     width: 90%;
     max-width: 400px;
     margin: auto;
@@ -44,12 +44,13 @@ header h1 {
     border: none;
     color: white;
     padding: 12px 15px;
-    margin: 5px 0;
+    margin: 5px;
     cursor: pointer;
     border-radius: 5px;
     transition: background-color 0.3s ease;
-    width: 100%;
+    width: calc(50% - 10px); /* Adjusted width to fit buttons side by side */
     font-size: 1em;
+    display: inline-block; /* Align buttons side by side */
 }
 
 .action-button:hover {
@@ -140,3 +141,34 @@ input {
 .low-stock-results li {
     color: #000;
 }
+
+.login-container h2 {
+    color: var(--primary-color);
+    margin-bottom: 20px;
+}
+
+.error-message {
+    color: red;
+    font-size: 0.9em;
+    margin-top: 10px;
+}
+
+/* El código CSS existente se mantiene sin cambios */
+
+#clear-results-button {
+    background-color: #FF5722;
+    border: none;
+    color: white;
+    padding: 12px 15px;
+    margin: 5px 0;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+    width: 100%;
+    font-size: 1em;
+}
+
+#clear-results-button:hover {
+    background-color: #E64A19;
+}
+

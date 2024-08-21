@@ -33,8 +33,6 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-// Código de manejo de la base de datos y otras funciones...
-
 class ProductDatabase {
     constructor() {
         this.dbName = 'MScannerDB';
@@ -134,163 +132,104 @@ document.addEventListener('DOMContentLoaded', () => {
     const cache = new Map();
 
     async function startScanner() {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-            video.srcObject = stream;
-            scannerContainer.style.display = 'flex';
-            video.play();
-            scan();
-        } catch (error) {
-            alert('Error accediendo a la cámara. Asegúrate de que tu navegador tiene permiso para usar la cámara.');
-        }
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        video.srcObject = stream;
+        scannerContainer.style.display = 'flex';
+        video.play();
+        scan();
     }
 
     async function scan() {
         if (barcodeDetector && video.readyState === video.HAVE_ENOUGH_DATA) {
             const barcodes = await barcodeDetector.detect(video);
             if (barcodes.length > 0) {
-                barcodeInput.value = barcodes[0].rawValue;
-                stopScanner();
-                searchProduct(barcodes[0].rawValue);
+                const barcode = barcodes[0].rawValue;
+                barcodeInput.value = barcode;
+                const product = await db.getProduct(barcode);
+                if (product) {
+                    descriptionInput.value = product.description;
+                    stockInput.value = product.stock;
+                    priceInput.value = product.price;
+                    productImage.src = product.image || '';
+                    productImage.style.display = product.image ? 'block' : 'none';
+                } else {
+                    descriptionInput.value = '';
+                    stockInput.value = '';
+                    priceInput.value = '';
+                    productImage.src = '';
+                    productImage.style.display = 'none';
+                    if (!productNotFoundAlertShown) {
+                        alert('Producto no encontrado');
+                        productNotFoundAlertShown = true;
+                    }
+                }
+                scannerContainer.style.display = 'none';
             }
         }
         requestAnimationFrame(scan);
     }
 
-    function stopScanner() {
-        video.srcObject.getTracks().forEach(track => track.stop());
-        scannerContainer.style.display = 'none';
-    }
+    async function saveProduct() {
+        const barcode = barcodeInput.value;
+        const description = descriptionInput.value;
+        const stock = stockInput.value;
+        const price = priceInput.value;
+        const image = productImage.src;
 
-    async function searchProduct(query) {
-        if (cache.has(query)) {
-            fillForm(cache.get(query));
-            return;
-        }
-
-        let product = await db.getProduct(query);
-
-        if (!product) {
-            const results = await db.searchProducts(query);
-            if (results.length > 0) {
-                product = results[0];
-            }
-        }
-
-        if (!product) {
-            product = await searchInOpenFoodFacts(query);
-        }
-
-        if (product) {
-            cache.set(query, product);
-            fillForm(product);
-            productNotFoundAlertShown = false;
-        } else {
-            if (!productNotFoundAlertShown) {
-                alert('Producto no encontrado.');
-                productNotFoundAlertShown = true;
-            }
-        }
-    }
-
-    async function searchInOpenFoodFacts(query) {
-        try {
-            const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${query}.json`);
-            const data = await response.json();
-
-            if (data.product) {
-                const product = {
-                    barcode: data.product.code,
-                    description: data.product.product_name || 'Sin nombre',
-                    stock: 0,
-                    price: 0,
-                    image: data.product.image_url || ''
-                };
-
-                await db.addProduct(product);
-                return product;
-            }
-        } catch (error) {
-            console.error('Error al buscar en OpenFoodFacts:', error);
-        }
-        return null;
-    }
-
-    function fillForm(product) {
-        barcodeInput.value = product.barcode;
-        descriptionInput.value = product.description;
-        stockInput.value = product.stock;
-        priceInput.value = product.price;
-        if (product.image) {
-            productImage.src = product.image;
-            productImage.style.display = 'block';
-        } else {
-            productImage.style.display = 'none';
-        }
-    }
-
-    document.getElementById('scan-button').addEventListener('click', async () => {
-        if (!('BarcodeDetector' in window)) {
-            alert('API de detección de códigos de barras no soportada en este navegador.');
-            return;
-        }
-
-        if (!barcodeDetector) {
-            barcodeDetector = new BarcodeDetector({ formats: ['ean_13'] });
-        }
-
-        startScanner();
-    });
-
-    document.getElementById('search-button').addEventListener('click', () => {
-        const query = barcodeInput.value.trim();
-        if (query) {
-            searchProduct(query);
-        } else {
-            alert('Por favor, introduce un código de barras para buscar.');
-        }
-    });
-
-    document.getElementById('save-button').addEventListener('click', async () => {
-        const product = {
-            barcode: barcodeInput.value.trim(),
-            description: descriptionInput.value.trim(),
-            stock: parseInt(stockInput.value),
-            price: parseFloat(priceInput.value),
-            image: productImage.src || ''
-        };
-
+        const product = { barcode, description, stock, price, image };
         await db.addProduct(product);
-        alert('Producto guardado.');
-    });
-
-    document.getElementById('clear-button').addEventListener('click', () => {
+        alert('Producto Guardado');
         barcodeInput.value = '';
         descriptionInput.value = '';
         stockInput.value = '';
         priceInput.value = '';
         productImage.src = '';
         productImage.style.display = 'none';
-    });
+    }
 
-    document.getElementById('export-button').addEventListener('click', async () => {
-        const products = await db.getAllProducts();
-        const worksheet = XLSX.utils.json_to_sheet(products);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'Products');
-        XLSX.writeFile(workbook, 'productos.xlsx');
-    });
-
-    document.getElementById('import-button').addEventListener('click', () => {
-        fileInput.click();
-    });
-
-    fileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            importFromExcel(file);
+    async function searchProduct() {
+        const query = barcodeInput.value || descriptionInput.value;
+        const products = await db.searchProducts(query);
+        if (products.length > 0) {
+            resultsList.innerHTML = '';
+            products.forEach(product => {
+                const item = document.createElement('li');
+                item.textContent = `${product.barcode} - ${product.description} - ${product.stock} - ${product.price}`;
+                resultsList.appendChild(item);
+            });
+            searchResults.style.display = 'block';
+        } else {
+            resultsList.innerHTML = '<li>Producto no encontrado</li>';
+            searchResults.style.display = 'block';
         }
-    });
+    }
+
+    async function loadProducts() {
+        const products = await db.getAllProducts();
+        if (products.length > 0) {
+            lowStockList.innerHTML = '';
+            products.forEach(product => {
+                if (parseInt(product.stock) < 10) {
+                    const item = document.createElement('li');
+                    item.textContent = `${product.barcode} - ${product.description} - ${product.stock} - ${product.price}`;
+                    lowStockList.appendChild(item);
+                }
+            });
+            lowStockResults.style.display = 'block';
+        } else {
+            lowStockList.innerHTML = '<li>No hay productos con stock bajo</li>';
+            lowStockResults.style.display = 'block';
+        }
+    }
+
+    function exportToExcel() {
+        db.getAllProducts().then(products => {
+            const ws = XLSX.utils.json_to_sheet(products);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Products');
+            XLSX.writeFile(wb, 'productos.xlsx');
+        });
+    }
 
     async function importFromExcel(file) {
         const data = await file.arrayBuffer();
@@ -302,24 +241,26 @@ document.addEventListener('DOMContentLoaded', () => {
         for (const product of json) {
             await db.addProduct(product);
         }
-        alert('Productos importados.');
+        alert('Productos importados');
     }
 
-    lowStockButton.addEventListener('click', async () => {
-        const products = await db.getAllProducts();
-        const lowStockProducts = products.filter(product => product.stock <= 5);
-        lowStockList.innerHTML = '';
-        if (lowStockProducts.length > 0) {
-            lowStockProducts.forEach(product => {
-                const li = document.createElement('li');
-                li.textContent = `${product.description} (Stock: ${product.stock})`;
-                lowStockList.appendChild(li);
-            });
-            lowStockResults.style.display = 'block';
-        } else {
-            lowStockResults.style.display = 'none';
-            alert('No hay productos con stock bajo.');
+    document.getElementById('scan-button').addEventListener('click', startScanner);
+    document.getElementById('search-button').addEventListener('click', searchProduct);
+    document.getElementById('save-button').addEventListener('click', saveProduct);
+    document.getElementById('low-stock-button').addEventListener('click', loadProducts);
+    document.getElementById('export-button').addEventListener('click', exportToExcel);
+    document.getElementById('import-button').addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            importFromExcel(file);
         }
     });
-});
 
+    (async function initBarcodeDetector() {
+        barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e'] });
+    })();
+});

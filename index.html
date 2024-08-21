@@ -8,7 +8,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
 </head>
 <body>
-    <!-- Contenedor de inicio de sesión -->
     <div id="login-container" class="login-container">
         <h2>Iniciar Sesión</h2>
         <form id="loginForm">
@@ -19,8 +18,7 @@
         </form>
     </div>
 
-    <!-- Contenedor principal de la aplicación -->
-    <div id="app-container" class="container" style="display:none;">
+    <div id="app-container" class="container" style="display: none;">
         <header>
             <h1>M-Scanner 2.0</h1>
         </header>
@@ -39,9 +37,8 @@
         
         <div class="action-section">
             <button id="save-button" class="action-button">Guardar</button>
-            <button id="clear-button" class="action-button">Borrar</button>
-            <button id="export-button" class="action-button">Exportar a Excel</button>
-            <button id="import-button" class="action-button">Importar desde Excel</button>
+            <button id="export-button" class="action-button">Exportar</button>
+            <button id="import-button" class="action-button">Importar</button>
             <button id="low-stock-button" class="action-button low-stock-button">Ver Productos con Stock Bajo</button>
         </div>
         
@@ -64,13 +61,11 @@
             <ul id="low-stock-list"></ul>
         </div>
     </div>
-
     <input type="file" id="fileInput" accept=".xlsx, .xls" style="display: none;" />
     <script src="https://unpkg.com/@zxing/library@0.19.1"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
     <script type="module" src="firebaseConfig.js"></script>
-    <script src="script.js"></script>
+    <script type="module" src="script.js"></script>
 </body>
 </html>
-
 
