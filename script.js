@@ -152,11 +152,11 @@ document.addEventListener('DOMContentLoaded', () => {
         requestAnimationFrame(scan);
     }
 
-    function displayProduct(product) {
+   function displayProduct(product) {
         if (product) {
-            descriptionInput.value = product.description;
-            stockInput.value = product.stock;
-            priceInput.value = product.price;
+            descriptionInput.value = product.description || '';
+            stockInput.value = product.stock || '';
+            priceInput.value = product.price || '';
             productImage.src = product.image || '';
             productImage.style.display = product.image ? 'block' : 'none';
         } else {
