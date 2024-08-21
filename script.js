@@ -188,10 +188,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function searchProduct() {
-        const query = barcodeInput.value || descriptionInput.value;
+        const query = barcodeInput.value || descriptionInput.value.trim();
+        if (!query) {
+            alert('Por favor, ingresa un código de barras o una descripción para buscar.');
+            return;
+        }
+
         const products = await db.searchProducts(query);
+        resultsList.innerHTML = ''; // Limpiar resultados previos
         if (products.length > 0) {
-            resultsList.innerHTML = '';
             products.forEach(product => {
                 const item = document.createElement('li');
                 item.textContent = `${product.barcode} - ${product.description} - ${product.stock} - ${product.price}`;
@@ -249,18 +254,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('save-button').addEventListener('click', saveProduct);
     document.getElementById('low-stock-button').addEventListener('click', loadProducts);
     document.getElementById('export-button').addEventListener('click', exportToExcel);
-    document.getElementById('import-button').addEventListener('click', () => {
-        fileInput.click();
-    });
+    fileInput.addEventListener('change', (e) => importFromExcel(e.target.files[0]));
 
-    fileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            importFromExcel(file);
-        }
-    });
-
-    (async function initBarcodeDetector() {
-        barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e'] });
-    })();
+    if ('BarcodeDetector' in window) {
+        barcodeDetector = new BarcodeDetector({ formats: ['ean_13'] });
+    } else {
+        alert('Barcode Detector no es compatible con este navegador.');
+    }
 });
