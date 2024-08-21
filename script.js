@@ -145,184 +145,31 @@ document.addEventListener('DOMContentLoaded', () => {
             if (barcodes.length > 0) {
                 const barcode = barcodes[0].rawValue;
                 barcodeInput.value = barcode;
-                displayProduct(await db.getProduct(barcode));
-                scannerContainer.style.display = 'none';
-            }
-        }
-        requestAnimationFrame(scan);
-    }
-
-   function displayProduct(product) {
-        if (product) {
-            descriptionInput.value = product.description || '';
-            stockInput.value = product.stock || '';
-            priceInput.value = product.price || '';
-            productImage.src = product.image || '';
-            productImage.style.display = product.image ? 'block' : 'none';
-        } else {
-            descriptionInput.value = '';
-            stockInput.value = '';
-            priceInput.value = '';
-            productImage.src = '';
-            productImage.style.display = 'none';
-            if (!productNotFoundAlertShown) {
-                alert('Producto no encontrado');
-                productNotFoundAlertShown = true;
-            }
-        }
-    }
-
-    async function saveProduct() {
-        const barcode = barcodeInput.value;
-        const description = descriptionInput.value;
-        const stock = stockInput.value;
-        const price = priceInput.value;
-        const image = productImage.src;
-
-        const product = { barcode, description, stock, price, image };
-        await db.addProduct(product);
-        alert('Producto Guardado');
-        barcodeInput.value = '';
-        descriptionInput.value = '';
-        stockInput.value = '';
-        priceInput.value = '';
-        productImage.src = '';
-        productImage.style.display = 'none';
-    }
-
-    async function searchProduct() {
-        const query = barcodeInput.value || descriptionInput.value;
-        if (query.trim() === '') {
-            alert('Por favor, ingresa un código de barras o una descripción.');
-            return;
-        }
-
-        const products = await db.searchProducts(query);
-        if (products.length > 0) {
-            displayProduct(products[0]);  // Mostrar el primer producto encontrado en los campos editables
-            resultsList.innerHTML = '';
-            products.forEach(product => {
-                const item = document.createElement('li');
-                item.textContent = `${product.barcode} - ${product.description} - ${product.stock} - ${product.price}`;
-                resultsList.appendChild(item);
-            });
-            searchResults.style.display = 'block';
-        } else {
-            resultsList.innerHTML = '<li>Producto no encontrado</li>';
-            searchResults.style.display = 'block';
-        }
-    }
-
-    async function loadProducts() {
-        const products = await db.getAllProducts();
-        if (products.length > 0) {
-            lowStockList.innerHTML = '';
-            products.forEach(product => {
-                if (parseInt(product.stock) < 10) {
-                    const item = document.createElement('li');
-                    item.textContent = `${product.barcode} - ${product.description} - ${product.stock} - ${product.price}`;
-                    lowStockList.appendChild(item);
-                }
-            });
-            lowStockResults.style.display = 'block';
-        } else {
-            lowStockList.innerHTML = '<li>No hay productos con stock bajo</li>';
-            lowStockResults.style.display = 'block';
-        }
-    }
-
-    function exportToExcel() {
-        db.getAllProducts().then(products => {
-            const ws = XLSX.utils.json_to_sheet(products);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Products');
-            XLSX.writeFile(wb, 'productos.xlsx');
-        });
-    }
-
-    async function importFromExcel(file) {
-        const data = await file.arrayBuffer();
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheetName = workbook.SheetNames[0];
-        const sheet = workbook.Sheets[sheetName];
-        const json = XLSX.utils.sheet_to_json(sheet);
-
-        for (const product of json) {
-            await db.addProduct(product);
-        }
-        alert('Productos importados exitosamente');
-    }
-
-    fileInput.addEventListener('change', (event
-document.addEventListener('DOMContentLoaded', () => {
-    const db = new ProductDatabase();
-    db.init();
-
-    const barcodeInput = document.getElementById('barcode');
-    const descriptionInput = document.getElementById('description');
-    const stockInput = document.getElementById('stock');
-    const priceInput = document.getElementById('price');
-    const productImage = document.getElementById('product-image');
-    const scannerContainer = document.getElementById('scanner-container');
-    const video = document.getElementById('video');
-    const resultsList = document.getElementById('results-list');
-    const searchResults = document.getElementById('search-results');
-    const lowStockButton = document.getElementById('low-stock-button');
-    const lowStockResults = document.getElementById('low-stock-results');
-    const lowStockList = document.getElementById('low-stock-list');
-    const fileInput = document.getElementById('fileInput');
-    let barcodeDetector;
-    let productNotFoundAlertShown = false;
-
-    // Cache para almacenar productos
-    const cache = new Map();
-
-    // Función para iniciar el escáner de códigos de barras
-    async function startScanner() {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        video.srcObject = stream;
-        scannerContainer.style.display = 'flex';
-        video.play();
-        scan();
-    }
-
-    // Función para escanear códigos de barras
-    async function scan() {
-        if (barcodeDetector && video.readyState === video.HAVE_ENOUGH_DATA) {
-            const barcodes = await barcodeDetector.detect(video);
-            if (barcodes.length > 0) {
-                const barcode = barcodes[0].rawValue;
-                barcodeInput.value = barcode;
                 const product = await db.getProduct(barcode);
-                displayProduct(product);
+                if (product) {
+                    descriptionInput.value = product.description || '';
+                    stockInput.value = product.stock || '';
+                    priceInput.value = product.price || '';
+                    productImage.src = product.image || '';
+                    productImage.style.display = product.image ? 'block' : 'none';
+                    productNotFoundAlertShown = false; // Reset alert flag
+                } else {
+                    descriptionInput.value = '';
+                    stockInput.value = '';
+                    priceInput.value = '';
+                    productImage.src = '';
+                    productImage.style.display = 'none';
+                    if (!productNotFoundAlertShown) {
+                        alert('Producto no encontrado');
+                        productNotFoundAlertShown = true;
+                    }
+                }
                 scannerContainer.style.display = 'none';
             }
         }
         requestAnimationFrame(scan);
     }
 
-    // Función para mostrar un producto en los campos editables
-    function displayProduct(product) {
-        if (product) {
-            descriptionInput.value = product.description;
-            stockInput.value = product.stock;
-            priceInput.value = product.price;
-            productImage.src = product.image || '';
-            productImage.style.display = product.image ? 'block' : 'none';
-        } else {
-            descriptionInput.value = '';
-            stockInput.value = '';
-            priceInput.value = '';
-            productImage.src = '';
-            productImage.style.display = 'none';
-            if (!productNotFoundAlertShown) {
-                alert('Producto no encontrado');
-                productNotFoundAlertShown = true;
-            }
-        }
-    }
-
-    // Función para guardar un producto en la base de datos
     async function saveProduct() {
         const barcode = barcodeInput.value;
         const description = descriptionInput.value;
@@ -341,17 +188,15 @@ document.addEventListener('DOMContentLoaded', () => {
         productImage.style.display = 'none';
     }
 
-    // Función para buscar productos por código de barras o descripción
     async function searchProduct() {
-        const query = barcodeInput.value || descriptionInput.value;
-        if (query.trim() === '') {
+        const query = barcodeInput.value.trim() || descriptionInput.value.trim();
+        if (query === '') {
             alert('Por favor, ingresa un código de barras o una descripción.');
             return;
         }
 
         const products = await db.searchProducts(query);
         if (products.length > 0) {
-            displayProduct(products[0]);  // Mostrar el primer producto encontrado en los campos editables
             resultsList.innerHTML = '';
             products.forEach(product => {
                 const item = document.createElement('li');
@@ -365,7 +210,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Función para cargar productos con stock bajo
     async function loadProducts() {
         const products = await db.getAllProducts();
         if (products.length > 0) {
@@ -384,7 +228,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Función para exportar productos a Excel
     function exportToExcel() {
         db.getAllProducts().then(products => {
             const ws = XLSX.utils.json_to_sheet(products);
@@ -394,7 +237,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Función para importar productos desde un archivo Excel
     async function importFromExcel(file) {
         const data = await file.arrayBuffer();
         const workbook = XLSX.read(data, { type: 'array' });
@@ -405,32 +247,27 @@ document.addEventListener('DOMContentLoaded', () => {
         for (const product of json) {
             await db.addProduct(product);
         }
-        alert('Productos importados exitosamente');
+        alert('Productos importados');
     }
 
-    // Manejar el evento de carga de archivos Excel
-    fileInput.addEventListener('change', (event) => {
-        const file = event.target.files[0];
-        importFromExcel(file);
+    document.getElementById('scan-button').addEventListener('click', startScanner);
+    document.getElementById('search-button').addEventListener('click', searchProduct);
+    document.getElementById('save-button').addEventListener('click', saveProduct);
+    document.getElementById('low-stock-button').addEventListener('click', loadProducts);
+    document.getElementById('export-button').addEventListener('click', exportToExcel);
+    document.getElementById('import-button').addEventListener('click', () => {
+        fileInput.click();
     });
 
-    // Configurar eventos de los botones
-    document.getElementById('scan-button').addEventListener('click', startScanner);
-    document.getElementById('save-button').addEventListener('click', saveProduct);
-    document.getElementById('search-button').addEventListener('click', searchProduct);
-    document.getElementById('export-button').addEventListener('click', exportToExcel);
-    lowStockButton.addEventListener('click', () => {
-        if (lowStockResults.style.display === 'block') {
-            lowStockResults.style.display = 'none';
-        } else {
-            loadProducts();
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            importFromExcel(file);
         }
     });
 
-    // Verificar soporte para BarcodeDetector
-    if ('BarcodeDetector' in window) {
-        barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'upc_a', 'ean_8'] });
-    } else {
-        alert('Barcode Detector no está disponible en este navegador.');
-    }
+    (async function initBarcodeDetector() {
+        barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e'] });
+    })();
 });
+
