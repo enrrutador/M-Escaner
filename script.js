@@ -13,6 +13,9 @@ loginForm.addEventListener('submit', (e) => {
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
     
+    console.log('Email:', email);
+    console.log('Password:', password);
+
     signInWithEmailAndPassword(auth, email, password)
         .then((userCredential) => {
             console.log('Usuario autenticado:', userCredential.user);
@@ -147,12 +150,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 barcodeInput.value = barcode;
                 const product = await db.getProduct(barcode);
                 if (product) {
-                    descriptionInput.value = product.description || '';
-                    stockInput.value = product.stock || '';
-                    priceInput.value = product.price || '';
+                    descriptionInput.value = product.description;
+                    stockInput.value = product.stock;
+                    priceInput.value = product.price;
                     productImage.src = product.image || '';
                     productImage.style.display = product.image ? 'block' : 'none';
-                    productNotFoundAlertShown = false; // Reset alert flag
                 } else {
                     descriptionInput.value = '';
                     stockInput.value = '';
@@ -189,12 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function searchProduct() {
-        const query = barcodeInput.value.trim() || descriptionInput.value.trim();
-        if (query === '') {
-            alert('Por favor, ingresa un código de barras o una descripción.');
-            return;
-        }
-
+        const query = barcodeInput.value || descriptionInput.value;
         const products = await db.searchProducts(query);
         if (products.length > 0) {
             resultsList.innerHTML = '';
@@ -255,19 +252,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('save-button').addEventListener('click', saveProduct);
     document.getElementById('low-stock-button').addEventListener('click', loadProducts);
     document.getElementById('export-button').addEventListener('click', exportToExcel);
-    document.getElementById('import-button').addEventListener('click', () => {
-        fileInput.click();
-    });
+    fileInput.addEventListener('change', (e) => importFromExcel(e.target.files[0]));
 
-    fileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            importFromExcel(file);
-        }
-    });
-
-    (async function initBarcodeDetector() {
-        barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e'] });
-    })();
+    if ('BarcodeDetector' in window) {
+        barcodeDetector = new BarcodeDetector({ formats: ['qr_code', 'ean_13'] });
+    } else {
+        alert('BarcodeDetector no está disponible en este navegador.');
+    }
 });
 
