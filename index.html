@@ -8,6 +8,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
 </head>
 <body>
+    <!-- Contenedor de inicio de sesión -->
     <div id="login-container" class="login-container">
         <h2>Iniciar Sesión</h2>
         <form id="loginForm">
@@ -17,7 +18,9 @@
             <div id="login-error" class="error-message"></div>
         </form>
     </div>
-    <div class="container">
+
+    <!-- Contenedor principal de la aplicación -->
+    <div id="app-container" class="container" style="display:none;">
         <header>
             <h1>M-Scanner 2.0</h1>
         </header>
@@ -64,10 +67,10 @@
 
     <input type="file" id="fileInput" accept=".xlsx, .xls" style="display: none;" />
     <script src="https://unpkg.com/@zxing/library@0.19.1"></script>
-     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
     <script type="module" src="firebaseConfig.js"></script>
     <script src="script.js"></script>
-
 </body>
 </html>
+
 
