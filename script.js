@@ -141,6 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const lowStockResults = document.getElementById('low-stock-results');
     const lowStockList = document.getElementById('low-stock-list');
     const fileInput = document.getElementById('fileInput');
+    const exportButton = document.getElementById('export-button');
     let barcodeDetector;
     let productNotFoundAlertShown = false;
 
@@ -340,5 +341,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
         alert('Productos importados desde el archivo CSV.');
     }
+
+    function exportToCSV(products) {
+        const header = ['Código de barras', 'Descripción', 'Stock', 'Precio Venta'];
+        const rows = products.map(p => [
+            p.barcode,
+            p.description,
+            p.stock,
+            p.price
+        ]);
+
+        const csvContent = [
+            header.join(','), 
+            ...rows.map(e => e.join(','))
+        ].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'productos.csv');
+        link.style.visibility = 'hidden';
+
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    exportButton.addEventListener('click', async () => {
+        const products = await db.getAllProducts();
+        exportToCSV(products);
+    });
 });
 
