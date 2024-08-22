@@ -212,7 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function searchInOpenFoodFacts(query) {
         try {
-            const response = await fetch(https://world.openfoodfacts.org/api/v0/product/${query}.json);
+            const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${query}.json`);
             const data = await response.json();
 
             if (data.product) {
@@ -306,7 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (lowStockProducts.length > 0) {
             lowStockProducts.forEach(product => {
                 const li = document.createElement('li');
-                li.textContent = ${product.description} (Código: ${product.barcode}) - Stock: ${product.stock};
+                li.textContent = `${product.description} (Código: ${product.barcode}) - Stock: ${product.stock}`;
                 lowStockList.appendChild(li);
             });
         } else {
@@ -354,7 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
         csvContent += "Código de Barras,Descripción,Stock,Precio,Imagen\n";
         
         allProducts.forEach(product => {
-            csvContent += ${product.barcode},${product.description},${product.stock},${product.price},${product.image}\n;
+            csvContent += `${product.barcode},${product.description},${product.stock},${product.price},${product.image}\n`;
         });
         
         const encodedUri = encodeURI(csvContent);
