@@ -85,12 +85,13 @@ class ProductDatabase {
             const transaction = this.db.transaction([this.storeName], 'readonly');
             const objectStore = transaction.objectStore(this.storeName);
             const products = [];
+            const queryLowerCase = query.toLowerCase();
 
             objectStore.openCursor().onsuccess = (event) => {
                 const cursor = event.target.result;
                 if (cursor) {
                     const product = cursor.value;
-                    if (product.description.toLowerCase().includes(query.toLowerCase())) {
+                    if (product.description.toLowerCase().includes(queryLowerCase)) {
                         products.push(product);
                     }
                     cursor.continue();
@@ -219,10 +220,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function fillForm(product) {
-        barcodeInput.value = product.barcode;
-        descriptionInput.value = product.description;
-        stockInput.value = product.stock;
-        priceInput.value = product.price;
+        barcodeInput.value = product.barcode || '';
+        descriptionInput.value = product.description || '';
+        stockInput.value = product.stock || '';
+        priceInput.value = product.price || '';
         if (product.image) {
             productImage.src = product.image;
             productImage.style.display = 'block';
@@ -257,8 +258,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const product = {
             barcode: barcodeInput.value.trim(),
             description: descriptionInput.value.trim(),
-            stock: parseInt(stockInput.value),
-            price: parseFloat(priceInput.value),
+            stock: parseInt(stockInput.value) || 0,
+            price: parseFloat(priceInput.value) || 0,
             image: productImage.src || ''
         };
 
