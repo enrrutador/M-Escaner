@@ -1,54 +1,6 @@
 import { auth } from './firebaseConfig.js';
 import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
-document.addEventListener('DOMContentLoaded', async () => {
-    // ... (otras inicializaciones)
-
-    const loginForm = document.getElementById('loginForm');
-    const loginContainer = document.getElementById('login-container');
-    const appContainer = document.getElementById('app-container');
-    const loginError = document.getElementById('login-error');
-
-    loginForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        
-        signInWithEmailAndPassword(auth, email, password)
-            .then((userCredential) => {
-                console.log('Usuario autenticado:', userCredential.user);
-            })
-            .catch((error) => {
-                console.error('Error de autenticación:', error.code, error.message);
-                loginError.textContent = 'Error al iniciar sesión. Verifica tu correo y contraseña.';
-            });
-    });
-
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            loginContainer.style.display = 'none';
-            appContainer.style.display = 'block';
-        } else {
-            loginContainer.style.display = 'block';
-            appContainer.style.display = 'none';
-        }
-    });
-
-    // ... (resto del código)
-});
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        loginContainer.style.display = 'none';
-        appContainer.style.display = 'block';
-    } else {
-        loginContainer.style.display = 'block';
-        appContainer.style.display = 'none';
-    }
-});
-import { auth } from './firebaseConfig.js';
-import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-
 class ProductDatabase {
     constructor() {
         this.dbName = 'MScannerDB';
@@ -75,7 +27,54 @@ class ProductDatabase {
         });
     }
 
-    // ... (resto de los métodos de ProductDatabase sin cambios)
+    async addProduct(product) {
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([this.storeName], 'readwrite');
+            transaction.objectStore(this.storeName).put(product).onsuccess = () => resolve();
+            transaction.onerror = event => reject('Error adding product:', event.target.error);
+        });
+    }
+
+    async getProduct(barcode) {
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([this.storeName], 'readonly');
+            const request = transaction.objectStore(this.storeName).get(barcode);
+
+            request.onsuccess = event => resolve(event.target.result);
+            request.onerror = event => reject('Error getting product:', event.target.error);
+        });
+    }
+
+    async searchProducts(query) {
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([this.storeName], 'readonly');
+            const store = transaction.objectStore(this.storeName);
+            const results = [];
+            store.openCursor().onsuccess = event => {
+                const cursor = event.target.result;
+                if (cursor) {
+                    const product = cursor.value;
+                    if (product.barcode.includes(query) || product.description.toLowerCase().includes(query.toLowerCase())) {
+                        results.push(product);
+                    }
+                    cursor.continue();
+                } else {
+                    resolve(results);
+                }
+            };
+            store.onerror = event => reject('Error searching products:', event.target.error);
+        });
+    }
+
+    async getAllProducts() {
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([this.storeName], 'readonly');
+            const request = transaction.objectStore(this.storeName).getAll();
+
+            request.onsuccess = event => resolve(event.target.result);
+            request.onerror = event => reject('Error getting all products:', event.target.error);
+        });
+    }
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -201,7 +200,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    async function loadLowStockProducts() {
+    async function loadProducts() {
         const products = await db.getAllProducts();
         if (products.length > 0) {
             lowStockList.innerHTML = '';
@@ -244,7 +243,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('scan-button').addEventListener('click', startScanner);
     document.getElementById('search-button').addEventListener('click', searchProduct);
     document.getElementById('save-button').addEventListener('click', saveProduct);
-    document.getElementById('low-stock-button').addEventListener('click', loadLowStockProducts);
+    document.getElementById('low-stock-button').addEventListener('click', loadProducts);
     document.getElementById('export-button').addEventListener('click', exportToExcel);
     document.getElementById('import-button').addEventListener('click', () => {
         fileInput.click();
@@ -258,11 +257,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     (async function initBarcodeDetector() {
-        try {
-            barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e'] });
-        } catch (e) {
-            console.error('Barcode Detector is not supported by this browser.');
-            document.getElementById('scan-button').style.display = 'none';
-        }
+        barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e'] });
     })();
 });
