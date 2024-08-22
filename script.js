@@ -1,5 +1,4 @@
 import { auth } from './firebaseConfig.js';
-
 import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
 // Manejar el formulario de inicio de sesión
@@ -191,10 +190,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        if (!product) {
-            product = await searchInOpenFoodFacts(query);
-        }
-
         if (product) {
             cache.set(query, product);
             fillForm(product);
@@ -206,8 +201,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }
-
-   
 
     function fillForm(product) {
         barcodeInput.value = product.barcode || '';
@@ -282,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (lowStockProducts.length > 0) {
             lowStockProducts.forEach(product => {
                 const li = document.createElement('li');
-                li.textContent = ${product.description} (Código: ${product.barcode}) - Stock: ${product.stock};
+                li.textContent = `${product.description} (Código: ${product.barcode}) - Stock: ${product.stock}`;
                 lowStockList.appendChild(li);
             });
         } else {
@@ -330,7 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
         csvContent += "Código de Barras,Descripción,Stock,Precio,Imagen\n";
         
         allProducts.forEach(product => {
-            csvContent += ${product.barcode},${product.description},${product.stock},${product.price},${product.image}\n;
+            csvContent += `${product.barcode},${product.description},${product.stock},${product.price},${product.image}\n`;
         });
         
         const encodedUri = encodeURI(csvContent);
