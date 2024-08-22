@@ -37,7 +37,7 @@ onAuthStateChanged(auth, (user) => {
 class ProductDatabase {
     constructor() {
         this.dbName = 'MScannerDB';
-        this.dbVersion = 1;
+        this.dbVersion = 2; // Incrementa la versión para actualizar la base de datos si es necesario
         this.storeName = 'products';
         this.db = null;
     }
@@ -55,8 +55,16 @@ class ProductDatabase {
 
             request.onupgradeneeded = (event) => {
                 const db = event.target.result;
-                const store = db.createObjectStore(this.storeName, { keyPath: 'barcode' });
-                store.createIndex('description', 'description', { unique: false });
+
+                if (!db.objectStoreNames.contains(this.storeName)) {
+                    const store = db.createObjectStore(this.storeName, { keyPath: 'barcode' });
+                    store.createIndex('description', 'description', { unique: false });
+                } else {
+                    const store = event.oldVersion < 2 ? db.transaction.objectStore(this.storeName) : db.transaction.objectStore(this.storeName);
+                    if (!store.indexNames.contains('description')) {
+                        store.createIndex('description', 'description', { unique: false });
+                    }
+                }
             };
         });
     }
@@ -95,6 +103,13 @@ class ProductDatabase {
         return new Promise((resolve, reject) => {
             const transaction = this.db.transaction([this.storeName], 'readonly');
             const store = transaction.objectStore(this.storeName);
+            
+            // Verificar si el índice 'description' existe
+            if (!store.indexNames.contains('description')) {
+                reject('Índice "description" no encontrado.');
+                return;
+            }
+
             const index = store.index('description');
             const request = index.openCursor();
             const results = [];
