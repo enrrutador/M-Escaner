@@ -97,12 +97,15 @@ class ProductDatabase {
             const store = transaction.objectStore(this.storeName);
             const results = [];
 
-            store.openCursor().onsuccess = (event) => {
+            const request = store.openCursor();
+
+            request.onsuccess = (event) => {
                 const cursor = event.target.result;
                 if (cursor) {
-                    const product = cursor.value;
-                    if (product.barcode.includes(query) || product.description.toLowerCase().includes(query.toLowerCase())) {
-                        results.push(product);
+                    const normalizedDescription = normalizeText(cursor.value.description);
+                    const normalizedQuery = normalizeText(query);
+                    if (normalizedDescription.includes(normalizedQuery)) {
+                        results.push(cursor.value);
                     }
                     cursor.continue();
                 } else {
@@ -110,7 +113,7 @@ class ProductDatabase {
                 }
             };
 
-            store.onerror = (event) => reject('Error buscando productos:', event.target.error);
+            request.onerror = (event) => reject('Error buscando productos:', event.target.error);
         });
     }
 }
@@ -359,3 +362,4 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.removeChild(link);
     });
 });
+
