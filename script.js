@@ -91,14 +91,27 @@ class ProductDatabase {
         });
     }
 
+  
     async searchProducts(query) {
         return new Promise((resolve, reject) => {
             const transaction = this.db.transaction([this.storeName], 'readonly');
             const store = transaction.objectStore(this.storeName);
-            const index = store.index('description');
-            const request = index.openCursor();
             const results = [];
-
+            store.openCursor().onsuccess = event => {
+                const cursor = event.target.result;
+                if (cursor) {
+                    const product = cursor.value;
+                    if (product.barcode.includes(query) || product.description.toLowerCase().includes(query.toLowerCase())) {
+                        results.push(product);
+                    }
+                    cursor.continue();
+                } else {
+                    resolve(results);
+                }
+            };
+            store.onerror = event => reject('Error searching products:', event.target.error);
+        });
+    }
             request.onsuccess = (event) => {
                 const cursor = event.target.result;
                 if (cursor) {
@@ -175,19 +188,16 @@ document.addEventListener('DOMContentLoaded', () => {
         scannerContainer.style.display = 'none';
     }
 
-    async function searchProduct(query) {
-        const isBarcode = /^\d+$/.test(query);
 
+    async function searchProduct(query) {
         if (cache.has(query)) {
             fillForm(cache.get(query));
             return;
         }
 
-        let product;
+        let product = await db.getProduct(query);
 
-        if (isBarcode) {
-            product = await db.getProduct(query);
-        } else {
+        if (!product) {
             const results = await db.searchProducts(query);
             if (results.length > 0) {
                 product = results[0];
@@ -212,7 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function searchInOpenFoodFacts(query) {
         try {
-            const response = await fetch(https://world.openfoodfacts.org/api/v0/product/${query}.json);
+            const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${query}.json`);
             const data = await response.json();
 
             if (data.product) {
@@ -232,6 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return null;
     }
+
 
     function fillForm(product) {
         barcodeInput.value = product.barcode || '';
