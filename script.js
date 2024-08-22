@@ -1,4 +1,5 @@
 import { auth } from './firebaseConfig.js';
+
 import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
 // Manejar el formulario de inicio de sesión
