@@ -80,6 +80,29 @@ class ProductDatabase {
         });
     }
 
+    async searchProducts(query) {
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([this.storeName], 'readonly');
+            const objectStore = transaction.objectStore(this.storeName);
+            const products = [];
+
+            objectStore.openCursor().onsuccess = (event) => {
+                const cursor = event.target.result;
+                if (cursor) {
+                    const product = cursor.value;
+                    if (product.description.toLowerCase().includes(query.toLowerCase())) {
+                        products.push(product);
+                    }
+                    cursor.continue();
+                } else {
+                    resolve(products);
+                }
+            };
+
+            objectStore.openCursor().onerror = (event) => reject('Error searching products:', event.target.error);
+        });
+    }
+
     async getAllProducts() {
         return new Promise((resolve, reject) => {
             const transaction = this.db.transaction([this.storeName], 'readonly');
@@ -277,3 +300,5 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+
