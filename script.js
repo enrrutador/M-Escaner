@@ -1,5 +1,6 @@
 import { auth } from './firebaseConfig.js';
 import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import * as XLSX from 'https://cdn.sheetjs.com/xlsx-0.18.5/package/xlsx.full.min.js'; // Importa la biblioteca SheetJS
 
 // Manejar el formulario de inicio de sesión
 const loginForm = document.getElementById('loginForm');
@@ -295,18 +296,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const reader = new FileReader();
 
         reader.onload = async (e) => {
-            const contents = e.target.result;
-            const lines = contents.split('\n').filter(line => line.trim() !== '');
-            
-            for (let line of lines) {
-                const [barcode, description, stock, price, image] = line.split(',');
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
+            for (let i = 1; i < json.length; i++) { // Empieza en 1 para saltar la cabecera
+                const [barcode, description, stock, price, image] = json[i];
                 const product = {
                     barcode: barcode.trim(),
                     description: description.trim(),
                     stock: parseInt(stock.trim()) || 0,
                     price: parseFloat(price.trim()) || 0,
-                    image: image.trim() || ''
+                    image: image ? image.trim() : ''
                 };
 
                 await db.addProduct(product);
@@ -315,24 +318,19 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Productos importados correctamente.');
         };
 
-        reader.readAsText(file);
+        reader.readAsArrayBuffer(file);
     });
 
     document.getElementById('export-button').addEventListener('click', async () => {
         const allProducts = await db.getAllProducts();
-        let csvContent = "data:text/csv;charset=utf-8,";
-        csvContent += "Código de Barras,Descripción,Stock,Precio,Imagen\n";
-        
-        allProducts.forEach(product => {
-            csvContent += `${product.barcode},${product.description},${product.stock},${product.price},${product.image}\n`;
+        const worksheet = XLSX.utils.json_to_sheet(allProducts, {
+            header: ["barcode", "description", "stock", "price", "image"],
+            skipHeader: false
         });
-        
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "productos_exportados.csv");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Productos");
+
+        // Genera el archivo y lo descarga
+        XLSX.writeFile(workbook, "productos_exportados.xlsx");
     });
 });
