@@ -55,7 +55,8 @@ class ProductDatabase {
 
             request.onupgradeneeded = (event) => {
                 const db = event.target.result;
-                db.createObjectStore(this.storeName, { keyPath: 'barcode' });
+                const store = db.createObjectStore(this.storeName, { keyPath: 'barcode' });
+                store.createIndex('description', 'description', { unique: false });  // Añadir índice para descripción
             };
         });
     }
@@ -87,6 +88,18 @@ class ProductDatabase {
 
             request.onsuccess = (event) => resolve(event.target.result);
             request.onerror = (event) => reject('Error getting all products:', event.target.error);
+        });
+    }
+
+    async searchProducts(query) {  // Nueva función para buscar productos por descripción
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([this.storeName], 'readonly');
+            const store = transaction.objectStore(this.storeName);
+            const index = store.index('description');  // Usar el índice creado en la descripción
+            const request = index.getAll(query);
+
+            request.onsuccess = (event) => resolve(event.target.result);
+            request.onerror = (event) => reject('Error searching products:', event.target.error);
         });
     }
 }
@@ -160,7 +173,8 @@ document.addEventListener('DOMContentLoaded', () => {
         let product = await db.getProduct(query);
 
         if (!product && !isBarcode) {
-            const results = await db.searchProducts(query);
+            const normalizedQuery = normalizeText(query);  // Normalizar la búsqueda
+            const results = await db.searchProducts(normalizedQuery);  // Buscar por descripción
             if (results.length > 0) {
                 product = results[0];
             }
@@ -250,62 +264,69 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         await db.addProduct(product);
-        alert('Producto guardado.');
+        alert('Producto guardado correctamente.');
+        clearForm();
     });
 
-    document.getElementById('clear-button').addEventListener('click', () => {
+    document.getElementById('clear-button').addEventListener('click', clearForm);
+
+    function clearForm() {
         barcodeInput.value = '';
         descriptionInput.value = '';
         stockInput.value = '';
         priceInput.value = '';
         productImage.src = '';
         productImage.style.display = 'none';
-    });
+    }
 
-    // Función de exportación de productos a Excel
-    document.getElementById('export-button').addEventListener('click', async () => {
-        const products = await db.getAllProducts();
-        const worksheet = XLSX.utils.json_to_sheet(products);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'Products');
-        XLSX.writeFile(workbook, 'productos.xlsx');
-    });
+    lowStockButton.addEventListener('click', async () => {
+        if (lowStockResults.style.display === 'block') {
+            lowStockResults.style.display = 'none';
+            return;
+        }
 
-    // Función de importación de productos desde Excel
-    document.getElementById('import-button').addEventListener('click', () => {
-        fileInput.click();
+        lowStockList.innerHTML = '';
+        const allProducts = await db.getAllProducts();
+        const lowStockProducts = allProducts.filter(product => product.stock <= 5);
+
+        if (lowStockProducts.length > 0) {
+            lowStockProducts.forEach(product => {
+                const li = document.createElement('li');
+                li.textContent = `${product.description} (Código: ${product.barcode}) - Stock: ${product.stock}`;
+                lowStockList.appendChild(li);
+            });
+        } else {
+            lowStockList.innerHTML = '<li>No hay productos con stock bajo.</li>';
+        }
+
+        lowStockResults.style.display = 'block';
     });
 
     fileInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
-        if (file) {
-            const data = await file.arrayBuffer();
-            const workbook = XLSX.read(data, { type: 'array' });
-            const sheetName = workbook.SheetNames[0];
-            const sheet = workbook.Sheets[sheetName];
-            const json = XLSX.utils.sheet_to_json(sheet);
+        const reader = new FileReader();
 
-            for (const product of json) {
+        reader.onload = async (e) => {
+            const contents = e.target.result;
+            const lines = contents.split('\n').filter(line => line.trim() !== '');
+            
+            for (let line of lines) {
+                const [barcode, description, stock, price, image] = line.split(',');
+
+                const product = {
+                    barcode: barcode.trim(),
+                    description: description.trim(),
+                    stock: parseInt(stock.trim()) || 0,
+                    price: parseFloat(price.trim()) || 0,
+                    image: image.trim() || ''
+                };
+
                 await db.addProduct(product);
             }
-            alert('Productos importados exitosamente');
-        }
-    });
 
-    lowStockButton.addEventListener('click', async () => {
-        const products = await db.getAllProducts();
-        const lowStockProducts = products.filter(product => product.stock <= 5);
-        lowStockList.innerHTML = '';
-        if (lowStockProducts.length > 0) {
-            lowStockProducts.forEach(product => {
-                const li = document.createElement('li');
-                li.textContent = `${product.description} (Stock: ${product.stock})`;
-                lowStockList.appendChild(li);
-            });
-            lowStockResults.style.display = 'block';
-        } else {
-            lowStockResults.style.display = 'none';
-            alert('No hay productos con stock bajo.');
-        }
+            alert('Productos importados correctamente.');
+        };
+
+        reader.readAsText(file);
     });
 });
