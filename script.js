@@ -46,7 +46,7 @@ class ProductDatabase {
         return new Promise((resolve, reject) => {
             const request = indexedDB.open(this.dbName, this.dbVersion);
 
-            request.onerror = (event) => reject('Error opening database:', event.target.error);
+            request.onerror = (event) => reject('Error abriendo la base de datos:', event.target.error);
 
             request.onsuccess = (event) => {
                 this.db = event.target.result;
@@ -67,7 +67,7 @@ class ProductDatabase {
             const request = transaction.objectStore(this.storeName).put(product);
 
             request.onsuccess = () => resolve();
-            request.onerror = (event) => reject('Error adding product:', event.target.error);
+            request.onerror = (event) => reject('Error añadiendo el producto:', event.target.error);
         });
     }
 
@@ -77,7 +77,7 @@ class ProductDatabase {
             const request = transaction.objectStore(this.storeName).get(barcode);
 
             request.onsuccess = (event) => resolve(event.target.result);
-            request.onerror = (event) => reject('Error getting product:', event.target.error);
+            request.onerror = (event) => reject('Error obteniendo el producto:', event.target.error);
         });
     }
 
@@ -87,7 +87,7 @@ class ProductDatabase {
             const request = transaction.objectStore(this.storeName).getAll();
 
             request.onsuccess = (event) => resolve(event.target.result);
-            request.onerror = (event) => reject('Error getting all products:', event.target.error);
+            request.onerror = (event) => reject('Error obteniendo todos los productos:', event.target.error);
         });
     }
 
@@ -113,7 +113,7 @@ class ProductDatabase {
                 }
             };
 
-            request.onerror = (event) => reject('Error searching products:', event.target.error);
+            request.onerror = (event) => reject('Error buscando productos:', event.target.error);
         });
     }
 }
