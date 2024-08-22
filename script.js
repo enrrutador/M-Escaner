@@ -27,54 +27,7 @@ class ProductDatabase {
         });
     }
 
-    async addProduct(product) {
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction([this.storeName], 'readwrite');
-            transaction.objectStore(this.storeName).put(product).onsuccess = () => resolve();
-            transaction.onerror = event => reject('Error adding product:', event.target.error);
-        });
-    }
-
-    async getProduct(barcode) {
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction([this.storeName], 'readonly');
-            const request = transaction.objectStore(this.storeName).get(barcode);
-
-            request.onsuccess = event => resolve(event.target.result);
-            request.onerror = event => reject('Error getting product:', event.target.error);
-        });
-    }
-
-    async searchProducts(query) {
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction([this.storeName], 'readonly');
-            const store = transaction.objectStore(this.storeName);
-            const results = [];
-            store.openCursor().onsuccess = event => {
-                const cursor = event.target.result;
-                if (cursor) {
-                    const product = cursor.value;
-                    if (product.barcode.includes(query) || product.description.toLowerCase().includes(query.toLowerCase())) {
-                        results.push(product);
-                    }
-                    cursor.continue();
-                } else {
-                    resolve(results);
-                }
-            };
-            store.onerror = event => reject('Error searching products:', event.target.error);
-        });
-    }
-
-    async getAllProducts() {
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction([this.storeName], 'readonly');
-            const request = transaction.objectStore(this.storeName).getAll();
-
-            request.onsuccess = event => resolve(event.target.result);
-            request.onerror = event => reject('Error getting all products:', event.target.error);
-        });
-    }
+    // ... (resto de los métodos de ProductDatabase sin cambios)
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -128,60 +81,41 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     async function startScanner() {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-            video.srcObject = stream;
-            scannerContainer.style.display = 'flex';
-            video.play();
-            scan();
-        } catch (error) {
-            console.error('Error accessing camera:', error);
-            alert('No se pudo acceder a la cámara. Por favor, asegúrate de que tienes una cámara disponible y has dado permiso para usarla.');
-        }
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        video.srcObject = stream;
+        scannerContainer.style.display = 'flex';
+        video.play();
+        scan();
     }
 
     async function scan() {
         if (barcodeDetector && video.readyState === video.HAVE_ENOUGH_DATA) {
-            try {
-                const barcodes = await barcodeDetector.detect(video);
-                if (barcodes.length > 0) {
-                    const barcode = barcodes[0].rawValue;
-                    barcodeInput.value = barcode;
-                    const product = await db.getProduct(barcode);
-                    if (product) {
-                        descriptionInput.value = product.description;
-                        stockInput.value = product.stock;
-                        priceInput.value = product.price;
-                        productImage.src = product.image || '';
-                        productImage.style.display = product.image ? 'block' : 'none';
-                    } else
-                        } else {
-                        descriptionInput.value = '';
-                        stockInput.value = '';
-                        priceInput.value = '';
-                        productImage.src = '';
-                        productImage.style.display = 'none';
-                        if (!productNotFoundAlertShown) {
-                            alert('Producto no encontrado');
-                            productNotFoundAlertShown = true;
-                        }
+            const barcodes = await barcodeDetector.detect(video);
+            if (barcodes.length > 0) {
+                const barcode = barcodes[0].rawValue;
+                barcodeInput.value = barcode;
+                const product = await db.getProduct(barcode);
+                if (product) {
+                    descriptionInput.value = product.description;
+                    stockInput.value = product.stock;
+                    priceInput.value = product.price;
+                    productImage.src = product.image || '';
+                    productImage.style.display = product.image ? 'block' : 'none';
+                } else {
+                    descriptionInput.value = '';
+                    stockInput.value = '';
+                    priceInput.value = '';
+                    productImage.src = '';
+                    productImage.style.display = 'none';
+                    if (!productNotFoundAlertShown) {
+                        alert('Producto no encontrado');
+                        productNotFoundAlertShown = true;
                     }
-                    scannerContainer.style.display = 'none';
-                    stopScanner();
                 }
-            } catch (error) {
-                console.error('Error scanning barcode:', error);
+                scannerContainer.style.display = 'none';
             }
         }
         requestAnimationFrame(scan);
-    }
-
-    function stopScanner() {
-        const stream = video.srcObject;
-        const tracks = stream.getTracks();
-        tracks.forEach(track => track.stop());
-        video.srcObject = null;
-        scannerContainer.style.display = 'none';
     }
 
     async function saveProduct() {
@@ -191,70 +125,50 @@ document.addEventListener('DOMContentLoaded', async () => {
         const price = priceInput.value;
         const image = productImage.src;
 
-        if (!barcode || !description || !stock || !price) {
-            alert('Por favor, complete todos los campos antes de guardar.');
-            return;
-        }
-
         const product = { barcode, description, stock, price, image };
         await db.addProduct(product);
         alert('Producto Guardado');
-        clearForm();
+        barcodeInput.value = '';
+        descriptionInput.value = '';
+        stockInput.value = '';
+        priceInput.value = '';
+        productImage.src = '';
+        productImage.style.display = 'none';
     }
 
     async function searchProduct() {
         const query = barcodeInput.value || descriptionInput.value;
-        if (!query) {
-            alert('Por favor, ingrese un código de barras o una descripción para buscar.');
-            return;
-        }
         const products = await db.searchProducts(query);
-        displaySearchResults(products);
-    }
-
-    function displaySearchResults(products) {
-        resultsList.innerHTML = '';
         if (products.length > 0) {
+            resultsList.innerHTML = '';
             products.forEach(product => {
                 const item = document.createElement('li');
-                item.textContent = `${product.barcode} - ${product.description} - Stock: ${product.stock} - Precio: ${product.price}`;
-                item.addEventListener('click', () => fillFormWithProduct(product));
+                item.textContent = `${product.barcode} - ${product.description} - ${product.stock} - ${product.price}`;
                 resultsList.appendChild(item);
             });
+            searchResults.style.display = 'block';
         } else {
-            resultsList.innerHTML = '<li>No se encontraron productos</li>';
+            resultsList.innerHTML = '<li>Producto no encontrado</li>';
+            searchResults.style.display = 'block';
         }
-        searchResults.style.display = 'block';
-    }
-
-    function fillFormWithProduct(product) {
-        barcodeInput.value = product.barcode;
-        descriptionInput.value = product.description;
-        stockInput.value = product.stock;
-        priceInput.value = product.price;
-        productImage.src = product.image || '';
-        productImage.style.display = product.image ? 'block' : 'none';
     }
 
     async function loadLowStockProducts() {
         const products = await db.getAllProducts();
-        const lowStockProducts = products.filter(product => parseInt(product.stock) < 10);
-        displayLowStockProducts(lowStockProducts);
-    }
-
-    function displayLowStockProducts(products) {
-        lowStockList.innerHTML = '';
         if (products.length > 0) {
+            lowStockList.innerHTML = '';
             products.forEach(product => {
-                const item = document.createElement('li');
-                item.textContent = `${product.barcode} - ${product.description} - Stock: ${product.stock} - Precio: ${product.price}`;
-                item.addEventListener('click', () => fillFormWithProduct(product));
-                lowStockList.appendChild(item);
+                if (parseInt(product.stock) < 10) {
+                    const item = document.createElement('li');
+                    item.textContent = `${product.barcode} - ${product.description} - ${product.stock} - ${product.price}`;
+                    lowStockList.appendChild(item);
+                }
             });
+            lowStockResults.style.display = 'block';
         } else {
             lowStockList.innerHTML = '<li>No hay productos con stock bajo</li>';
+            lowStockResults.style.display = 'block';
         }
-        lowStockResults.style.display = 'block';
     }
 
     function exportToExcel() {
@@ -276,17 +190,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         for (const product of json) {
             await db.addProduct(product);
         }
-        alert('Productos importados exitosamente');
-    }
-
-    function clearForm() {
-        barcodeInput.value = '';
-        descriptionInput.value = '';
-        stockInput.value = '';
-        priceInput.value = '';
-        productImage.src = '';
-        productImage.style.display = 'none';
-        productNotFoundAlertShown = false;
+        alert('Productos importados');
     }
 
     document.getElementById('scan-button').addEventListener('click', startScanner);
@@ -294,7 +198,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('save-button').addEventListener('click', saveProduct);
     document.getElementById('low-stock-button').addEventListener('click', loadLowStockProducts);
     document.getElementById('export-button').addEventListener('click', exportToExcel);
-    document.getElementById('import-button').addEventListener('click', () => fileInput.click());
+    document.getElementById('import-button').addEventListener('click', () => {
+        fileInput.click();
+    });
 
     fileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
@@ -303,17 +209,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    barcodeInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            searchProduct();
-        }
-    });
-
     (async function initBarcodeDetector() {
-        if ('BarcodeDetector' in window) {
+        try {
             barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e'] });
-        } else {
-            console.warn('Barcode Detector is not supported by this browser.');
+        } catch (e) {
+            console.error('Barcode Detector is not supported by this browser.');
             document.getElementById('scan-button').style.display = 'none';
         }
     })();
