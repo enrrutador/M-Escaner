@@ -80,37 +80,29 @@ class ProductDatabase {
         });
     }
 
-async searchProducts(query) {
-    return new Promise((resolve, reject) => {
-        const normalizedQuery = normalizeText(query);
-        const transaction = this.db.transaction([this.storeName], 'readonly');
-        const objectStore = transaction.objectStore(this.storeName);
-        const products = [];
+    async searchProducts(query) {
+        return new Promise((resolve, reject) => {
+            const normalizedQuery = normalizeText(query);
+            const transaction = this.db.transaction([this.storeName], 'readonly');
+            const objectStore = transaction.objectStore(this.storeName);
+            const products = [];
 
-        objectStore.openCursor().onsuccess = (event) => {
-            const cursor = event.target.result;
-            if (cursor) {
-                const product = cursor.value;
-                if (normalizeText(product.description).includes(normalizedQuery)) {
-                    products.push(product);
+            objectStore.openCursor().onsuccess = (event) => {
+                const cursor = event.target.result;
+                if (cursor) {
+                    const product = cursor.value;
+                    if (normalizeText(product.description).includes(normalizedQuery)) {
+                        products.push(product);
+                    }
+                    cursor.continue();
+                } else {
+                    resolve(products);
                 }
-                cursor.continue();
-            } else {
-                resolve(products);
-            }
-        };
+            };
 
-        objectStore.openCursor().onerror = (event) => reject('Error searching products:', event.target.error);
-    });
-}
-
-function normalizeText(text) {
-    return text
-        .toLowerCase() // Convertir a minúsculas
-        .normalize('NFD') // Descomponer caracteres acentuados
-        .replace(/[\u0300-\u036f]/g, ''); // Eliminar acentos
-}
-
+            objectStore.openCursor().onerror = (event) => reject('Error searching products:', event.target.error);
+        });
+    }
 
     async getAllProducts() {
         return new Promise((resolve, reject) => {
@@ -121,6 +113,14 @@ function normalizeText(text) {
             request.onerror = (event) => reject('Error getting all products:', event.target.error);
         });
     }
+}
+
+// Función para normalizar texto
+function normalizeText(text) {
+    return text
+        .toLowerCase() // Convertir a minúsculas
+        .normalize('NFD') // Descomponer caracteres acentuados
+        .replace(/[\u0300-\u036f]/g, ''); // Eliminar acentos
 }
 
 document.addEventListener('DOMContentLoaded', () => {
