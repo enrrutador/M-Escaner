@@ -209,7 +209,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function searchInOpenFoodFacts(query) {
         try {
-            const response = await fetch(https://world.openfoodfacts.org/api/v0/product/${query}.json);
+            const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${query}.json`);
+
             const data = await response.json();
 
             if (data.product) {
