@@ -313,7 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
         csvContent += "Código de barras,Descripción,Rubro,Precio Costo,% IVA,% Utilidad,Precio Venta,Proveedor,Stock,Stock mínimo,Stock máximo,Control Stock,Activo\n";
         
         allProducts.forEach(product => {
-            csvContent += `${product.Código de barras},${product.Descripción},,,,,${product.Precio Venta},,,${product.Stock},,,,\n`;
+            csvContent += `${product.CodigodeBarras},${product.Descripción},,,,,${product.PrecioVenta},,,${product.Stock},,,,\n`;
         });
         
         const encodedUri = encodeURI(csvContent);
