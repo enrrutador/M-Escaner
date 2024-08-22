@@ -79,26 +79,50 @@ class ProductDatabase {
         });
     }
 
-    async searchProducts(query) {
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction([this.storeName], 'readonly');
-            const store = transaction.objectStore(this.storeName);
-            const results = [];
-            store.openCursor().onsuccess = event => {
-                const cursor = event.target.result;
-                if (cursor) {
-                    const product = cursor.value;
-                    if (product.barcode.includes(query) || product.description.toLowerCase().includes(query.toLowerCase())) {
-                        results.push(product);
-                    }
-                    cursor.continue();
-                } else {
-                    resolve(results);
-                }
-            };
-            store.onerror = event => reject('Error searching products:', event.target.error);
-        });
+async function searchProduct(query) {
+    // Verifica si es un código de barras o una descripción
+    const isBarcode = /^\d+$/.test(query);
+    
+    if (cache.has(query)) {
+        fillForm(cache.get(query));
+        return;
     }
+
+    let product;
+    if (isBarcode) {
+        product = await db.getProduct(query);
+    } else {
+        const results = await db.searchProducts(query);
+        if (results.length > 0) {
+            product = results[0];
+        }
+    }
+
+    if (!product) {
+        product = await searchInOpenFoodFacts(query);
+    }
+
+    if (product) {
+        cache.set(query, product);
+        fillForm(product);
+        productNotFoundAlertShown = false;
+    } else {
+        if (!productNotFoundAlertShown) {
+            alert('Producto no encontrado.');
+            productNotFoundAlertShown = true;
+        }
+    }
+}
+
+document.getElementById('search-button').addEventListener('click', () => {
+    const query = barcodeInput.value.trim() || descriptionInput.value.trim();
+    if (query) {
+        searchProduct(query);
+    } else {
+        alert('Por favor, introduce un código de barras o nombre de producto para buscar.');
+    }
+});
+
 
     async getAllProducts() {
         return new Promise((resolve, reject) => {
