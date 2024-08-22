@@ -1,4 +1,4 @@
- import { auth } from './firebaseConfig.js';
+import { auth } from './firebaseConfig.js';
 import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
 // Manejar el formulario de inicio de sesión
@@ -91,13 +91,13 @@ class ProductDatabase {
         });
     }
 
-  
     async searchProducts(query) {
         return new Promise((resolve, reject) => {
             const transaction = this.db.transaction([this.storeName], 'readonly');
             const store = transaction.objectStore(this.storeName);
             const results = [];
-            store.openCursor().onsuccess = event => {
+
+            store.openCursor().onsuccess = (event) => {
                 const cursor = event.target.result;
                 if (cursor) {
                     const product = cursor.value;
@@ -109,24 +109,8 @@ class ProductDatabase {
                     resolve(results);
                 }
             };
-            store.onerror = event => reject('Error searching products:', event.target.error);
-        });
-    }
-            request.onsuccess = (event) => {
-                const cursor = event.target.result;
-                if (cursor) {
-                    const normalizedDescription = normalizeText(cursor.value.description);
-                    const normalizedQuery = normalizeText(query);
-                    if (normalizedDescription.includes(normalizedQuery)) {
-                        results.push(cursor.value);
-                    }
-                    cursor.continue();
-                } else {
-                    resolve(results);
-                }
-            };
 
-            request.onerror = (event) => reject('Error buscando productos:', event.target.error);
+            store.onerror = (event) => reject('Error buscando productos:', event.target.error);
         });
     }
 }
@@ -188,7 +172,6 @@ document.addEventListener('DOMContentLoaded', () => {
         scannerContainer.style.display = 'none';
     }
 
-
     async function searchProduct(query) {
         if (cache.has(query)) {
             fillForm(cache.get(query));
@@ -242,7 +225,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return null;
     }
-
 
     function fillForm(product) {
         barcodeInput.value = product.barcode || '';
@@ -317,7 +299,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (lowStockProducts.length > 0) {
             lowStockProducts.forEach(product => {
                 const li = document.createElement('li');
-                li.textContent = ${product.description} (Código: ${product.barcode}) - Stock: ${product.stock};
+                li.textContent = `${product.description} (Código: ${product.barcode}) - Stock: ${product.stock}`;
                 lowStockList.appendChild(li);
             });
         } else {
@@ -365,7 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
         csvContent += "Código de Barras,Descripción,Stock,Precio,Imagen\n";
         
         allProducts.forEach(product => {
-            csvContent += ${product.barcode},${product.description},${product.stock},${product.price},${product.image}\n;
+            csvContent += `${product.barcode},${product.description},${product.stock},${product.price},${product.image}\n`;
         });
         
         const encodedUri = encodeURI(csvContent);
