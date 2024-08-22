@@ -56,7 +56,7 @@ class ProductDatabase {
             request.onupgradeneeded = (event) => {
                 const db = event.target.result;
                 const store = db.createObjectStore(this.storeName, { keyPath: 'barcode' });
-                store.createIndex('description', 'description', { unique: false });  // Añadir índice para descripción
+                store.createIndex('description', 'description', { unique: false });
             };
         });
     }
@@ -91,20 +91,28 @@ class ProductDatabase {
         });
     }
 
-    async searchProducts(query) {  // Nueva función para buscar productos por descripción
+    async searchProducts(query) {
         return new Promise((resolve, reject) => {
             const transaction = this.db.transaction([this.storeName], 'readonly');
             const store = transaction.objectStore(this.storeName);
-            const index = store.index('description');  // Usar el índice creado en la descripción
-            const request = index.getAll();
+            const index = store.index('description');
+            const request = index.openCursor();
+            const results = [];
 
             request.onsuccess = (event) => {
-                const results = event.target.result.filter(product => {
-                    const normalizedDescription = normalizeText(product.description);
-                    return normalizedDescription.includes(query);
-                });
-                resolve(results);
+                const cursor = event.target.result;
+                if (cursor) {
+                    const normalizedDescription = normalizeText(cursor.value.description);
+                    const normalizedQuery = normalizeText(query);
+                    if (normalizedDescription.includes(normalizedQuery)) {
+                        results.push(cursor.value);
+                    }
+                    cursor.continue();
+                } else {
+                    resolve(results);
+                }
             };
+
             request.onerror = (event) => reject('Error searching products:', event.target.error);
         });
     }
@@ -113,9 +121,9 @@ class ProductDatabase {
 // Función para normalizar texto
 function normalizeText(text) {
     return text
-        .toLowerCase() // Convertir a minúsculas
-        .normalize('NFD') // Descomponer caracteres acentuados
-        .replace(/[\u0300-\u036f]/g, ''); // Eliminar acentos
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -138,7 +146,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const cache = new Map();
 
-    // Función para empezar el escaneo de código de barras
     async function startScanner() {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
@@ -176,11 +183,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        let product = await db.getProduct(query);
+        let product;
 
-        if (!product && !isBarcode) {
-            const normalizedQuery = normalizeText(query);  // Normalizar la búsqueda
-            const results = await db.searchProducts(normalizedQuery);  // Buscar por descripción
+        if (isBarcode) {
+            product = await db.getProduct(query);
+        } else {
+            const results = await db.searchProducts(query);
             if (results.length > 0) {
                 product = results[0];
             }
@@ -269,84 +277,92 @@ document.addEventListener('DOMContentLoaded', () => {
             image: productImage.src || ''
         };
 
-        if (!product.barcode) {
-            alert('El código de barras es obligatorio.');
-            return;
-        }
-
         await db.addProduct(product);
-        alert('Producto guardado exitosamente.');
+        alert('Producto guardado correctamente.');
         clearForm();
     });
 
-    document.getElementById('delete-button').addEventListener('click', clearForm);
-
-    document.getElementById('export-button').addEventListener('click', async () => {
-        const products = await db.getAllProducts();
-        const csvContent = [
-            ['Código de Barras', 'Descripción', 'Stock', 'Precio', 'Imagen'],
-            ...products.map(product => [
-                product.barcode,
-                product.description,
-                product.stock,
-                product.price,
-                product.image
-            ])
-        ].map(e => e.join(",")).join("\n");
-
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute("download", "productos.csv");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    });
+    document.getElementById('clear-button').addEventListener('click', clearForm);
 
     function clearForm() {
         barcodeInput.value = '';
         descriptionInput.value = '';
         stockInput.value = '';
         priceInput.value = '';
+        productImage.src = '';
         productImage.style.display = 'none';
     }
 
     lowStockButton.addEventListener('click', async () => {
-        const lowStockProducts = (await db.getAllProducts()).filter(product => product.stock < 10);
-        lowStockList.innerHTML = '';
-        lowStockProducts.forEach(product => {
-            const listItem = document.createElement('li');
-            listItem.textContent = `${product.description} - Stock: ${product.stock}`;
-            lowStockList.appendChild(listItem);
-        });
+        if (lowStockResults.style.display === 'block') {
+            lowStockResults.style.display = 'none';
+            return;
+        }
 
-        lowStockResults.style.display = lowStockResults.style.display === 'block' ? 'none' : 'block';
+        lowStockList.innerHTML = '';
+        const allProducts = await db.getAllProducts();
+        const lowStockProducts = allProducts.filter(product => product.stock <= 5);
+
+        if (lowStockProducts.length > 0) {
+            lowStockProducts.forEach(product => {
+                const li = document.createElement('li');
+                li.textContent = `${product.description} (Código: ${product.barcode}) - Stock: ${product.stock}`;
+                lowStockList.appendChild(li);
+            });
+        } else {
+            lowStockList.innerHTML = '<li>No hay productos con stock bajo.</li>';
+        }
+
+        lowStockResults.style.display = 'block';
     });
 
-    fileInput.addEventListener('change', async (event) => {
-        const file = event.target.files[0];
+    document.getElementById('import-button').addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
         const reader = new FileReader();
 
         reader.onload = async (e) => {
-            const text = e.target.result;
-            const lines = text.split('\n').filter(Boolean);
-            const keys = lines[0].split(',');
+            const contents = e.target.result;
+            const lines = contents.split('\n').filter(line => line.trim() !== '');
+            
+            for (let line of lines) {
+                const [barcode, description, stock, price, image] = line.split(',');
 
-            for (let i = 1; i < lines.length; i++) {
-                const values = lines[i].split(',');
-                const product = keys.reduce((obj, key, index) => {
-                    obj[key] = values[index];
-                    return obj;
-                }, {});
+                const product = {
+                    barcode: barcode.trim(),
+                    description: description.trim(),
+                    stock: parseInt(stock.trim()) || 0,
+                    price: parseFloat(price.trim()) || 0,
+                    image: image.trim() || ''
+                };
 
                 await db.addProduct(product);
             }
 
-            alert('Importación completada.');
+            alert('Productos importados correctamente.');
         };
 
         reader.readAsText(file);
     });
-});
 
+    document.getElementById('export-button').addEventListener('click', async () => {
+        const allProducts = await db.getAllProducts();
+        let csvContent = "data:text/csv;charset=utf-8,";
+        csvContent += "Código de Barras,Descripción,Stock,Precio,Imagen\n";
+        
+        allProducts.forEach(product => {
+            csvContent += `${product.barcode},${product.description},${product.stock},${product.price},${product.image}\n`;
+        });
+        
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "productos_exportados.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+});
