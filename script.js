@@ -1,5 +1,6 @@
 import { auth } from './firebaseConfig.js';
 import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import * as XLSX from 'xlsx'; // Importa XLSX para usar en importación y exportación
 
 // Manejar el formulario de inicio de sesión
 const loginForm = document.getElementById('loginForm');
@@ -80,30 +81,6 @@ class ProductDatabase {
         });
     }
 
-    async searchProducts(query) {
-        return new Promise((resolve, reject) => {
-            const normalizedQuery = normalizeText(query);
-            const transaction = this.db.transaction([this.storeName], 'readonly');
-            const objectStore = transaction.objectStore(this.storeName);
-            const products = [];
-
-            objectStore.openCursor().onsuccess = (event) => {
-                const cursor = event.target.result;
-                if (cursor) {
-                    const product = cursor.value;
-                    if (normalizeText(product.description).includes(normalizedQuery)) {
-                        products.push(product);
-                    }
-                    cursor.continue();
-                } else {
-                    resolve(products);
-                }
-            };
-
-            objectStore.openCursor().onerror = (event) => reject('Error searching products:', event.target.error);
-        });
-    }
-
     async getAllProducts() {
         return new Promise((resolve, reject) => {
             const transaction = this.db.transaction([this.storeName], 'readonly');
@@ -137,11 +114,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const lowStockButton = document.getElementById('low-stock-button');
     const lowStockResults = document.getElementById('low-stock-results');
     const lowStockList = document.getElementById('low-stock-list');
+    const fileInput = document.getElementById('fileInput');
     let barcodeDetector;
     let productNotFoundAlertShown = false;
 
     const cache = new Map();
 
+    // Función para empezar el escaneo de código de barras
     async function startScanner() {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
@@ -284,12 +263,34 @@ document.addEventListener('DOMContentLoaded', () => {
         productImage.style.display = 'none';
     });
 
+    // Función de exportación de productos a Excel
     document.getElementById('export-button').addEventListener('click', async () => {
         const products = await db.getAllProducts();
         const worksheet = XLSX.utils.json_to_sheet(products);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Products');
         XLSX.writeFile(workbook, 'productos.xlsx');
+    });
+
+    // Función de importación de productos desde Excel
+    document.getElementById('import-button').addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const data = await file.arrayBuffer();
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheetName = workbook.SheetNames[0];
+            const sheet = workbook.Sheets[sheetName];
+            const json = XLSX.utils.sheet_to_json(sheet);
+
+            for (const product of json) {
+                await db.addProduct(product);
+            }
+            alert('Productos importados exitosamente');
+        }
     });
 
     lowStockButton.addEventListener('click', async () => {
@@ -309,5 +310,4 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
-
 
