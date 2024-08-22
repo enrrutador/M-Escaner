@@ -1,6 +1,6 @@
 import { auth } from './firebaseConfig.js';
 import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-import * as XLSX from 'https://cdn.sheetjs.com/xlsx-0.18.5/package/xlsx.full.min.js'; // Importa la biblioteca SheetJS
+import * as XLSX from 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; // Importa la biblioteca SheetJS
 
 // Manejar el formulario de inicio de sesión
 const loginForm = document.getElementById('loginForm');
@@ -334,3 +334,4 @@ document.addEventListener('DOMContentLoaded', () => {
         XLSX.writeFile(workbook, "productos_exportados.xlsx");
     });
 });
+
