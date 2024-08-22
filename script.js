@@ -1,4 +1,4 @@
-import { auth } from './firebaseConfig.js';
+ import { auth } from './firebaseConfig.js';
 import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
 // Manejar el formulario de inicio de sesión
@@ -37,7 +37,7 @@ onAuthStateChanged(auth, (user) => {
 class ProductDatabase {
     constructor() {
         this.dbName = 'MScannerDB';
-        this.dbVersion = 2; // Incrementa la versión para actualizar la base de datos si es necesario
+        this.dbVersion = 1;
         this.storeName = 'products';
         this.db = null;
     }
@@ -55,16 +55,8 @@ class ProductDatabase {
 
             request.onupgradeneeded = (event) => {
                 const db = event.target.result;
-
-                if (!db.objectStoreNames.contains(this.storeName)) {
-                    const store = db.createObjectStore(this.storeName, { keyPath: 'barcode' });
-                    store.createIndex('description', 'description', { unique: false });
-                } else {
-                    const store = event.oldVersion < 2 ? db.transaction.objectStore(this.storeName) : db.transaction.objectStore(this.storeName);
-                    if (!store.indexNames.contains('description')) {
-                        store.createIndex('description', 'description', { unique: false });
-                    }
-                }
+                const store = db.createObjectStore(this.storeName, { keyPath: 'barcode' });
+                store.createIndex('description', 'description', { unique: false });
             };
         });
     }
@@ -103,13 +95,6 @@ class ProductDatabase {
         return new Promise((resolve, reject) => {
             const transaction = this.db.transaction([this.storeName], 'readonly');
             const store = transaction.objectStore(this.storeName);
-            
-            // Verificar si el índice 'description' existe
-            if (!store.indexNames.contains('description')) {
-                reject('Índice "description" no encontrado.');
-                return;
-            }
-
             const index = store.index('description');
             const request = index.openCursor();
             const results = [];
@@ -227,7 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function searchInOpenFoodFacts(query) {
         try {
-            const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${query}.json`);
+            const response = await fetch(https://world.openfoodfacts.org/api/v0/product/${query}.json);
             const data = await response.json();
 
             if (data.product) {
@@ -321,7 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (lowStockProducts.length > 0) {
             lowStockProducts.forEach(product => {
                 const li = document.createElement('li');
-                li.textContent = `${product.description} (Código: ${product.barcode}) - Stock: ${product.stock}`;
+                li.textContent = ${product.description} (Código: ${product.barcode}) - Stock: ${product.stock};
                 lowStockList.appendChild(li);
             });
         } else {
@@ -369,7 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
         csvContent += "Código de Barras,Descripción,Stock,Precio,Imagen\n";
         
         allProducts.forEach(product => {
-            csvContent += `${product.barcode},${product.description},${product.stock},${product.price},${product.image}\n`;
+            csvContent += ${product.barcode},${product.description},${product.stock},${product.price},${product.image}\n;
         });
         
         const encodedUri = encodeURI(csvContent);
