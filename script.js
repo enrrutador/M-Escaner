@@ -207,30 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function searchInOpenFoodFacts(query) {
-        try {
-            const response = await fetch('https://world.openfoodfacts.org/api/v0/product/' + query + '.json');
-
-
-            const data = await response.json();
-
-            if (data.product) {
-                const product = {
-                    barcode: data.product.code,
-                    description: data.product.product_name || 'Sin nombre',
-                    stock: 0,
-                    price: 0,
-                    image: data.product.image_url || ''
-                };
-
-                await db.addProduct(product);
-                return product;
-            }
-        } catch (error) {
-            console.error('Error al buscar en OpenFoodFacts:', error);
-        }
-        return null;
-    }
+   
 
     function fillForm(product) {
         barcodeInput.value = product.barcode || '';
