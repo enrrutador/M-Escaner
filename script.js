@@ -33,8 +33,7 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-// Tu código existente aquí...
-
+// Clase para la base de datos de productos
 class ProductDatabase {
     constructor() {
         this.dbName = 'MScannerDB';
@@ -47,14 +46,14 @@ class ProductDatabase {
         return new Promise((resolve, reject) => {
             const request = indexedDB.open(this.dbName, this.dbVersion);
 
-            request.onerror = event => reject('Error opening database:', event.target.error);
+            request.onerror = (event) => reject('Error opening database:', event.target.error);
 
-            request.onsuccess = event => {
+            request.onsuccess = (event) => {
                 this.db = event.target.result;
                 resolve();
             };
 
-            request.onupgradeneeded = event => {
+            request.onupgradeneeded = (event) => {
                 const db = event.target.result;
                 db.createObjectStore(this.storeName, { keyPath: 'barcode' });
             };
@@ -64,8 +63,10 @@ class ProductDatabase {
     async addProduct(product) {
         return new Promise((resolve, reject) => {
             const transaction = this.db.transaction([this.storeName], 'readwrite');
-            transaction.objectStore(this.storeName).put(product).onsuccess = () => resolve();
-            transaction.onerror = event => reject('Error adding product:', event.target.error);
+            const request = transaction.objectStore(this.storeName).put(product);
+
+            request.onsuccess = () => resolve();
+            request.onerror = (event) => reject('Error adding product:', event.target.error);
         });
     }
 
@@ -74,63 +75,18 @@ class ProductDatabase {
             const transaction = this.db.transaction([this.storeName], 'readonly');
             const request = transaction.objectStore(this.storeName).get(barcode);
 
-            request.onsuccess = event => resolve(event.target.result);
-            request.onerror = event => reject('Error getting product:', event.target.error);
+            request.onsuccess = (event) => resolve(event.target.result);
+            request.onerror = (event) => reject('Error getting product:', event.target.error);
         });
     }
-
-async function searchProduct(query) {
-    // Verifica si es un código de barras o una descripción
-    const isBarcode = /^\d+$/.test(query);
-    
-    if (cache.has(query)) {
-        fillForm(cache.get(query));
-        return;
-    }
-
-    let product;
-    if (isBarcode) {
-        product = await db.getProduct(query);
-    } else {
-        const results = await db.searchProducts(query);
-        if (results.length > 0) {
-            product = results[0];
-        }
-    }
-
-    if (!product) {
-        product = await searchInOpenFoodFacts(query);
-    }
-
-    if (product) {
-        cache.set(query, product);
-        fillForm(product);
-        productNotFoundAlertShown = false;
-    } else {
-        if (!productNotFoundAlertShown) {
-            alert('Producto no encontrado.');
-            productNotFoundAlertShown = true;
-        }
-    }
-}
-
-document.getElementById('search-button').addEventListener('click', () => {
-    const query = barcodeInput.value.trim() || descriptionInput.value.trim();
-    if (query) {
-        searchProduct(query);
-    } else {
-        alert('Por favor, introduce un código de barras o nombre de producto para buscar.');
-    }
-});
-
 
     async getAllProducts() {
         return new Promise((resolve, reject) => {
             const transaction = this.db.transaction([this.storeName], 'readonly');
             const request = transaction.objectStore(this.storeName).getAll();
 
-            request.onsuccess = event => resolve(event.target.result);
-            request.onerror = event => reject('Error getting all products:', event.target.error);
+            request.onsuccess = (event) => resolve(event.target.result);
+            request.onerror = (event) => reject('Error getting all products:', event.target.error);
         });
     }
 }
@@ -146,8 +102,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const productImage = document.getElementById('product-image');
     const scannerContainer = document.getElementById('scanner-container');
     const video = document.getElementById('video');
-    const resultsList = document.getElementById('results-list');
-    const searchResults = document.getElementById('search-results');
     const lowStockButton = document.getElementById('low-stock-button');
     const lowStockResults = document.getElementById('low-stock-results');
     const lowStockList = document.getElementById('low-stock-list');
@@ -186,6 +140,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function searchProduct(query) {
+        const isBarcode = /^\d+$/.test(query);
+
         if (cache.has(query)) {
             fillForm(cache.get(query));
             return;
@@ -193,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let product = await db.getProduct(query);
 
-        if (!product) {
+        if (!product && !isBarcode) {
             const results = await db.searchProducts(query);
             if (results.length > 0) {
                 product = results[0];
@@ -266,11 +222,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('search-button').addEventListener('click', () => {
-        const query = barcodeInput.value.trim();
+        const query = barcodeInput.value.trim() || descriptionInput.value.trim();
         if (query) {
             searchProduct(query);
         } else {
-            alert('Por favor, introduce un código de barras para buscar.');
+            alert('Por favor, introduce un código de barras o nombre de producto para buscar.');
         }
     });
 
@@ -321,4 +277,3 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
-
