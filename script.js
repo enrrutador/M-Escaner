@@ -1,6 +1,5 @@
 import { auth } from './firebaseConfig.js';
 import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-import * as XLSX from 'xlsx'; // Importa XLSX para usar en importación y exportación
 
 // Manejar el formulario de inicio de sesión
 const loginForm = document.getElementById('loginForm');
