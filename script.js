@@ -1,38 +1,6 @@
 import { auth } from './firebaseConfig.js';
 import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
-// Manejar el formulario de inicio de sesión
-const loginForm = document.getElementById('loginForm');
-const loginContainer = document.getElementById('login-container');
-const appContainer = document.getElementById('app-container');
-const loginError = document.getElementById('login-error');
-
-loginForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    
-    signInWithEmailAndPassword(auth, email, password)
-        .then((userCredential) => {
-            console.log('Usuario autenticado:', userCredential.user);
-        })
-        .catch((error) => {
-            console.error('Error de autenticación:', error.code, error.message);
-            loginError.textContent = 'Error al iniciar sesión. Verifica tu correo y contraseña.';
-        });
-});
-
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        loginContainer.style.display = 'none';
-        appContainer.style.display = 'block';
-    } else {
-        loginContainer.style.display = 'block';
-        appContainer.style.display = 'none';
-    }
-});
-
 class ProductDatabase {
     constructor() {
         this.dbName = 'MScannerDB';
@@ -109,10 +77,14 @@ class ProductDatabase {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const db = new ProductDatabase();
-    db.init();
+    await db.init();
 
+    const loginForm = document.getElementById('loginForm');
+    const loginContainer = document.getElementById('login-container');
+    const appContainer = document.getElementById('app-container');
+    const loginError = document.getElementById('login-error');
     const barcodeInput = document.getElementById('barcode');
     const descriptionInput = document.getElementById('description');
     const stockInput = document.getElementById('stock');
@@ -129,7 +101,31 @@ document.addEventListener('DOMContentLoaded', () => {
     let barcodeDetector;
     let productNotFoundAlertShown = false;
 
-    const cache = new Map();
+    loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        
+        signInWithEmailAndPassword(auth, email, password)
+            .then((userCredential) => {
+                console.log('Usuario autenticado:', userCredential.user);
+            })
+            .catch((error) => {
+                console.error('Error de autenticación:', error.code, error.message);
+                loginError.textContent = 'Error al iniciar sesión. Verifica tu correo y contraseña.';
+            });
+    });
+
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            loginContainer.style.display = 'none';
+            appContainer.style.display = 'block';
+        } else {
+            loginContainer.style.display = 'block';
+            appContainer.style.display = 'none';
+        }
+    });
 
     async function startScanner() {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
@@ -260,17 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    document.getElementById('clear-button').addEventListener('click', () => {
-    document.getElementById('barcode').value = '';
-    document.getElementById('description').value = '';
-    document.getElementById('stock').value = '';
-    document.getElementById('price').value = '';
-    document.getElementById('product-image').src = '';
-    document.getElementById('product-image').style.display = 'none';
-});
-
     (async function initBarcodeDetector() {
         barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e'] });
     })();
 });
-
