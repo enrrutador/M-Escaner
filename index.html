@@ -33,6 +33,7 @@
             <input type="text" id="description" placeholder="Descripción del Producto">
             <input type="number" id="stock" placeholder="Stock">
             <input type="number" id="price" placeholder="Precio de Venta">
+             <input type="file" id="fileInput" accept=".xlsx, .xls" style="display: none;" />
         </div>
         
         <div class="action-section">
@@ -40,6 +41,9 @@
             <button id="clear-button" class="action-button">Borrar</button>
             <button id="export-button" class="action-button">Exportar a Excel</button>
             <button id="low-stock-button" class="action-button low-stock-button">Ver Productos con Stock Bajo</button>
+            <button id="import-button" class="action-button">Importar</button>
+           
+
         </div>
         
         <div id="product-image-container" class="image-section">
@@ -64,6 +68,7 @@
 
     <!-- Incluye la biblioteca XLSX antes del script principal -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    
     
     <!-- Tu configuración de Firebase -->
     <script type="module" src="firebaseConfig.js"></script>
