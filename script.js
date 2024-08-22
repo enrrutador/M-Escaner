@@ -13,9 +13,6 @@ loginForm.addEventListener('submit', (e) => {
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
     
-    console.log('Email:', email);
-    console.log('Password:', password);
-
     signInWithEmailAndPassword(auth, email, password)
         .then((userCredential) => {
             console.log('Usuario autenticado:', userCredential.user);
@@ -252,12 +249,19 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('save-button').addEventListener('click', saveProduct);
     document.getElementById('low-stock-button').addEventListener('click', loadProducts);
     document.getElementById('export-button').addEventListener('click', exportToExcel);
-    fileInput.addEventListener('change', (e) => importFromExcel(e.target.files[0]));
+    document.getElementById('import-button').addEventListener('click', () => {
+        fileInput.click();
+    });
 
-    if ('BarcodeDetector' in window) {
-        barcodeDetector = new BarcodeDetector({ formats: ['qr_code', 'ean_13'] });
-    } else {
-        alert('BarcodeDetector no está disponible en este navegador.');
-    }
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            importFromExcel(file);
+        }
+    });
+
+    (async function initBarcodeDetector() {
+        barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e'] });
+    })();
 });
 
