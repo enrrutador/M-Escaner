@@ -1,4 +1,4 @@
-import { auth } from './firebaseConfig.js';
+{ auth } from './firebaseConfig.js';
 import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
 // Manejar el formulario de inicio de sesión
@@ -141,7 +141,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const lowStockResults = document.getElementById('low-stock-results');
     const lowStockList = document.getElementById('low-stock-list');
     const fileInput = document.getElementById('fileInput');
-    const exportButton = document.getElementById('export-button');
     let barcodeDetector;
     let productNotFoundAlertShown = false;
 
@@ -209,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function searchInOpenFoodFacts(query) {
         try {
-            const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${query}.json`);
+            const response = await fetch(https://world.openfoodfacts.org/api/v0/product/${query}.json);
             const data = await response.json();
 
             if (data.product) {
@@ -291,87 +290,75 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     lowStockButton.addEventListener('click', async () => {
-        if (lowStockResults.style.display === 'none') {
-            const products = await db.getAllProducts();
-            const lowStockProducts = products.filter(p => p.stock < 5);
-
-            lowStockList.innerHTML = '';
-            lowStockProducts.forEach(p => {
-                const listItem = document.createElement('li');
-                listItem.textContent = `${p.description} - Stock: ${p.stock}`;
-                lowStockList.appendChild(listItem);
-            });
-
-            lowStockResults.style.display = 'block';
-        } else {
+        if (lowStockResults.style.display === 'block') {
             lowStockResults.style.display = 'none';
+            return;
         }
+
+        lowStockList.innerHTML = '';
+        const allProducts = await db.getAllProducts();
+        const lowStockProducts = allProducts.filter(product => product.stock <= 5);
+
+        if (lowStockProducts.length > 0) {
+            lowStockProducts.forEach(product => {
+                const li = document.createElement('li');
+                li.textContent = ${product.description} (Código: ${product.barcode}) - Stock: ${product.stock};
+                lowStockList.appendChild(li);
+            });
+        } else {
+            lowStockList.innerHTML = '<li>No hay productos con stock bajo.</li>';
+        }
+
+        lowStockResults.style.display = 'block';
     });
 
-    fileInput.addEventListener('change', handleFileUpload);
+    document.getElementById('import-button').addEventListener('click', () => {
+        fileInput.click();
+    });
 
-    function handleFileUpload(event) {
-        const file = event.target.files[0];
+    fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
         const reader = new FileReader();
 
-        reader.onload = function(event) {
-            const csvData = event.target.result;
-            parseAndImportCSV(csvData);
+        reader.onload = async (e) => {
+            const contents = e.target.result;
+            const lines = contents.split('\n').filter(line => line.trim() !== '');
+            
+            for (let line of lines) {
+                const [barcode, description, stock, price, image] = line.split(',');
+
+                const product = {
+                    barcode: barcode.trim(),
+                    description: description.trim(),
+                    stock: parseInt(stock.trim()) || 0,
+                    price: parseFloat(price.trim()) || 0,
+                    image: image.trim() || ''
+                };
+
+                await db.addProduct(product);
+            }
+
+            alert('Productos importados correctamente.');
         };
 
         reader.readAsText(file);
-    }
+    });
 
-    function parseAndImportCSV(csvData) {
-        const rows = csvData.split('\n');
-        const header = rows[0].split(',');
-
-        rows.slice(1).forEach(row => {
-            const values = row.split(',');
-
-            const product = {
-                barcode: values[header.indexOf('Código de barras')],
-                description: values[header.indexOf('Descripción')],
-                stock: parseInt(values[header.indexOf('Stock')]) || 0,
-                price: parseFloat(values[header.indexOf('Precio Venta')]) || 0
-            };
-
-            db.addProduct(product).catch(error => console.error('Error añadiendo producto desde CSV:', error));
+    document.getElementById('export-button').addEventListener('click', async () => {
+        const allProducts = await db.getAllProducts();
+        let csvContent = "data:text/csv;charset=utf-8,";
+        csvContent += "Código de Barras,Descripción,Stock,Precio,Imagen\n";
+        
+        allProducts.forEach(product => {
+            csvContent += ${product.barcode},${product.description},${product.stock},${product.price},${product.image}\n;
         });
-
-        alert('Productos importados desde el archivo CSV.');
-    }
-
-    function exportToCSV(products) {
-        const header = ['Código de barras', 'Descripción', 'Stock', 'Precio Venta'];
-        const rows = products.map(p => [
-            p.barcode,
-            p.description,
-            p.stock,
-            p.price
-        ]);
-
-        const csvContent = [
-            header.join(','), 
-            ...rows.map(e => e.join(','))
-        ].join('\n');
-
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-
-        link.setAttribute('href', url);
-        link.setAttribute('download', 'productos.csv');
-        link.style.visibility = 'hidden';
-
+        
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "productos_exportados.csv");
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-    }
-
-    exportButton.addEventListener('click', async () => {
-        const products = await db.getAllProducts();
-        exportToCSV(products);
     });
 });
-
