@@ -276,6 +276,7 @@ document.addEventListener('DOMContentLoaded', () => {
             lowStockProducts.forEach(product => {
                 const li = document.createElement('li');
                 li.textContent = `${product.description} (Código: ${product.barcode}) - Stock: ${product.stock}`;
+
                 lowStockList.appendChild(li);
             });
         } else {
