@@ -96,9 +96,15 @@ class ProductDatabase {
             const transaction = this.db.transaction([this.storeName], 'readonly');
             const store = transaction.objectStore(this.storeName);
             const index = store.index('description');  // Usar el índice creado en la descripción
-            const request = index.getAll(query);
+            const request = index.getAll();
 
-            request.onsuccess = (event) => resolve(event.target.result);
+            request.onsuccess = (event) => {
+                const results = event.target.result.filter(product => {
+                    const normalizedDescription = normalizeText(product.description);
+                    return normalizedDescription.includes(query);
+                });
+                resolve(results);
+            };
             request.onerror = (event) => reject('Error searching products:', event.target.error);
         });
     }
@@ -263,70 +269,84 @@ document.addEventListener('DOMContentLoaded', () => {
             image: productImage.src || ''
         };
 
+        if (!product.barcode) {
+            alert('El código de barras es obligatorio.');
+            return;
+        }
+
         await db.addProduct(product);
-        alert('Producto guardado correctamente.');
+        alert('Producto guardado exitosamente.');
         clearForm();
     });
 
-    document.getElementById('clear-button').addEventListener('click', clearForm);
+    document.getElementById('delete-button').addEventListener('click', clearForm);
+
+    document.getElementById('export-button').addEventListener('click', async () => {
+        const products = await db.getAllProducts();
+        const csvContent = [
+            ['Código de Barras', 'Descripción', 'Stock', 'Precio', 'Imagen'],
+            ...products.map(product => [
+                product.barcode,
+                product.description,
+                product.stock,
+                product.price,
+                product.image
+            ])
+        ].map(e => e.join(",")).join("\n");
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", "productos.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
 
     function clearForm() {
         barcodeInput.value = '';
         descriptionInput.value = '';
         stockInput.value = '';
         priceInput.value = '';
-        productImage.src = '';
         productImage.style.display = 'none';
     }
 
     lowStockButton.addEventListener('click', async () => {
-        if (lowStockResults.style.display === 'block') {
-            lowStockResults.style.display = 'none';
-            return;
-        }
-
+        const lowStockProducts = (await db.getAllProducts()).filter(product => product.stock < 10);
         lowStockList.innerHTML = '';
-        const allProducts = await db.getAllProducts();
-        const lowStockProducts = allProducts.filter(product => product.stock <= 5);
+        lowStockProducts.forEach(product => {
+            const listItem = document.createElement('li');
+            listItem.textContent = `${product.description} - Stock: ${product.stock}`;
+            lowStockList.appendChild(listItem);
+        });
 
-        if (lowStockProducts.length > 0) {
-            lowStockProducts.forEach(product => {
-                const li = document.createElement('li');
-                li.textContent = `${product.description} (Código: ${product.barcode}) - Stock: ${product.stock}`;
-                lowStockList.appendChild(li);
-            });
-        } else {
-            lowStockList.innerHTML = '<li>No hay productos con stock bajo.</li>';
-        }
-
-        lowStockResults.style.display = 'block';
+        lowStockResults.style.display = lowStockResults.style.display === 'block' ? 'none' : 'block';
     });
 
-    fileInput.addEventListener('change', async (e) => {
-        const file = e.target.files[0];
+    fileInput.addEventListener('change', async (event) => {
+        const file = event.target.files[0];
         const reader = new FileReader();
 
         reader.onload = async (e) => {
-            const contents = e.target.result;
-            const lines = contents.split('\n').filter(line => line.trim() !== '');
-            
-            for (let line of lines) {
-                const [barcode, description, stock, price, image] = line.split(',');
+            const text = e.target.result;
+            const lines = text.split('\n').filter(Boolean);
+            const keys = lines[0].split(',');
 
-                const product = {
-                    barcode: barcode.trim(),
-                    description: description.trim(),
-                    stock: parseInt(stock.trim()) || 0,
-                    price: parseFloat(price.trim()) || 0,
-                    image: image.trim() || ''
-                };
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',');
+                const product = keys.reduce((obj, key, index) => {
+                    obj[key] = values[index];
+                    return obj;
+                }, {});
 
                 await db.addProduct(product);
             }
 
-            alert('Productos importados correctamente.');
+            alert('Importación completada.');
         };
 
         reader.readAsText(file);
     });
 });
+
