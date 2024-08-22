@@ -260,6 +260,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    document.getElementById('clear-button').addEventListener('click', () => {
+    document.getElementById('barcode').value = '';
+    document.getElementById('description').value = '';
+    document.getElementById('stock').value = '';
+    document.getElementById('price').value = '';
+    document.getElementById('product-image').src = '';
+    document.getElementById('product-image').style.display = 'none';
+});
+
     (async function initBarcodeDetector() {
         barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e'] });
     })();
