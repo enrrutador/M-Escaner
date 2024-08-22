@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>M-Scanner 2.0</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
 </head>
 <body>
     <div id="login-container" class="login-container">
@@ -37,8 +36,8 @@
         
         <div class="action-section">
             <button id="save-button" class="action-button">Guardar</button>
-            <button id="export-button" class="action-button">Exportar</button>
-            <button id="import-button" class="action-button">Importar</button>
+            <button id="clear-button" class="action-button">Borrar</button>
+            <button id="export-button" class="action-button">Exportar a Excel</button>
             <button id="low-stock-button" class="action-button low-stock-button">Ver Productos con Stock Bajo</button>
         </div>
         
@@ -61,10 +60,15 @@
             <ul id="low-stock-list"></ul>
         </div>
     </div>
-    <input type="file" id="fileInput" accept=".xlsx, .xls" style="display: none;" />
-    <script src="https://unpkg.com/@zxing/library@0.19.1"></script>
+
+    <!-- Incluye la biblioteca XLSX antes del script principal -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    
+    <!-- Tu configuración de Firebase -->
     <script type="module" src="firebaseConfig.js"></script>
+    
+    <!-- Tu script principal -->
     <script type="module" src="script.js"></script>
 </body>
 </html>
+
