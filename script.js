@@ -337,22 +337,38 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 let importedCount = 0;
                 for (let product of products) {
-                    // Verificar si el producto tiene un código de barras válido
-                    const barcode = product['Código de Barras'] || product['Codigo de Barras'] || product['codigo de barras'] || product['barcode'];
-                    if (!barcode) {
+                    console.log('Procesando producto:', product);
+                    
+                    // Función auxiliar para buscar la clave correcta
+                    const findKey = (possibleKeys) => {
+                        return possibleKeys.find(key => product.hasOwnProperty(key));
+                    };
+
+                    // Buscar las claves correctas
+                    const barcodeKey = findKey(['Código de barras', 'Codigo de Barras', 'codigo de barras', 'barcode']);
+                    const descriptionKey = findKey(['Descripción', 'Descripcion', 'descripcion', 'description']);
+                    const stockKey = findKey(['Stock', 'stock']);
+                    const priceKey = findKey(['Precio Costo', 'Precio', 'precio', 'price']);
+                    const imageKey = findKey(['Imagen', 'imagen', 'image']);
+
+                    if (!barcodeKey) {
                         console.warn('Producto sin código de barras:', product);
                         continue;
                     }
 
                     try {
-                        await db.addProduct({
-                            barcode: barcode.toString(),
-                            description: product['Descripción'] || product['Descripcion'] || product['descripcion'] || product['description'] || '',
-                            stock: parseInt(product['Stock'] || product['stock'] || '0'),
-                            price: parseFloat(product['Precio'] || product['precio'] || product['price'] || '0'),
-                            image: product['Imagen'] || product['imagen'] || product['image'] || ''
-                        });
+                        const newProduct = {
+                            barcode: product[barcodeKey].toString(),
+                            description: product[descriptionKey] || '',
+                            stock: parseInt(product[stockKey] || '0'),
+                            price: parseFloat(product[priceKey] || '0'),
+                            image: product[imageKey] || ''
+                        };
+
+                        console.log('Intentando agregar producto:', newProduct);
+                        await db.addProduct(newProduct);
                         importedCount++;
+                        console.log('Producto agregado con éxito');
                     } catch (error) {
                         console.error('Error al agregar producto:', product, error);
                     }
@@ -389,4 +405,3 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         XLSX.writeFile(workbook, "productos_exportados.xlsx");
     });
-});
