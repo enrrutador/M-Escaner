@@ -3,7 +3,7 @@
     --secondary-color: #0277BD;
     --accent-color: #FF5722;
     --text-color: #FFFFFF;
-    --background-color: rgba(236, 239, 241, 0.1); /* Fondo más transparente */
+    --background-color: rgba(236, 239, 241, 0.6); /* Fondo más transparente */
 }
 
 body, html {
