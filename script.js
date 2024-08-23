@@ -141,6 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const lowStockResults = document.getElementById('low-stock-results');
     const lowStockList = document.getElementById('low-stock-list');
     const fileInput = document.getElementById('fileInput');
+    const exportButton = document.getElementById('export-button');
     let barcodeDetector;
     let productNotFoundAlertShown = false;
 
@@ -277,100 +278,130 @@ document.addEventListener('DOMContentLoaded', () => {
             image: productImage.src || ''
         };
 
-        try {
-            await db.addProduct(product);
-            alert('Producto guardado correctamente.');
-        } catch (error) {
-            console.error('Error al guardar producto:', error);
-            alert('Error al guardar el producto. Inténtalo nuevamente.');
-        }
+        await db.addProduct(product);
+        cache.set(product.barcode, product);
+        alert('Producto guardado correctamente.');
     });
 
     lowStockButton.addEventListener('click', async () => {
-        if (lowStockResults.style.display === 'none') {
-            const products = await db.getAllProducts();
-            const lowStockProducts = products.filter(p => p.stock <= 5);
-
-            lowStockList.innerHTML = '';
-
-            lowStockProducts.forEach(product => {
-                const listItem = document.createElement('li');
-                listItem.textContent = `${product.description} - Stock: ${product.stock}`;
-                lowStockList.appendChild(listItem);
-            });
-
-            lowStockResults.style.display = 'block';
-        } else {
+        if (lowStockResults.style.display === 'block') {
             lowStockResults.style.display = 'none';
+            lowStockList.innerHTML = '';
+            return;
+        }
+
+        const products = await db.getAllProducts();
+        const lowStockProducts = products.filter(product => product.stock < 10);
+
+        if (lowStockProducts.length > 0) {
+            lowStockResults.style.display = 'block';
+            lowStockList.innerHTML = lowStockProducts.map(product => `
+                <li>${product.description} (Stock: ${product.stock})</li>
+            `).join('');
+        } else {
+            alert('No hay productos con stock bajo.');
         }
     });
 
     fileInput.addEventListener('change', async (event) => {
         const file = event.target.files[0];
-        if (!file) {
-            alert('Por favor selecciona un archivo para importar.');
-            return;
-        }
-
-        const fileType = file.name.split('.').pop().toLowerCase();
-
-        if (fileType === 'csv') {
-            importFromCSV(file);
-        } else if (fileType === 'xlsx') {
-            importFromXLSX(file);
-        } else {
-            alert('Tipo de archivo no soportado. Por favor selecciona un archivo .csv o .xlsx.');
+        if (file) {
+            const extension = file.name.split('.').pop().toLowerCase();
+            if (extension === 'csv') {
+                await handleFile(file);
+            } else if (extension === 'xlsx') {
+                await handleXLSX(file);
+            } else {
+                alert('Formato de archivo no soportado. Por favor, usa un archivo .csv o .xlsx.');
+            }
+            fileInput.value = ''; // Limpiar el input después de manejar el archivo
         }
     });
 
-    async function importFromCSV(file) {
-        const reader = new FileReader();
-        reader.onload = async (event) => {
-            const csvData = event.target.result;
-            const lines = csvData.split('\n');
-            const products = [];
+    exportButton.addEventListener('click', async () => {
+        const products = await db.getAllProducts();
+        const csvContent = generateCSVContent(products);
 
-            lines.forEach((line, index) => {
-                if (index === 0) return; // Skip header line
-                const [barcode, description, , , , , , , stock] = line.split(',');
-                if (barcode && description) {
-                    products.push({ barcode, description, stock: parseInt(stock, 10) || 0, price: 0 });
-                }
-            });
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'productos.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
 
-            for (const product of products) {
-                await db.addProduct(product);
-            }
+    function generateCSVContent(products) {
+        const headers = [
+            'Código de barras', 'Descripción', 'Rubro', 'Precio Costo',
+            '% IVA', '% Utilidad', 'Precio Venta', 'Proveedor',
+            'Stock', 'Stock mínimo', 'Stock máximo', 'Control Stock', 'Activo'
+        ];
+        const rows = products.map(product => [
+            product.barcode || '',
+            product.description || '',
+            '', '', '', '', // Rubro, Precio Costo, % IVA, % Utilidad
+            product.price || '',
+            '', '', '', '', '', '' // Proveedor, Stock mínimo, Stock máximo, Control Stock, Activo
+        ]);
 
-            alert('Productos importados desde CSV correctamente.');
-        };
-        reader.readAsText(file);
+        const csvContent = [
+            headers.join(';'),
+            ...rows.map(row => row.join(';'))
+        ].join('\n');
+
+        return csvContent;
     }
 
-    async function importFromXLSX(file) {
+    async function handleXLSX(file) {
         const reader = new FileReader();
         reader.onload = async (event) => {
             const data = new Uint8Array(event.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
-            const sheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[sheetName];
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
             const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-            const products = [];
 
-            jsonData.forEach((row, index) => {
-                if (index === 0) return; // Skip header row
-                const [barcode, description, , , , , , , stock] = row;
-                if (barcode && description) {
-                    products.push({ barcode, description, stock: parseInt(stock, 10) || 0, price: 0 });
-                }
+            const products = jsonData.slice(1).map(row => ({
+                barcode: row[0]?.toString() || '',
+                description: row[1] || '',
+                stock: parseInt(row[8]) || 0,
+                price: parseFloat(row[6]) || 0,
+                image: '' // No se maneja imagen en la importación de XLSX
+            }));
+
+            for (const product of products) {
+                await db.addProduct(product);
+                cache.set(product.barcode, product);
+            }
+            alert('Productos importados correctamente desde XLSX.');
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    async function handleFile(file) {
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            const text = event.target.result;
+            const products = text.split('\n').slice(1).map(line => {
+                const [barcode, description, , , , , price, , stock] = line.split(';');
+                return {
+                    barcode: barcode?.trim() || '',
+                    description: description?.trim() || '',
+                    stock: parseInt(stock) || 0,
+                    price: parseFloat(price) || 0,
+                    image: '' // No se maneja imagen en la importación de CSV
+                };
             });
 
             for (const product of products) {
                 await db.addProduct(product);
+                cache.set(product.barcode, product);
             }
-
-            alert('Productos importados desde XLSX correctamente.');
+            alert('Productos importados correctamente desde CSV.');
         };
-        reader.readAsArrayBuffer(file);
+        reader.readAsText(file);
     }
 });
+
