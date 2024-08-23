@@ -64,7 +64,8 @@ class ProductDatabase {
     async addProduct(product) {
         return new Promise((resolve, reject) => {
             const transaction = this.db.transaction([this.storeName], 'readwrite');
-            const request = transaction.objectStore(this.storeName).put(product);
+            const store = transaction.objectStore(this.storeName);
+            const request = store.put(product);
 
             request.onsuccess = () => resolve();
             request.onerror = (event) => reject('Error adding product:', event.target.error);
@@ -126,9 +127,9 @@ function normalizeText(text) {
         .replace(/[\u0300-\u036f]/g, '');
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const db = new ProductDatabase();
-    db.init();
+    await db.init();
 
     const barcodeInput = document.getElementById('barcode');
     const descriptionInput = document.getElementById('description');
@@ -332,12 +333,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const worksheet = workbook.Sheets[firstSheetName];
                 const products = XLSX.utils.sheet_to_json(worksheet);
 
-                console.log('Productos leídos del archivo:', products); // Para depuración
+                console.log('Productos leídos del archivo:', products);
 
+                let importedCount = 0;
                 for (let product of products) {
                     if (!product['Código de Barras']) {
                         console.warn('Producto sin código de barras:', product);
-                        continue; // Salta este producto y continúa con el siguiente
+                        continue;
                     }
 
                     try {
@@ -348,12 +350,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             price: parseFloat(product['Precio']) || 0,
                             image: product['Imagen'] || ''
                         });
+                        importedCount++;
                     } catch (error) {
                         console.error('Error al agregar producto:', product, error);
                     }
                 }
 
-                alert('Productos importados correctamente.');
+                alert(`Importación completada. ${importedCount} productos importados correctamente.`);
             } catch (error) {
                 console.error('Error durante la importación:', error);
                 alert('Error durante la importación. Por favor, revisa la consola para más detalles.');
