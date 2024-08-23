@@ -1,5 +1,32 @@
 import { auth } from './firebaseConfig.js';
 import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
+
+// Inicializar Firestore
+const db = getFirestore();
+
+// Función para obtener o generar un ID de dispositivo único
+function getDeviceId() {
+    let deviceId = localStorage.getItem('deviceId');
+    if (!deviceId) {
+        deviceId = crypto.randomUUID();  // Generar un UUID
+        localStorage.setItem('deviceId', deviceId);
+    }
+    return deviceId;
+}
+
+// Función para vincular el ID del dispositivo al usuario en Firestore
+async function linkDeviceToUser(userId, deviceId) {
+    const userRef = doc(db, 'users', userId);
+    await setDoc(userRef, { deviceId }, { merge: true });
+}
+
+// Función para obtener el ID del dispositivo vinculado desde Firestore
+async function getUserDevice(userId) {
+    const userRef = doc(db, 'users', userId);
+    const userDoc = await getDoc(userRef);
+    return userDoc.exists() ? userDoc.data() : null;
+}
 
 // Manejar el formulario de inicio de sesión
 const loginForm = document.getElementById('loginForm');
@@ -12,10 +39,28 @@ loginForm.addEventListener('submit', (e) => {
     
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
-    
+    const deviceId = getDeviceId();
+
     signInWithEmailAndPassword(auth, email, password)
-        .then((userCredential) => {
-            console.log('Usuario autenticado:', userCredential.user);
+        .then(async (userCredential) => {
+            const user = userCredential.user;
+
+            // Recuperar el ID del dispositivo vinculado desde Firestore
+            const userDoc = await getUserDevice(user.uid);
+
+            if (userDoc && userDoc.deviceId && userDoc.deviceId !== deviceId) {
+                // Si hay una discrepancia, cerrar sesión y mostrar un error
+                await auth.signOut();
+                alert('Este usuario ya está vinculado a otro dispositivo.');
+                return;
+            }
+
+            // Vincular el ID del dispositivo actual con la cuenta del usuario si aún no está vinculado
+            if (!userDoc || !userDoc.deviceId) {
+                await linkDeviceToUser(user.uid, deviceId);
+            }
+
+            console.log('Usuario autenticado:', user);
         })
         .catch((error) => {
             console.error('Error de autenticación:', error.code, error.message);
@@ -405,3 +450,4 @@ document.addEventListener('DOMContentLoaded', async () => {
         XLSX.writeFile(workbook, "productos_exportados.xlsx");
     });
 });
+
