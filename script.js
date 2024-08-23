@@ -405,3 +405,4 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         XLSX.writeFile(workbook, "productos_exportados.xlsx");
     });
+});
