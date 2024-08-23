@@ -20,7 +20,7 @@ body, html {
     display: flex;
     justify-content: center;
     align-items: center;
-    filter: brightness(0.5); /* Reduce la intensidad de la imagen */
+    filter: background brightness(0.5); /* Reduce la intensidad de la imagen */
 }
 
 .container, .login-container {
