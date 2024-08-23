@@ -325,23 +325,44 @@ document.addEventListener('DOMContentLoaded', () => {
         const reader = new FileReader();
 
         reader.onload = async (e) => {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, {type: 'array'});
-            const firstSheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[firstSheetName];
-            const products = XLSX.utils.sheet_to_json(worksheet);
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const products = XLSX.utils.sheet_to_json(worksheet);
 
-            for (let product of products) {
-                await db.addProduct({
-                    barcode: product['Código de Barras'].toString(),
-                    description: product['Descripción'],
-                    stock: parseInt(product['Stock']) || 0,
-                    price: parseFloat(product['Precio']) || 0,
-                    image: product['Imagen'] || ''
-                });
+                console.log('Productos leídos del archivo:', products); // Para depuración
+
+                for (let product of products) {
+                    if (!product['Código de Barras']) {
+                        console.warn('Producto sin código de barras:', product);
+                        continue; // Salta este producto y continúa con el siguiente
+                    }
+
+                    try {
+                        await db.addProduct({
+                            barcode: product['Código de Barras'].toString(),
+                            description: product['Descripción'] || '',
+                            stock: parseInt(product['Stock']) || 0,
+                            price: parseFloat(product['Precio']) || 0,
+                            image: product['Imagen'] || ''
+                        });
+                    } catch (error) {
+                        console.error('Error al agregar producto:', product, error);
+                    }
+                }
+
+                alert('Productos importados correctamente.');
+            } catch (error) {
+                console.error('Error durante la importación:', error);
+                alert('Error durante la importación. Por favor, revisa la consola para más detalles.');
             }
+        };
 
-            alert('Productos importados correctamente.');
+        reader.onerror = (error) => {
+            console.error('Error al leer el archivo:', error);
+            alert('Error al leer el archivo. Por favor, intenta de nuevo.');
         };
 
         reader.readAsArrayBuffer(file);
