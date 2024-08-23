@@ -1,6 +1,5 @@
 import { auth } from './firebaseConfig.js';
 import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-import * as XLSX from 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
 
 // Manejar el formulario de inicio de sesión
 const loginForm = document.getElementById('loginForm');
@@ -191,6 +190,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        if (!product) {
+            product = await searchInOpenFoodFacts(query);
+        }
+
         if (product) {
             cache.set(query, product);
             fillForm(product);
@@ -201,6 +204,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 productNotFoundAlertShown = true;
             }
         }
+    }
+
+    async function searchInOpenFoodFacts(query) {
+        try {
+            const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${query}.json`);
+            const data = await response.json();
+
+            if (data.product) {
+                const product = {
+                    barcode: data.product.code,
+                    description: data.product.product_name || 'Sin nombre',
+                    stock: 0,
+                    price: 0,
+                    image: data.product.image_url || ''
+                };
+
+                await db.addProduct(product);
+                return product;
+            }
+        } catch (error) {
+            console.error('Error al buscar en OpenFoodFacts:', error);
+        }
+        return null;
     }
 
     function fillForm(product) {
@@ -249,13 +275,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
         await db.addProduct(product);
         alert('Producto guardado correctamente.');
+        clearForm();
     });
 
+    document.getElementById('clear-button').addEventListener('click', clearForm);
+
+    function clearForm() {
+        barcodeInput.value = '';
+        descriptionInput.value = '';
+        stockInput.value = '';
+        priceInput.value = '';
+        productImage.src = '';
+        productImage.style.display = 'none';
+    }
+
     lowStockButton.addEventListener('click', async () => {
+        if (lowStockResults.style.display === 'block') {
+            lowStockResults.style.display = 'none';
+            return;
+        }
+
+        lowStockList.innerHTML = '';
         const allProducts = await db.getAllProducts();
         const lowStockProducts = allProducts.filter(product => product.stock <= 5);
-
-        lowStockList.innerHTML = ''; // Limpiar la lista antes de agregar elementos
 
         if (lowStockProducts.length > 0) {
             lowStockProducts.forEach(product => {
@@ -276,55 +318,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
     fileInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
-        if (!file) return;
-
         const reader = new FileReader();
 
         reader.onload = async (e) => {
             const contents = e.target.result;
-            try {
-                const workbook = XLSX.read(contents, { type: 'array' });
-                const sheetNames = workbook.SheetNames;
-                const products = XLSX.utils.sheet_to_json(workbook.Sheets[sheetNames[0]]);
+            const lines = contents.split('\n').filter(line => line.trim() !== '');
+            
+            for (let line of lines) {
+                const [barcode, description, stock, price, image] = line.split(',');
 
-                for (let product of products) {
-                    const { 'Código de Barras': barcode, Descripción: description, Stock: stock, Precio: price, Imagen: image } = product;
+                const product = {
+                    barcode: barcode.trim(),
+                    description: description.trim(),
+                    stock: parseInt(stock.trim()) || 0,
+                    price: parseFloat(price.trim()) || 0,
+                    image: image.trim() || ''
+                };
 
-                    const productData = {
-                        barcode: barcode?.trim() || '',
-                        description: description?.trim() || '',
-                        stock: parseInt(stock) || 0,
-                        price: parseFloat(price) || 0,
-                        image: image?.trim() || ''
-                    };
-
-                    await db.addProduct(productData);
-                }
-
-                alert('Productos importados correctamente.');
-            } catch (error) {
-                console.error('Error procesando el archivo:', error);
-                alert('Error al importar productos.');
-            } finally {
-                fileInput.value = '';
+                await db.addProduct(product);
             }
+
+            alert('Productos importados correctamente.');
         };
 
-        reader.readAsArrayBuffer(file);
+        reader.readAsText(file);
     });
 
     document.getElementById('export-button').addEventListener('click', async () => {
         const allProducts = await db.getAllProducts();
-        const ws = XLSX.utils.json_to_sheet(allProducts, { header: ['barcode', 'description', 'stock', 'price', 'image'] });
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Productos');
-
-        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-        const blob = new Blob([wbout], { type: 'application/octet-stream' });
-
+        let csvContent = "data:text/csv;charset=utf-8,";
+        csvContent += "Código de Barras,Descripción,Stock,Precio,Imagen\n";
+        
+        allProducts.forEach(product => {
+            csvContent += `${product.barcode},${product.description},${product.stock},${product.price},${product.image}\n`;
+        });
+        
+        const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = 'productos_exportados.xlsx';
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "productos_exportados.csv");
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
