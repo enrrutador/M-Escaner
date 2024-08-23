@@ -56,7 +56,7 @@ class ProductDatabase {
             request.onupgradeneeded = (event) => {
                 const db = event.target.result;
                 const store = db.createObjectStore(this.storeName, { keyPath: 'barcode' });
-                store.createIndex('description', 'description', { unique: false });
+                store.createIndex('description', 'description', { unique: false });  // Añadir índice para descripción
             };
         });
     }
@@ -91,28 +91,14 @@ class ProductDatabase {
         });
     }
 
-    async searchProducts(query) {
+    async searchProducts(query) {  // Nueva función para buscar productos por descripción
         return new Promise((resolve, reject) => {
             const transaction = this.db.transaction([this.storeName], 'readonly');
             const store = transaction.objectStore(this.storeName);
-            const index = store.index('description');
-            const request = index.openCursor();
-            const results = [];
+            const index = store.index('description');  // Usar el índice creado en la descripción
+            const request = index.getAll(query);
 
-            request.onsuccess = (event) => {
-                const cursor = event.target.result;
-                if (cursor) {
-                    const normalizedDescription = normalizeText(cursor.value.description);
-                    const normalizedQuery = normalizeText(query);
-                    if (normalizedDescription.includes(normalizedQuery)) {
-                        results.push(cursor.value);
-                    }
-                    cursor.continue();
-                } else {
-                    resolve(results);
-                }
-            };
-
+            request.onsuccess = (event) => resolve(event.target.result);
             request.onerror = (event) => reject('Error searching products:', event.target.error);
         });
     }
@@ -121,9 +107,9 @@ class ProductDatabase {
 // Función para normalizar texto
 function normalizeText(text) {
     return text
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '');
+        .toLowerCase() // Convertir a minúsculas
+        .normalize('NFD') // Descomponer caracteres acentuados
+        .replace(/[\u0300-\u036f]/g, ''); // Eliminar acentos
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -146,6 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const cache = new Map();
 
+    // Función para empezar el escaneo de código de barras
     async function startScanner() {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
@@ -183,12 +170,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        let product;
+        let product = await db.getProduct(query);
 
-        if (isBarcode) {
-            product = await db.getProduct(query);
-        } else {
-            const results = await db.searchProducts(query);
+        if (!product && !isBarcode) {
+            const normalizedQuery = normalizeText(query);  // Normalizar la búsqueda
+            const results = await db.searchProducts(normalizedQuery);  // Buscar por descripción
             if (results.length > 0) {
                 product = results[0];
             }
@@ -316,10 +302,6 @@ document.addEventListener('DOMContentLoaded', () => {
         lowStockResults.style.display = 'block';
     });
 
-    document.getElementById('import-button').addEventListener('click', () => {
-        fileInput.click();
-    });
-
     fileInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         const reader = new FileReader();
@@ -346,23 +328,5 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         reader.readAsText(file);
-    });
-
-    document.getElementById('export-button').addEventListener('click', async () => {
-        const allProducts = await db.getAllProducts();
-        let csvContent = "data:text/csv;charset=utf-8,";
-        csvContent += "Código de Barras,Descripción,Stock,Precio,Imagen\n";
-        
-        allProducts.forEach(product => {
-            csvContent += `${product.barcode},${product.description},${product.stock},${product.price},${product.image}\n`;
-        });
-        
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "productos_exportados.csv");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
     });
 });
