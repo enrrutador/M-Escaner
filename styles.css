@@ -3,7 +3,7 @@
     --secondary-color: #0277BD;
     --accent-color: #FF5722;
     --text-color: #FFFFFF;
-    --background-color: rgba(236, 239, 241, 0.8);
+    --background-color: rgba(236, 239, 241, 0.3);
 }
 
 body, html {
@@ -20,7 +20,7 @@ body, html {
     display: flex;
     justify-content: center;
     align-items: center;
-    filter: background brightness(0.5); /* Reduce la intensidad de la imagen */
+    
 }
 
 .container, .login-container {
