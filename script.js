@@ -1,6 +1,5 @@
 import { auth } from './firebaseConfig.js';
 import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-import * as XLSX from 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
 
 // Manejar el formulario de inicio de sesión
 const loginForm = document.getElementById('loginForm');
@@ -47,7 +46,7 @@ class ProductDatabase {
         return new Promise((resolve, reject) => {
             const request = indexedDB.open(this.dbName, this.dbVersion);
 
-            request.onerror = (event) => reject('Error abriendo la base de datos:', event.target.error);
+            request.onerror = (event) => reject('Error opening database:', event.target.error);
 
             request.onsuccess = (event) => {
                 this.db = event.target.result;
@@ -68,7 +67,7 @@ class ProductDatabase {
             const request = transaction.objectStore(this.storeName).put(product);
 
             request.onsuccess = () => resolve();
-            request.onerror = (event) => reject('Error al añadir el producto:', event.target.error);
+            request.onerror = (event) => reject('Error adding product:', event.target.error);
         });
     }
 
@@ -78,7 +77,7 @@ class ProductDatabase {
             const request = transaction.objectStore(this.storeName).get(barcode);
 
             request.onsuccess = (event) => resolve(event.target.result);
-            request.onerror = (event) => reject('Error al obtener el producto:', event.target.error);
+            request.onerror = (event) => reject('Error getting product:', event.target.error);
         });
     }
 
@@ -88,7 +87,7 @@ class ProductDatabase {
             const request = transaction.objectStore(this.storeName).getAll();
 
             request.onsuccess = (event) => resolve(event.target.result);
-            request.onerror = (event) => reject('Error al obtener todos los productos:', event.target.error);
+            request.onerror = (event) => reject('Error getting all products:', event.target.error);
         });
     }
 
@@ -114,7 +113,7 @@ class ProductDatabase {
                 }
             };
 
-            request.onerror = (event) => reject('Error al buscar productos:', event.target.error);
+            request.onerror = (event) => reject('Error searching products:', event.target.error);
         });
     }
 }
@@ -142,6 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const lowStockResults = document.getElementById('low-stock-results');
     const lowStockList = document.getElementById('low-stock-list');
     const fileInput = document.getElementById('fileInput');
+    const exportButton = document.getElementById('export-button');
     let barcodeDetector;
     let productNotFoundAlertShown = false;
 
@@ -253,99 +253,117 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        if (!barcodeDetector) {
-            barcodeDetector = new BarcodeDetector({ formats: ['ean_13'] });
-        }
+                 if (!barcodeDetector) {
+               barcodeDetector = new BarcodeDetector({ formats: ['ean_13'] });
+           }
 
-        startScanner();
-    });
+           startScanner();
+       });
 
-    document.getElementById('search-button').addEventListener('click', () => {
-        const query = barcodeInput.value.trim() || descriptionInput.value.trim();
-        if (query) {
-            searchProduct(query);
-        } else {
-            alert('Por favor, introduce un código de barras o nombre de producto para buscar.');
-        }
-    });
+       document.getElementById('search-button').addEventListener('click', () => {
+           const query = barcodeInput.value.trim() || descriptionInput.value.trim();
+           if (query) {
+               searchProduct(query);
+           } else {
+               alert('Por favor, introduce un código de barras o nombre de producto para buscar.');
+           }
+       });
 
-    document.getElementById('save-button').addEventListener('click', async () => {
-        const product = {
-            barcode: barcodeInput.value.trim(),
-            description: descriptionInput.value.trim(),
-            stock: parseInt(stockInput.value, 10) || 0,
-            price: parseFloat(priceInput.value) || 0,
-            image: productImage.src || ''
-        };
+       document.getElementById('save-button').addEventListener('click', async () => {
+           const product = {
+               barcode: barcodeInput.value.trim(),
+               description: descriptionInput.value.trim(),
+               stock: parseInt(stockInput.value, 10) || 0,
+               price: parseFloat(priceInput.value) || 0,
+               image: productImage.src || ''
+           };
 
-        try {
-            await db.addProduct(product);
-            alert('Producto guardado correctamente.');
-        } catch (error) {
-            console.error('Error al guardar producto:', error);
-            alert('Error al guardar el producto. Inténtalo nuevamente.');
-        }
-    });
+           try {
+               await db.addProduct(product);
+               alert('Producto guardado correctamente.');
+           } catch (error) {
+               console.error('Error al guardar producto:', error);
+               alert('Error al guardar el producto. Inténtalo nuevamente.');
+           }
+       });
 
-    lowStockButton.addEventListener('click', async () => {
-        if (lowStockResults.style.display === 'none') {
-            const products = await db.getAllProducts();
-            const lowStockProducts = products.filter(p => p.stock <= 5);
+       lowStockButton.addEventListener('click', async () => {
+           if (lowStockResults.style.display === 'none') {
+               const products = await db.getAllProducts();
+               const lowStockProducts = products.filter(p => p.stock <= 5);
 
-            lowStockList.innerHTML = '';
+               lowStockList.innerHTML = '';
 
-            lowStockProducts.forEach(product => {
-                const listItem = document.createElement('li');
-                listItem.textContent = `${product.description} - Stock: ${product.stock}`;
-                lowStockList.appendChild(listItem);
-            });
+               lowStockProducts.forEach(product => {
+                   const listItem = document.createElement('li');
+                   listItem.textContent = `${product.description} - Stock: ${product.stock}`;
+                   lowStockList.appendChild(listItem);
+               });
 
-            lowStockResults.style.display = 'block';
-        } else {
-            lowStockResults.style.display = 'none';
-        }
-    });
+               lowStockResults.style.display = 'block';
+           } else {
+               lowStockResults.style.display = 'none';
+           }
+       });
 
-    fileInput.addEventListener('change', async (event) => {
-        const file = event.target.files[0];
-        if (!file) {
-            alert('Por favor selecciona un archivo para importar.');
-            return;
-        }
+       fileInput.addEventListener('change', async (event) => {
+           const file = event.target.files[0];
+           if (!file) {
+               alert('Por favor selecciona un archivo para importar.');
+               return;
+           }
 
-        const fileType = file.name.split('.').pop().toLowerCase();
+           const fileType = file.name.split('.').pop().toLowerCase();
 
-        if (fileType === 'xlsx') {
-            importFromXLSX(file);
-        } else {
-            alert('Tipo de archivo no soportado. Por favor selecciona un archivo .xlsx.');
-        }
-    });
+           if (fileType === 'xlsx') {
+               importFromXLSX(file);
+           } else {
+               alert('Tipo de archivo no soportado. Por favor selecciona un archivo .xlsx.');
+           }
+       });
 
-    async function importFromXLSX(file) {
-        const reader = new FileReader();
-        reader.onload = async (event) => {
-            const data = new Uint8Array(event.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const sheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[sheetName];
-            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-            const products = [];
+       async function importFromXLSX(file) {
+           const reader = new FileReader();
+           reader.onload = async (event) => {
+               const data = new Uint8Array(event.target.result);
+               const workbook = XLSX.read(data, { type: 'array' });
+               const sheetName = workbook.SheetNames[0];
+               const worksheet = workbook.Sheets[sheetName];
+               const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+               const products = [];
 
-            jsonData.forEach((row, index) => {
-                if (index === 0) return; // Skip header row
-                const [barcode, description, , , , , , , stock] = row;
-                if (barcode && description) {
-                    products.push({ barcode, description, stock: parseInt(stock, 10) || 0, price: 0 });
-                }
-            });
+               jsonData.forEach((row, index) => {
+                   if (index === 0) return; // Skip header row
+                   const [barcode, description, , , , , , , stock] = row;
+                   if (barcode && description) {
+                       products.push({ barcode, description, stock: parseInt(stock, 10) || 0, price: 0 });
+                   }
+               });
 
-            for (const product of products) {
-                await db.addProduct(product);
-            }
+               for (const product of products) {
+                   await db.addProduct(product);
+               }
 
-            alert('Productos importados desde XLSX correctamente.');
-        };
-        reader.readAsArrayBuffer(file);
-    }
-});
+               alert('Productos importados desde XLSX correctamente.');
+           };
+           reader.readAsArrayBuffer(file);
+       }
+
+       exportButton.addEventListener('click', async () => {
+           const products = await db.getAllProducts();
+           const wb = XLSX.utils.book_new();
+           const wsData = products.map(product => [
+               product.barcode,
+               product.description,
+               product.stock,
+               product.price
+           ]);
+
+           const ws = XLSX.utils.aoa_to_sheet([['Código de barras', 'Descripción', 'Stock', 'Precio']].concat(wsData));
+           XLSX.utils.book_append_sheet(wb, ws, 'Productos');
+           
+           XLSX.writeFile(wb, 'productos.xlsx');
+       });
+   });
+
+
