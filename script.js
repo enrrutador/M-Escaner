@@ -396,8 +396,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             'Código de Barras': product.barcode,
             'Descripción': product.description,
             'Stock': product.stock,
-            'Precio': product.price,
-            'Imagen': product.image
+            'Precio': product.price
         })));
         
         const workbook = XLSX.utils.book_new();
