@@ -141,7 +141,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const lowStockResults = document.getElementById('low-stock-results');
     const lowStockList = document.getElementById('low-stock-list');
     const fileInput = document.getElementById('fileInput');
-    const exportButton = document.getElementById('export-button');
     let barcodeDetector;
     let productNotFoundAlertShown = false;
 
@@ -253,117 +252,114 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-                 if (!barcodeDetector) {
-               barcodeDetector = new BarcodeDetector({ formats: ['ean_13'] });
-           }
+        if (!barcodeDetector) {
+            barcodeDetector = new BarcodeDetector({ formats: ['ean_13'] });
+        }
 
-           startScanner();
-       });
+        startScanner();
+    });
 
-       document.getElementById('search-button').addEventListener('click', () => {
-           const query = barcodeInput.value.trim() || descriptionInput.value.trim();
-           if (query) {
-               searchProduct(query);
-           } else {
-               alert('Por favor, introduce un código de barras o nombre de producto para buscar.');
-           }
-       });
+    document.getElementById('search-button').addEventListener('click', () => {
+        const query = barcodeInput.value.trim() || descriptionInput.value.trim();
+        if (query) {
+            searchProduct(query);
+        } else {
+            alert('Por favor, introduce un código de barras o nombre de producto para buscar.');
+        }
+    });
 
-       document.getElementById('save-button').addEventListener('click', async () => {
-           const product = {
-               barcode: barcodeInput.value.trim(),
-               description: descriptionInput.value.trim(),
-               stock: parseInt(stockInput.value, 10) || 0,
-               price: parseFloat(priceInput.value) || 0,
-               image: productImage.src || ''
-           };
+    document.getElementById('save-button').addEventListener('click', async () => {
+        const product = {
+            barcode: barcodeInput.value.trim(),
+            description: descriptionInput.value.trim(),
+            stock: parseInt(stockInput.value) || 0,
+            price: parseFloat(priceInput.value) || 0,
+            image: productImage.src || ''
+        };
 
-           try {
-               await db.addProduct(product);
-               alert('Producto guardado correctamente.');
-           } catch (error) {
-               console.error('Error al guardar producto:', error);
-               alert('Error al guardar el producto. Inténtalo nuevamente.');
-           }
-       });
+        await db.addProduct(product);
+        alert('Producto guardado correctamente.');
+        clearForm();
+    });
 
-       lowStockButton.addEventListener('click', async () => {
-           if (lowStockResults.style.display === 'none') {
-               const products = await db.getAllProducts();
-               const lowStockProducts = products.filter(p => p.stock <= 5);
+    document.getElementById('clear-button').addEventListener('click', clearForm);
 
-               lowStockList.innerHTML = '';
+    function clearForm() {
+        barcodeInput.value = '';
+        descriptionInput.value = '';
+        stockInput.value = '';
+        priceInput.value = '';
+        productImage.src = '';
+        productImage.style.display = 'none';
+    }
 
-               lowStockProducts.forEach(product => {
-                   const listItem = document.createElement('li');
-                   listItem.textContent = `${product.description} - Stock: ${product.stock}`;
-                   lowStockList.appendChild(listItem);
-               });
+    lowStockButton.addEventListener('click', async () => {
+        if (lowStockResults.style.display === 'block') {
+            lowStockResults.style.display = 'none';
+            return;
+        }
 
-               lowStockResults.style.display = 'block';
-           } else {
-               lowStockResults.style.display = 'none';
-           }
-       });
+        lowStockList.innerHTML = '';
+        const allProducts = await db.getAllProducts();
+        const lowStockProducts = allProducts.filter(product => product.stock <= 5);
 
-       fileInput.addEventListener('change', async (event) => {
-           const file = event.target.files[0];
-           if (!file) {
-               alert('Por favor selecciona un archivo para importar.');
-               return;
-           }
+        if (lowStockProducts.length > 0) {
+            lowStockProducts.forEach(product => {
+                const li = document.createElement('li');
+                li.textContent = `${product.description} (Código: ${product.barcode}) - Stock: ${product.stock}`;
+                lowStockList.appendChild(li);
+            });
+        } else {
+            lowStockList.innerHTML = '<li>No hay productos con stock bajo.</li>';
+        }
 
-           const fileType = file.name.split('.').pop().toLowerCase();
+        lowStockResults.style.display = 'block';
+    });
 
-           if (fileType === 'xlsx') {
-               importFromXLSX(file);
-           } else {
-               alert('Tipo de archivo no soportado. Por favor selecciona un archivo .xlsx.');
-           }
-       });
+    document.getElementById('import-button').addEventListener('click', () => {
+        fileInput.click();
+    });
 
-       async function importFromXLSX(file) {
-           const reader = new FileReader();
-           reader.onload = async (event) => {
-               const data = new Uint8Array(event.target.result);
-               const workbook = XLSX.read(data, { type: 'array' });
-               const sheetName = workbook.SheetNames[0];
-               const worksheet = workbook.Sheets[sheetName];
-               const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-               const products = [];
+    fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
 
-               jsonData.forEach((row, index) => {
-                   if (index === 0) return; // Skip header row
-                   const [barcode, description, , , , , , , stock] = row;
-                   if (barcode && description) {
-                       products.push({ barcode, description, stock: parseInt(stock, 10) || 0, price: 0 });
-                   }
-               });
+        reader.onload = async (e) => {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            const products = XLSX.utils.sheet_to_json(worksheet);
 
-               for (const product of products) {
-                   await db.addProduct(product);
-               }
+            for (let product of products) {
+                await db.addProduct({
+                    barcode: product['Código de Barras'].toString(),
+                    description: product['Descripción'],
+                    stock: parseInt(product['Stock']) || 0,
+                    price: parseFloat(product['Precio']) || 0,
+                    image: product['Imagen'] || ''
+                });
+            }
 
-               alert('Productos importados desde XLSX correctamente.');
-           };
-           reader.readAsArrayBuffer(file);
-       }
+            alert('Productos importados correctamente.');
+        };
 
-       exportButton.addEventListener('click', async () => {
-           const products = await db.getAllProducts();
-           const wb = XLSX.utils.book_new();
-           const wsData = products.map(product => [
-               product.barcode,
-               product.description,
-               product.stock,
-               product.price
-           ]);
+        reader.readAsArrayBuffer(file);
+    });
 
-           const ws = XLSX.utils.aoa_to_sheet([['Código de barras', 'Descripción', 'Stock', 'Precio']].concat(wsData));
-           XLSX.utils.book_append_sheet(wb, ws, 'Productos');
-           
-           XLSX.writeFile(wb, 'productos.xlsx');
-       });
-   });
-
-
+    document.getElementById('export-button').addEventListener('click', async () => {
+        const allProducts = await db.getAllProducts();
+        const worksheet = XLSX.utils.json_to_sheet(allProducts.map(product => ({
+            'Código de Barras': product.barcode,
+            'Descripción': product.description,
+            'Stock': product.stock,
+            'Precio': product.price,
+            'Imagen': product.image
+        })));
+        
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Productos");
+        
+        XLSX.writeFile(workbook, "productos_exportados.xlsx");
+    });
+});
