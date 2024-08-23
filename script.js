@@ -249,35 +249,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         await db.addProduct(product);
         alert('Producto guardado correctamente.');
-        clearForm();
     });
 
-    document.getElementById('clear-button').addEventListener('click', clearForm);
-
-    function clearForm() {
-        barcodeInput.value = '';
-        descriptionInput.value = '';
-        stockInput.value = '';
-        priceInput.value = '';
-        productImage.src = '';
-        productImage.style.display = 'none';
-    }
-
     lowStockButton.addEventListener('click', async () => {
-        if (lowStockResults.style.display === 'block') {
-            lowStockResults.style.display = 'none';
-            return;
-        }
-
-        lowStockList.innerHTML = '';
         const allProducts = await db.getAllProducts();
         const lowStockProducts = allProducts.filter(product => product.stock <= 5);
+
+        lowStockList.innerHTML = ''; // Limpiar la lista antes de agregar elementos
 
         if (lowStockProducts.length > 0) {
             lowStockProducts.forEach(product => {
                 const li = document.createElement('li');
                 li.textContent = `${product.description} (Código: ${product.barcode}) - Stock: ${product.stock}`;
-
                 lowStockList.appendChild(li);
             });
         } else {
@@ -293,17 +276,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     fileInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
-        if (!file) return; // Si no hay archivo, salimos
+        if (!file) return;
 
         const reader = new FileReader();
 
         reader.onload = async (e) => {
             const contents = e.target.result;
             try {
-                const workbook = XLSX.read(contents, { type: 'binary' });
+                const workbook = XLSX.read(contents, { type: 'array' });
                 const sheetNames = workbook.SheetNames;
                 const products = XLSX.utils.sheet_to_json(workbook.Sheets[sheetNames[0]]);
-                
+
                 for (let product of products) {
                     const { 'Código de Barras': barcode, Descripción: description, Stock: stock, Precio: price, Imagen: image } = product;
 
@@ -323,12 +306,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('Error procesando el archivo:', error);
                 alert('Error al importar productos.');
             } finally {
-                // Restablecer el valor del input para permitir nuevas selecciones
                 fileInput.value = '';
             }
         };
 
-        reader.readAsBinaryString(file);
+        reader.readAsArrayBuffer(file);
     });
 
     document.getElementById('export-button').addEventListener('click', async () => {
