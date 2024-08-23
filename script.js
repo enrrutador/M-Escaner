@@ -1,5 +1,6 @@
 import { auth } from './firebaseConfig.js';
 import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import * as XLSX from 'https://cdn.sheetjs.com/xlsx-0.18.5/xlsx.full.min.js';
 
 // Manejar el formulario de inicio de sesión
 const loginForm = document.getElementById('loginForm');
@@ -292,44 +293,58 @@ document.addEventListener('DOMContentLoaded', () => {
 
     fileInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
+        if (!file) return; // Si no hay archivo, salimos
+
         const reader = new FileReader();
 
         reader.onload = async (e) => {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const sheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[sheetName];
-            const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+            const contents = e.target.result;
+            try {
+                const workbook = XLSX.read(contents, { type: 'binary' });
+                const sheetNames = workbook.SheetNames;
+                const products = XLSX.utils.sheet_to_json(workbook.Sheets[sheetNames[0]]);
+                
+                for (let product of products) {
+                    const { 'Código de Barras': barcode, Descripción: description, Stock: stock, Precio: price, Imagen: image } = product;
 
-            for (let i = 1; i < json.length; i++) { // Empieza en 1 para saltar la cabecera
-                const [barcode, description, stock, price, image] = json[i];
-                const product = {
-                    barcode: barcode ? barcode.trim() : '',
-                    description: description ? description.trim() : '',
-                    stock: parseInt(stock) || 0,
-                    price: parseFloat(price) || 0,
-                    image: image ? image.trim() : ''
-                };
+                    const productData = {
+                        barcode: barcode?.trim() || '',
+                        description: description?.trim() || '',
+                        stock: parseInt(stock) || 0,
+                        price: parseFloat(price) || 0,
+                        image: image?.trim() || ''
+                    };
 
-                await db.addProduct(product);
+                    await db.addProduct(productData);
+                }
+
+                alert('Productos importados correctamente.');
+            } catch (error) {
+                console.error('Error procesando el archivo:', error);
+                alert('Error al importar productos.');
+            } finally {
+                // Restablecer el valor del input para permitir nuevas selecciones
+                fileInput.value = '';
             }
-
-            alert('Productos importados correctamente.');
         };
 
-        reader.readAsArrayBuffer(file);
+        reader.readAsBinaryString(file);
     });
 
     document.getElementById('export-button').addEventListener('click', async () => {
         const allProducts = await db.getAllProducts();
-        const worksheet = XLSX.utils.json_to_sheet(allProducts, {
-            header: ["barcode", "description", "stock", "price", "image"],
-            skipHeader: false
-        });
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Productos");
+        const ws = XLSX.utils.json_to_sheet(allProducts, { header: ['barcode', 'description', 'stock', 'price', 'image'] });
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Productos');
 
-        // Genera el archivo y lo descarga
-        XLSX.writeFile(workbook, "productos_exportados.xlsx");
+        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([wbout], { type: 'application/octet-stream' });
+
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = 'productos_exportados.xlsx';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     });
 });
