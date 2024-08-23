@@ -337,18 +337,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 let importedCount = 0;
                 for (let product of products) {
-                    if (!product['Código de Barras']) {
+                    // Verificar si el producto tiene un código de barras válido
+                    const barcode = product['Código de Barras'] || product['Codigo de Barras'] || product['codigo de barras'] || product['barcode'];
+                    if (!barcode) {
                         console.warn('Producto sin código de barras:', product);
                         continue;
                     }
 
                     try {
                         await db.addProduct({
-                            barcode: product['Código de Barras'].toString(),
-                            description: product['Descripción'] || '',
-                            stock: parseInt(product['Stock']) || 0,
-                            price: parseFloat(product['Precio']) || 0,
-                            image: product['Imagen'] || ''
+                            barcode: barcode.toString(),
+                            description: product['Descripción'] || product['Descripcion'] || product['descripcion'] || product['description'] || '',
+                            stock: parseInt(product['Stock'] || product['stock'] || '0'),
+                            price: parseFloat(product['Precio'] || product['precio'] || product['price'] || '0'),
+                            image: product['Imagen'] || product['imagen'] || product['image'] || ''
                         });
                         importedCount++;
                     } catch (error) {
@@ -356,6 +358,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 }
 
+                console.log(`Importación completada. ${importedCount} productos importados correctamente.`);
                 alert(`Importación completada. ${importedCount} productos importados correctamente.`);
             } catch (error) {
                 console.error('Error durante la importación:', error);
