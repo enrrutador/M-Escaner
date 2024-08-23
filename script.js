@@ -1,6 +1,5 @@
 import { auth } from './firebaseConfig.js';
 import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-import * as XLSX from 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; // Importa la biblioteca SheetJS
 
 // Manejar el formulario de inicio de sesión
 const loginForm = document.getElementById('loginForm');
@@ -305,10 +304,10 @@ document.addEventListener('DOMContentLoaded', () => {
             for (let i = 1; i < json.length; i++) { // Empieza en 1 para saltar la cabecera
                 const [barcode, description, stock, price, image] = json[i];
                 const product = {
-                    barcode: barcode.trim(),
-                    description: description.trim(),
-                    stock: parseInt(stock.trim()) || 0,
-                    price: parseFloat(price.trim()) || 0,
+                    barcode: barcode ? barcode.trim() : '',
+                    description: description ? description.trim() : '',
+                    stock: parseInt(stock) || 0,
+                    price: parseFloat(price) || 0,
                     image: image ? image.trim() : ''
                 };
 
