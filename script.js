@@ -1,6 +1,6 @@
 import { auth } from './firebaseConfig.js';
 import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-import * as XLSX from 'xlsx'; // Asegúrate de importar XLSX correctamente
+import * as XLSX from 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
 
 // Manejar el formulario de inicio de sesión
 const loginForm = document.getElementById('loginForm');
@@ -47,7 +47,7 @@ class ProductDatabase {
         return new Promise((resolve, reject) => {
             const request = indexedDB.open(this.dbName, this.dbVersion);
 
-            request.onerror = (event) => reject('Error opening database:', event.target.error);
+            request.onerror = (event) => reject('Error abriendo la base de datos:', event.target.error);
 
             request.onsuccess = (event) => {
                 this.db = event.target.result;
@@ -68,7 +68,7 @@ class ProductDatabase {
             const request = transaction.objectStore(this.storeName).put(product);
 
             request.onsuccess = () => resolve();
-            request.onerror = (event) => reject('Error adding product:', event.target.error);
+            request.onerror = (event) => reject('Error al añadir el producto:', event.target.error);
         });
     }
 
@@ -78,7 +78,7 @@ class ProductDatabase {
             const request = transaction.objectStore(this.storeName).get(barcode);
 
             request.onsuccess = (event) => resolve(event.target.result);
-            request.onerror = (event) => reject('Error getting product:', event.target.error);
+            request.onerror = (event) => reject('Error al obtener el producto:', event.target.error);
         });
     }
 
@@ -88,7 +88,7 @@ class ProductDatabase {
             const request = transaction.objectStore(this.storeName).getAll();
 
             request.onsuccess = (event) => resolve(event.target.result);
-            request.onerror = (event) => reject('Error getting all products:', event.target.error);
+            request.onerror = (event) => reject('Error al obtener todos los productos:', event.target.error);
         });
     }
 
@@ -114,7 +114,7 @@ class ProductDatabase {
                 }
             };
 
-            request.onerror = (event) => reject('Error searching products:', event.target.error);
+            request.onerror = (event) => reject('Error al buscar productos:', event.target.error);
         });
     }
 }
@@ -348,20 +348,4 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         reader.readAsArrayBuffer(file);
     }
-
-    document.getElementById('export-button').addEventListener('click', async () => {
-        const products = await db.getAllProducts();
-        const data = products.map(product => ({
-            'Código de barras': product.barcode,
-            'Descripción': product.description,
-            'Stock': product.stock,
-            'Precio Venta': product.price
-        }));
-
-        const ws = XLSX.utils.json_to_sheet(data, { header: ["Código de barras", "Descripción", "Stock", "Precio Venta"] });
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Productos');
-        
-        XLSX.writeFile(wb, 'productos.xlsx');
-    });
 });
