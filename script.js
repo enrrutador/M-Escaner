@@ -1,6 +1,6 @@
 import { auth, database } from './firebaseConfig.js';
 import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-import { ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+import { ref, set, get } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
 
 // Función para obtener o generar un ID de dispositivo único
 function getDeviceId() {
@@ -45,18 +45,15 @@ loginForm.addEventListener('submit', async (e) => {
         // Recuperar el ID del dispositivo vinculado desde Realtime Database
         const userDoc = await getUserDevice(user.uid);
 
-        if (userDoc && userDoc.deviceId && userDoc.deviceId !== deviceId) {
-            // Si hay una discrepancia, mostrar un mensaje y ofrecer la opción de desbloquear
-            const unlockConfirm = confirm('Esta cuenta está vinculada a otro dispositivo. ¿Deseas desvincular el dispositivo anterior y usar este?');
-            if (unlockConfirm) {
-                await linkDeviceToUser(user.uid, deviceId);
-                alert('Dispositivo actualizado. Ahora puedes usar esta cuenta en este dispositivo.');
-            } else {
+        if (userDoc && userDoc.deviceId) {
+            // Si ya existe un dispositivo vinculado
+            if (userDoc.deviceId !== deviceId) {
+                // Si el dispositivo actual no coincide con el vinculado, denegar acceso
                 await auth.signOut();
-                loginError.textContent = 'Inicio de sesión cancelado. La cuenta sigue vinculada al dispositivo original.';
+                loginError.textContent = 'Acceso denegado. Esta cuenta está vinculada a otro dispositivo.';
                 return;
             }
-        } else if (!userDoc || !userDoc.deviceId) {
+        } else {
             // Si es la primera vez que se inicia sesión, vincular el dispositivo
             await linkDeviceToUser(user.uid, deviceId);
         }
@@ -72,16 +69,8 @@ loginForm.addEventListener('submit', async (e) => {
 
 onAuthStateChanged(auth, (user) => {
     if (user) {
-        const userRef = ref(database, `users/${user.uid}`);
-        onValue(userRef, (snapshot) => {
-            const userData = snapshot.val();
-            if (userData && userData.deviceId !== getDeviceId()) {
-                auth.signOut();
-                alert('Esta cuenta ha sido iniciada en otro dispositivo. Se ha cerrado la sesión por seguridad.');
-                loginContainer.style.display = 'block';
-                appContainer.style.display = 'none';
-            }
-        });
+        loginContainer.style.display = 'none';
+        appContainer.style.display = 'block';
     } else {
         loginContainer.style.display = 'block';
         appContainer.style.display = 'none';
