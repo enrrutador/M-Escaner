@@ -1,62 +1,68 @@
 import { auth } from './firebaseConfig.js';
 import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-import { v4 as uuidv4 } from 'https://cdn.jsdelivr.net/npm/uuid@8.3.2/dist/esm-browser/index.js'; // Importar UUID
+import { v4 as uuidv4 } from 'https://cdn.jsdelivr.net/npm/uuid@8.3.2/dist/esm-browser/uuidv4.js';
 
 // Manejar el formulario de inicio de sesión
-const loginForm = document.getElementById('loginForm');
-const loginContainer = document.getElementById('login-container');
-const appContainer = document.getElementById('app-container');
-const loginError = document.getElementById('login-error');
+document.addEventListener('DOMContentLoaded', () => {
+    const loginForm = document.getElementById('loginForm');
+    const loginError = document.getElementById('login-error');
+    const loginContainer = document.getElementById('login-container');
+    const appContainer = document.getElementById('app-container');
 
-loginForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    
-    signInWithEmailAndPassword(auth, email, password)
-        .then(async (userCredential) => {
-            const user = userCredential.user;
+    if (loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                const deviceId = uuidv4(); // Genera un UUID único para el dispositivo
 
-            // Genera un UUID para el dispositivo
-            const deviceUUID = uuidv4();
+                // Guardar el UUID en Realtime Database
+                const userRef = firebase.database().ref('users/' + user.uid);
+                await userRef.set({ deviceId });
 
-            // Almacena el UUID junto con el correo del usuario en Realtime Database
-            const userRef = firebase.database().ref('users/' + user.uid);
-            const snapshot = await userRef.once('value');
+                // Almacena el UUID en localStorage
+                localStorage.setItem('deviceId', deviceId);
 
-            const existingUUID = snapshot.val()?.deviceUUID;
-
-            if (existingUUID && existingUUID !== deviceUUID) {
-                // Si ya existe un UUID diferente, deniega el acceso
-                alert('Este correo ya está vinculado a otro dispositivo.');
-                firebase.auth().signOut(); // Cerrar sesión
-            } else {
-                // Si no existe o coincide, guarda el UUID
-                userRef.set({
-                    email: user.email,
-                    deviceUUID: deviceUUID,
-                });
-                alert('Sesión iniciada con éxito.');
-                loginContainer.style.display = 'none';
-                appContainer.style.display = 'block';
+                console.log('Usuario autenticado:', user);
+            } catch (error) {
+                console.error('Error de autenticación:', error.code, error.message);
+                loginError.textContent = 'Error al iniciar sesión. Verifica tu correo y contraseña.';
             }
-        })
-        .catch((error) => {
-            console.error('Error de autenticación:', error.code, error.message);
-            loginError.textContent = 'Error al iniciar sesión. Verifica tu correo y contraseña.';
         });
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            const userRef = firebase.database().ref('users/' + user.uid);
+            const userSnapshot = await userRef.once('value');
+            const userData = userSnapshot.val();
+
+            // Obtener el UUID del dispositivo actual
+            const currentDeviceId = localStorage.getItem('deviceId');
+
+            // Verificar si el UUID coincide con el almacenado en la base de datos
+            if (userData.deviceId !== currentDeviceId) {
+                await auth.signOut();
+                alert('Esta cuenta ya está en uso en otro dispositivo.');
+                return;
+            }
+
+            loginContainer.style.display = 'none';
+            appContainer.style.display = 'block';
+        } else {
+            loginContainer.style.display = 'block';
+            appContainer.style.display = 'none';
+        }
+    });
+
+    // Aquí va el resto de tu código...
 });
 
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        loginContainer.style.display = 'none';
-        appContainer.style.display = 'block';
-    } else {
-        loginContainer.style.display = 'block';
-        appContainer.style.display = 'none';
-    }
-});
 
 // Clase para la base de datos de productos
 class ProductDatabase {
