@@ -292,84 +292,80 @@ document.addEventListener('DOMContentLoaded', async () => {
         descriptionInput.value = '';
         stockInput.value = '';
         priceInput.value = '';
+        productImage.src = '';
         productImage.style.display = 'none';
     }
 
     lowStockButton.addEventListener('click', async () => {
-        if (lowStockResults.style.display === 'block') {
+        lowStockList.innerHTML = '';
+
+        if (lowStockResults.style.display === 'none' || !lowStockResults.style.display) {
+            const products = await db.getAllProducts();
+            const lowStockProducts = products.filter(product => product.stock <= 5);
+
+            lowStockProducts.forEach(product => {
+                const li = document.createElement('li');
+                li.textContent = `${product.description} (Stock: ${product.stock})`;
+                lowStockList.appendChild(li);
+            });
+
+            if (lowStockProducts.length === 0) {
+                lowStockList.textContent = 'No hay productos con bajo stock.';
+            }
+
+            lowStockResults.style.display = 'block';
+        } else {
             lowStockResults.style.display = 'none';
+        }
+    });
+
+    document.getElementById('export-button').addEventListener('click', async () => {
+        const products = await db.getAllProducts();
+        if (products.length === 0) {
+            alert('No hay productos para exportar.');
             return;
         }
 
-        const allProducts = await db.getAllProducts();
-        const lowStockProducts = allProducts.filter(product => product.stock < 10);
+        const csvContent = 'data:text/csv;charset=utf-8,'
+            + ['Código de Barras', 'Descripción', 'Stock', 'Precio'].join(',') + '\n'
+            + products.map(product => [product.barcode, product.description, product.stock, product.price].join(',')).join('\n');
 
-        if (lowStockProducts.length > 0) {
-            lowStockList.innerHTML = lowStockProducts.map(product => `
-                <li>${product.description} (Código de barras: ${product.barcode}, Stock: ${product.stock})</li>
-            `).join('');
-        } else {
-            lowStockList.innerHTML = '<li>No hay productos con stock bajo.</li>';
-        }
-
-        lowStockResults.style.display = 'block';
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', 'productos.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     });
 
-    // Importar productos desde un archivo Excel
     document.getElementById('import-button').addEventListener('click', () => {
         fileInput.click();
     });
 
     fileInput.addEventListener('change', async (event) => {
         const file = event.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
-                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        if (!file) return;
 
-                for (let i = 1; i < jsonData.length; i++) {
-                    const row = jsonData[i];
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const text = e.target.result;
+            const lines = text.split('\n').slice(1);
+
+            for (const line of lines) {
+                const [barcode, description, stock, price] = line.split(',');
+                if (barcode) {
                     const product = {
-                        barcode: row[0],
-                        description: row[1],
-                        stock: parseInt(row[2]) || 0,
-                        price: parseFloat(row[3]) || 0,
-                        image: row[4] || ''
+                        barcode: barcode.trim(),
+                        description: description.trim(),
+                        stock: parseInt(stock.trim()) || 0,
+                        price: parseFloat(price.trim()) || 0
                     };
                     await db.addProduct(product);
                 }
-                alert('Productos importados correctamente.');
-            };
-            reader.readAsArrayBuffer(file);
-        }
-    });
-
-    // Exportar productos a un archivo Excel
-    document.getElementById('export-button').addEventListener('click', async () => {
-        const allProducts = await db.getAllProducts();
-
-        if (allProducts.length === 0) {
-            alert('No hay productos para exportar.');
-            return;
-        }
-
-        const worksheet = XLSX.utils.json_to_sheet(allProducts);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'Productos');
-        const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-
-        const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'productos.xlsx';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+            }
+            alert('Productos importados correctamente.');
+        };
+        reader.readAsText(file);
     });
 });
