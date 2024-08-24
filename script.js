@@ -451,5 +451,3 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 });
 
-
-
