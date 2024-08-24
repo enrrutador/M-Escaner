@@ -1,68 +1,82 @@
 import { auth } from './firebaseConfig.js';
 import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-import { v4 as uuidv4 } from 'https://cdn.jsdelivr.net/npm/uuid@8.3.2/dist/esm-browser/uuidv4.js';
+import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+// Inicializar Firestore
+const db = getFirestore();
+
+// Función para obtener o generar un ID de dispositivo único
+function getDeviceId() {
+    let deviceId = localStorage.getItem('deviceId');
+    if (!deviceId) {
+        deviceId = crypto.randomUUID();  // Generar un UUID
+        localStorage.setItem('deviceId', deviceId);
+    }
+    return deviceId;
+}
+
+// Función para vincular el ID del dispositivo al usuario en Firestore
+async function linkDeviceToUser(userId, deviceId) {
+    const userRef = doc(db, 'users', userId);
+    await setDoc(userRef, { deviceId }, { merge: true });
+}
+
+// Función para obtener el ID del dispositivo vinculado desde Firestore
+async function getUserDevice(userId) {
+    const userRef = doc(db, 'users', userId);
+    const userDoc = await getDoc(userRef);
+    return userDoc.exists() ? userDoc.data() : null;
+}
 
 // Manejar el formulario de inicio de sesión
-document.addEventListener('DOMContentLoaded', () => {
-    const loginForm = document.getElementById('loginForm');
-    const loginError = document.getElementById('login-error');
-    const loginContainer = document.getElementById('login-container');
-    const appContainer = document.getElementById('app-container');
+const loginForm = document.getElementById('loginForm');
+const loginContainer = document.getElementById('login-container');
+const appContainer = document.getElementById('app-container');
+const loginError = document.getElementById('login-error');
 
-    if (loginForm) {
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            
-            try {
-                const userCredential = await signInWithEmailAndPassword(auth, email, password);
-                const user = userCredential.user;
-                const deviceId = uuidv4(); // Genera un UUID único para el dispositivo
+loginForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const deviceId = getDeviceId();
 
-                // Guardar el UUID en Realtime Database
-                const userRef = firebase.database().ref('users/' + user.uid);
-                await userRef.set({ deviceId });
+    signInWithEmailAndPassword(auth, email, password)
+        .then(async (userCredential) => {
+            const user = userCredential.user;
 
-                // Almacena el UUID en localStorage
-                localStorage.setItem('deviceId', deviceId);
+            // Recuperar el ID del dispositivo vinculado desde Firestore
+            const userDoc = await getUserDevice(user.uid);
 
-                console.log('Usuario autenticado:', user);
-            } catch (error) {
-                console.error('Error de autenticación:', error.code, error.message);
-                loginError.textContent = 'Error al iniciar sesión. Verifica tu correo y contraseña.';
-            }
-        });
-    }
-
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            const userRef = firebase.database().ref('users/' + user.uid);
-            const userSnapshot = await userRef.once('value');
-            const userData = userSnapshot.val();
-
-            // Obtener el UUID del dispositivo actual
-            const currentDeviceId = localStorage.getItem('deviceId');
-
-            // Verificar si el UUID coincide con el almacenado en la base de datos
-            if (userData.deviceId !== currentDeviceId) {
+            if (userDoc && userDoc.deviceId && userDoc.deviceId !== deviceId) {
+                // Si hay una discrepancia, cerrar sesión y mostrar un error
                 await auth.signOut();
-                alert('Esta cuenta ya está en uso en otro dispositivo.');
+                alert('Este usuario ya está vinculado a otro dispositivo.');
                 return;
             }
 
-            loginContainer.style.display = 'none';
-            appContainer.style.display = 'block';
-        } else {
-            loginContainer.style.display = 'block';
-            appContainer.style.display = 'none';
-        }
-    });
+            // Vincular el ID del dispositivo actual con la cuenta del usuario si aún no está vinculado
+            if (!userDoc || !userDoc.deviceId) {
+                await linkDeviceToUser(user.uid, deviceId);
+            }
 
-    // Aquí va el resto de tu código...
+            console.log('Usuario autenticado:', user);
+        })
+        .catch((error) => {
+            console.error('Error de autenticación:', error.code, error.message);
+            loginError.textContent = 'Error al iniciar sesión. Verifica tu correo y contraseña.';
+        });
 });
 
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        loginContainer.style.display = 'none';
+        appContainer.style.display = 'block';
+    } else {
+        loginContainer.style.display = 'block';
+        appContainer.style.display = 'none';
+    }
+});
 
 // Clase para la base de datos de productos
 class ProductDatabase {
@@ -77,7 +91,7 @@ class ProductDatabase {
         return new Promise((resolve, reject) => {
             const request = indexedDB.open(this.dbName, this.dbVersion);
 
-            request.onerror = (event) => reject('Error abriendo la base de datos:', event.target.error);
+            request.onerror = (event) => reject('Error opening database:', event.target.error);
 
             request.onsuccess = (event) => {
                 this.db = event.target.result;
@@ -99,7 +113,7 @@ class ProductDatabase {
             const request = store.put(product);
 
             request.onsuccess = () => resolve();
-            request.onerror = (event) => reject('Error agregando producto:', event.target.error);
+            request.onerror = (event) => reject('Error adding product:', event.target.error);
         });
     }
 
@@ -109,7 +123,7 @@ class ProductDatabase {
             const request = transaction.objectStore(this.storeName).get(barcode);
 
             request.onsuccess = (event) => resolve(event.target.result);
-            request.onerror = (event) => reject('Error obteniendo producto:', event.target.error);
+            request.onerror = (event) => reject('Error getting product:', event.target.error);
         });
     }
 
@@ -119,7 +133,7 @@ class ProductDatabase {
             const request = transaction.objectStore(this.storeName).getAll();
 
             request.onsuccess = (event) => resolve(event.target.result);
-            request.onerror = (event) => reject('Error obteniendo todos los productos:', event.target.error);
+            request.onerror = (event) => reject('Error getting all products:', event.target.error);
         });
     }
 
@@ -145,7 +159,7 @@ class ProductDatabase {
                 }
             };
 
-            request.onerror = (event) => reject('Error buscando productos:', event.target.error);
+            request.onerror = (event) => reject('Error searching products:', event.target.error);
         });
     }
 }
@@ -278,19 +292,68 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    document.getElementById('start-scanner-button').addEventListener('click', startScanner);
+    document.getElementById('scan-button').addEventListener('click', async () => {
+        if (!('BarcodeDetector' in window)) {
+            alert('API de detección de códigos de barras no soportada en este navegador.');
+            return;
+        }
+
+        if (!barcodeDetector) {
+            barcodeDetector = new BarcodeDetector({ formats: ['ean_13'] });
+        }
+
+        startScanner();
+    });
+
+    document.getElementById('search-button').addEventListener('click', () => {
+        const query = barcodeInput.value.trim() || descriptionInput.value.trim();
+        if (query) {
+            searchProduct(query);
+        } else {
+            alert('Por favor, introduce un código de barras o nombre de producto para buscar.');
+        }
+    });
+
+    document.getElementById('save-button').addEventListener('click', async () => {
+        const product = {
+            barcode: barcodeInput.value.trim(),
+            description: descriptionInput.value.trim(),
+            stock: parseInt(stockInput.value) || 0,
+            price: parseFloat(priceInput.value) || 0,
+            image: productImage.src || ''
+        };
+
+        await db.addProduct(product);
+        alert('Producto guardado correctamente.');
+        clearForm();
+    });
+
+    document.getElementById('clear-button').addEventListener('click', clearForm);
+
+    function clearForm() {
+        barcodeInput.value = '';
+        descriptionInput.value = '';
+        stockInput.value = '';
+        priceInput.value = '';
+        productImage.src = '';
+        productImage.style.display = 'none';
+    }
 
     lowStockButton.addEventListener('click', async () => {
-        const products = await db.getAllProducts();
-        lowStockList.innerHTML = '';
+        if (lowStockResults.style.display === 'block') {
+            lowStockResults.style.display = 'none';
+            return;
+        }
 
-        const lowStockProducts = products.filter(product => product.stock <= 5);
+        lowStockList.innerHTML = '';
+        const allProducts = await db.getAllProducts();
+        const lowStockProducts = allProducts.filter(product => product.stock <= 5);
 
         if (lowStockProducts.length > 0) {
             lowStockProducts.forEach(product => {
-                const item = document.createElement('li');
-                item.textContent = `${product.description} - Stock: ${product.stock}`;
-                lowStockList.appendChild(item);
+                const li = document.createElement('li');
+                li.textContent = `${product.description} (Código: ${product.barcode}) - Stock: ${product.stock}`;
+                lowStockList.appendChild(li);
             });
         } else {
             lowStockList.innerHTML = '<li>No hay productos con stock bajo.</li>';
@@ -299,27 +362,92 @@ document.addEventListener('DOMContentLoaded', async () => {
         lowStockResults.style.display = 'block';
     });
 
-    fileInput.addEventListener('change', async (event) => {
-        const file = event.target.files[0];
-        if (file && file.type === 'text/csv') {
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                const csvData = e.target.result;
-                const rows = csvData.split('\n').map(row => row.split(','));
+    document.getElementById('import-button').addEventListener('click', () => {
+        fileInput.click();
+    });
 
-                // Suponiendo que el CSV tiene las columnas: barcode,description,stock,price
-                for (const row of rows) {
-                    if (row.length === 4) {
-                        const [barcode, description, stock, price] = row;
-                        await db.addProduct({ barcode, description, stock: parseInt(stock), price: parseFloat(price) });
+    fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+
+        reader.onload = async (e) => {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const products = XLSX.utils.sheet_to_json(worksheet);
+
+                console.log('Productos leídos del archivo:', products);
+
+                let importedCount = 0;
+                for (let product of products) {
+                    console.log('Procesando producto:', product);
+                    
+                    // Función auxiliar para buscar la clave correcta
+                    const findKey = (possibleKeys) => {
+                        return possibleKeys.find(key => product.hasOwnProperty(key));
+                    };
+
+                    // Buscar las claves correctas
+                    const barcodeKey = findKey(['Código de barras', 'Codigo de Barras', 'codigo de barras', 'barcode']);
+                    const descriptionKey = findKey(['Descripción', 'Descripcion', 'descripcion', 'description']);
+                    const stockKey = findKey(['Stock', 'stock']);
+                    const priceKey = findKey(['Precio Costo', 'Precio', 'precio', 'price']);
+                    const imageKey = findKey(['Imagen', 'imagen', 'image']);
+
+                    if (!barcodeKey) {
+                        console.warn('Producto sin código de barras:', product);
+                        continue;
+                    }
+
+                    try {
+                        const newProduct = {
+                            barcode: product[barcodeKey].toString(),
+                            description: product[descriptionKey] || '',
+                            stock: parseInt(product[stockKey] || '0'),
+                            price: parseFloat(product[priceKey] || '0'),
+                            image: product[imageKey] || ''
+                        };
+
+                        console.log('Intentando agregar producto:', newProduct);
+                        await db.addProduct(newProduct);
+                        importedCount++;
+                        console.log('Producto agregado con éxito');
+                    } catch (error) {
+                        console.error('Error al agregar producto:', product, error);
                     }
                 }
-                alert('Productos importados con éxito.');
-            };
-            reader.readAsText(file);
-        } else {
-            alert('Por favor, selecciona un archivo CSV.');
-        }
+
+                console.log(`Importación completada. ${importedCount} productos importados correctamente.`);
+                alert(`Importación completada. ${importedCount} productos importados correctamente.`);
+            } catch (error) {
+                console.error('Error durante la importación:', error);
+                alert('Error durante la importación. Por favor, revisa la consola para más detalles.');
+            }
+        };
+
+        reader.onerror = (error) => {
+            console.error('Error al leer el archivo:', error);
+            alert('Error al leer el archivo. Por favor, intenta de nuevo.');
+        };
+
+        reader.readAsArrayBuffer(file);
+    });
+
+    document.getElementById('export-button').addEventListener('click', async () => {
+        const allProducts = await db.getAllProducts();
+        const worksheet = XLSX.utils.json_to_sheet(allProducts.map(product => ({
+            'Código de Barras': product.barcode,
+            'Descripción': product.description,
+            'Stock': product.stock,
+            'Precio': product.price
+        })));
+        
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Productos");
+        
+        XLSX.writeFile(workbook, "productos_exportados.xlsx");
     });
 });
 

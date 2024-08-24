@@ -3,14 +3,18 @@
     --secondary-color: #0277BD;
     --accent-color: #FF5722;
     --text-color: #FFFFFF;
-    --background-color: #ECEFF1;
+    --background-color: rgba(236, 239, 241, 0.8); /* Fondo más transparente */
 }
 
 body, html {
     margin: 0;
     padding: 0;
     font-family: Arial, sans-serif;
-    background-color: var(--background-color);
+    background-image: url('https://enrrutador.github.io/M-Escaner/image/1.jpg');
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-position: center;
     color: var(--text-color);
     height: 100%;
     display: flex;
@@ -24,7 +28,7 @@ body, html {
     margin: auto;
     padding: 20px;
     text-align: center;
-    background-color: var(--background-color);
+    background-color: var(--background-color); /* Fondo semitransparente */
     border-radius: 10px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
@@ -151,5 +155,3 @@ input {
     font-size: 0.9em;
     margin-top: 10px;
 }
-
-
