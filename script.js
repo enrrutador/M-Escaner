@@ -68,15 +68,31 @@ loginForm.addEventListener('submit', (e) => {
         });
 });
 
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
     if (user) {
-        loginContainer.style.display = 'none';
-        appContainer.style.display = 'block';
+        const deviceId = getDeviceId();
+        const userDoc = await getUserDevice(user.uid);
+        
+        if (userDoc && userDoc.deviceId && userDoc.deviceId !== deviceId) {
+            await auth.signOut();
+            alert('Este usuario ya está vinculado a otro dispositivo.');
+            loginContainer.style.display = 'block';
+            appContainer.style.display = 'none';
+        } else {
+            if (!userDoc || !userDoc.deviceId) {
+                await linkDeviceToUser(user.uid, deviceId);
+            }
+            loginContainer.style.display = 'none';
+            appContainer.style.display = 'block';
+        }
     } else {
         loginContainer.style.display = 'block';
         appContainer.style.display = 'none';
     }
 });
+
+// El resto del código (ProductDatabase, funciones de escáner, etc.) permanece sin cambios
+// ... (Código omitido por brevedad)
 
 // Clase para la base de datos de productos
 class ProductDatabase {
