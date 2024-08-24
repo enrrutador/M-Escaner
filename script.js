@@ -283,14 +283,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         clearForm();
     });
 
-    document.getElementById('clear-button').addEventListener('click', clearForm);
+    document.getElementById('clear-button').addEventListener('click', () => {
+        clearForm();
+    });
 
     function clearForm() {
         barcodeInput.value = '';
         descriptionInput.value = '';
         stockInput.value = '';
         priceInput.value = '';
-        productImage.src = '';
         productImage.style.display = 'none';
     }
 
@@ -300,16 +301,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        lowStockList.innerHTML = '';
         const allProducts = await db.getAllProducts();
-        const lowStockProducts = allProducts.filter(product => product.stock <= 5);
+        const lowStockProducts = allProducts.filter(product => product.stock < 10);
 
         if (lowStockProducts.length > 0) {
-            lowStockProducts.forEach(product => {
-                const li = document.createElement('li');
-                li.textContent = `${product.description} (Código: ${product.barcode}) - Stock: ${product.stock}`;
-                lowStockList.appendChild(li);
-            });
+            lowStockList.innerHTML = lowStockProducts.map(product => `
+                <li>${product.description} (Código de barras: ${product.barcode}, Stock: ${product.stock})</li>
+            `).join('');
         } else {
             lowStockList.innerHTML = '<li>No hay productos con stock bajo.</li>';
         }
@@ -317,91 +315,61 @@ document.addEventListener('DOMContentLoaded', async () => {
         lowStockResults.style.display = 'block';
     });
 
+    // Importar productos desde un archivo Excel
     document.getElementById('import-button').addEventListener('click', () => {
         fileInput.click();
     });
 
-    fileInput.addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-
-        reader.onload = async (e) => {
-            try {
+    fileInput.addEventListener('change', async (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
                 const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, {type: 'array'});
+                const workbook = XLSX.read(data, { type: 'array' });
                 const firstSheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[firstSheetName];
-                const products = XLSX.utils.sheet_to_json(worksheet);
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-                console.log('Productos leídos del archivo:', products);
-
-                let importedCount = 0;
-                for (let product of products) {
-                    console.log('Procesando producto:', product);
-                    
-                    // Función auxiliar para buscar la clave correcta
-                    const findKey = (possibleKeys) => {
-                        return possibleKeys.find(key => product.hasOwnProperty(key));
+                for (let i = 1; i < jsonData.length; i++) {
+                    const row = jsonData[i];
+                    const product = {
+                        barcode: row[0],
+                        description: row[1],
+                        stock: parseInt(row[2]) || 0,
+                        price: parseFloat(row[3]) || 0,
+                        image: row[4] || ''
                     };
-
-                    // Buscar las claves correctas
-                    const barcodeKey = findKey(['Código de barras', 'Codigo de Barras', 'codigo de barras', 'barcode']);
-                    const descriptionKey = findKey(['Descripción', 'Descripcion', 'descripcion', 'description']);
-                    const stockKey = findKey(['Stock', 'stock']);
-                    const priceKey = findKey(['Precio Costo', 'Precio', 'precio', 'price']);
-                    const imageKey = findKey(['Imagen', 'imagen', 'image']);
-
-                    if (!barcodeKey) {
-                        console.warn('Producto sin código de barras:', product);
-                        continue;
-                    }
-
-                    try {
-                        const newProduct = {
-                            barcode: product[barcodeKey].toString(),
-                            description: product[descriptionKey] || '',
-                            stock: parseInt(product[stockKey] || '0'),
-                            price: parseFloat(product[priceKey] || '0'),
-                            image: product[imageKey] || ''
-                        };
-
-                        console.log('Intentando agregar producto:', newProduct);
-                        await db.addProduct(newProduct);
-                        importedCount++;
-                        console.log('Producto agregado con éxito');
-                    } catch (error) {
-                        console.error('Error al agregar producto:', product, error);
-                    }
+                    await db.addProduct(product);
                 }
-
-                console.log(`Importación completada. ${importedCount} productos importados correctamente.`);
-                alert(`Importación completada. ${importedCount} productos importados correctamente.`);
-            } catch (error) {
-                console.error('Error durante la importación:', error);
-                alert('Error durante la importación. Por favor, revisa la consola para más detalles.');
-            }
-        };
-
-        reader.onerror = (error) => {
-            console.error('Error al leer el archivo:', error);
-            alert('Error al leer el archivo. Por favor, intenta de nuevo.');
-        };
-
-        reader.readAsArrayBuffer(file);
+                alert('Productos importados correctamente.');
+            };
+            reader.readAsArrayBuffer(file);
+        }
     });
 
+    // Exportar productos a un archivo Excel
     document.getElementById('export-button').addEventListener('click', async () => {
         const allProducts = await db.getAllProducts();
-        const worksheet = XLSX.utils.json_to_sheet(allProducts.map(product => ({
-            'Código de Barras': product.barcode,
-            'Descripción': product.description,
-            'Stock': product.stock,
-            'Precio': product.price
-        })));
-        
+
+        if (allProducts.length === 0) {
+            alert('No hay productos para exportar.');
+            return;
+        }
+
+        const worksheet = XLSX.utils.json_to_sheet(allProducts);
         const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Productos");
-        
-        XLSX.writeFile(workbook, "productos_exportados.xlsx");
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Productos');
+        const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+
+        const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'productos.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     });
 });
