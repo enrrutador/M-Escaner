@@ -283,89 +283,54 @@ document.addEventListener('DOMContentLoaded', async () => {
         clearForm();
     });
 
-    document.getElementById('clear-button').addEventListener('click', () => {
-        clearForm();
-    });
+    document.getElementById('clear-button').addEventListener('click', clearForm);
 
-    function clearForm() {
+    async function clearForm() {
         barcodeInput.value = '';
         descriptionInput.value = '';
         stockInput.value = '';
         priceInput.value = '';
         productImage.src = '';
         productImage.style.display = 'none';
+        cache.clear();
+        barcodeDetector = null;
+        stopScanner();
     }
 
     lowStockButton.addEventListener('click', async () => {
+        const lowStockProducts = await db.getAllProducts();
+        lowStockResults.style.display = 'block';
         lowStockList.innerHTML = '';
 
-        if (lowStockResults.style.display === 'none' || !lowStockResults.style.display) {
-            const products = await db.getAllProducts();
-            const lowStockProducts = products.filter(product => product.stock <= 5);
-
-            lowStockProducts.forEach(product => {
-                const li = document.createElement('li');
-                li.textContent = `${product.description} (Stock: ${product.stock})`;
-                lowStockList.appendChild(li);
-            });
-
-            if (lowStockProducts.length === 0) {
-                lowStockList.textContent = 'No hay productos con bajo stock.';
+        lowStockProducts.forEach((product) => {
+            if (product.stock < 5) {
+                const listItem = document.createElement('li');
+                listItem.textContent = `${product.description} (Código de barras: ${product.barcode}, Stock: ${product.stock})`;
+                lowStockList.appendChild(listItem);
             }
-
-            lowStockResults.style.display = 'block';
-        } else {
-            lowStockResults.style.display = 'none';
-        }
-    });
-
-    document.getElementById('export-button').addEventListener('click', async () => {
-        const products = await db.getAllProducts();
-        if (products.length === 0) {
-            alert('No hay productos para exportar.');
-            return;
-        }
-
-        const csvContent = 'data:text/csv;charset=utf-8,'
-            + ['Código de Barras', 'Descripción', 'Stock', 'Precio'].join(',') + '\n'
-            + products.map(product => [product.barcode, product.description, product.stock, product.price].join(',')).join('\n');
-
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement('a');
-        link.setAttribute('href', encodedUri);
-        link.setAttribute('download', 'productos.csv');
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    });
-
-    document.getElementById('import-button').addEventListener('click', () => {
-        fileInput.click();
+        });
     });
 
     fileInput.addEventListener('change', async (event) => {
         const file = event.target.files[0];
-        if (!file) return;
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const data = e.target.result;
+                const workbook = XLSX.read(data, { type: 'binary' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const products = XLSX.utils.sheet_to_json(worksheet);
 
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            const text = e.target.result;
-            const lines = text.split('\n').slice(1);
-
-            for (const line of lines) {
-                const [barcode, description, stock, price] = line.split(',');
-                if (barcode) {
-                    const product = {
-                        barcode: barcode.trim(),
-                        description: description.trim(),
-                        stock: parseInt(stock.trim()) || 0,
-                        price: parseFloat(price.trim()) || 0
-                    };
-                    await db.addProduct(product);
+                for (const product of products) {
+                    if (product.barcode) {
+                        await db.addProduct(product);
+                    }
                 }
-            }
-            alert('Productos importados correctamente.');
-        };
-        reader.readAsText(file);
+                alert('Productos importados correctamente.');
+            };
+            reader.readAsBinaryString(file);
+        }
     });
 });
+;
