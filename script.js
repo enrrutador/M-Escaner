@@ -1,5 +1,6 @@
 import { auth } from './firebaseConfig.js';
 import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import { v4 as uuidv4 } from 'https://cdn.jsdelivr.net/npm/uuid@8.3.2/dist/esm-browser/index.js'; // Importar UUID
 
 // Manejar el formulario de inicio de sesión
 const loginForm = document.getElementById('loginForm');
@@ -14,8 +15,32 @@ loginForm.addEventListener('submit', (e) => {
     const password = document.getElementById('password').value;
     
     signInWithEmailAndPassword(auth, email, password)
-        .then((userCredential) => {
-            console.log('Usuario autenticado:', userCredential.user);
+        .then(async (userCredential) => {
+            const user = userCredential.user;
+
+            // Genera un UUID para el dispositivo
+            const deviceUUID = uuidv4();
+
+            // Almacena el UUID junto con el correo del usuario en Realtime Database
+            const userRef = firebase.database().ref('users/' + user.uid);
+            const snapshot = await userRef.once('value');
+
+            const existingUUID = snapshot.val()?.deviceUUID;
+
+            if (existingUUID && existingUUID !== deviceUUID) {
+                // Si ya existe un UUID diferente, deniega el acceso
+                alert('Este correo ya está vinculado a otro dispositivo.');
+                firebase.auth().signOut(); // Cerrar sesión
+            } else {
+                // Si no existe o coincide, guarda el UUID
+                userRef.set({
+                    email: user.email,
+                    deviceUUID: deviceUUID,
+                });
+                alert('Sesión iniciada con éxito.');
+                loginContainer.style.display = 'none';
+                appContainer.style.display = 'block';
+            }
         })
         .catch((error) => {
             console.error('Error de autenticación:', error.code, error.message);
@@ -46,7 +71,7 @@ class ProductDatabase {
         return new Promise((resolve, reject) => {
             const request = indexedDB.open(this.dbName, this.dbVersion);
 
-            request.onerror = (event) => reject('Error opening database:', event.target.error);
+            request.onerror = (event) => reject('Error abriendo la base de datos:', event.target.error);
 
             request.onsuccess = (event) => {
                 this.db = event.target.result;
@@ -68,7 +93,7 @@ class ProductDatabase {
             const request = store.put(product);
 
             request.onsuccess = () => resolve();
-            request.onerror = (event) => reject('Error adding product:', event.target.error);
+            request.onerror = (event) => reject('Error agregando producto:', event.target.error);
         });
     }
 
@@ -78,7 +103,7 @@ class ProductDatabase {
             const request = transaction.objectStore(this.storeName).get(barcode);
 
             request.onsuccess = (event) => resolve(event.target.result);
-            request.onerror = (event) => reject('Error getting product:', event.target.error);
+            request.onerror = (event) => reject('Error obteniendo producto:', event.target.error);
         });
     }
 
@@ -88,7 +113,7 @@ class ProductDatabase {
             const request = transaction.objectStore(this.storeName).getAll();
 
             request.onsuccess = (event) => resolve(event.target.result);
-            request.onerror = (event) => reject('Error getting all products:', event.target.error);
+            request.onerror = (event) => reject('Error obteniendo todos los productos:', event.target.error);
         });
     }
 
@@ -114,7 +139,7 @@ class ProductDatabase {
                 }
             };
 
-            request.onerror = (event) => reject('Error searching products:', event.target.error);
+            request.onerror = (event) => reject('Error buscando productos:', event.target.error);
         });
     }
 }
@@ -247,68 +272,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    document.getElementById('scan-button').addEventListener('click', async () => {
-        if (!('BarcodeDetector' in window)) {
-            alert('API de detección de códigos de barras no soportada en este navegador.');
-            return;
-        }
-
-        if (!barcodeDetector) {
-            barcodeDetector = new BarcodeDetector({ formats: ['ean_13'] });
-        }
-
-        startScanner();
-    });
-
-    document.getElementById('search-button').addEventListener('click', () => {
-        const query = barcodeInput.value.trim() || descriptionInput.value.trim();
-        if (query) {
-            searchProduct(query);
-        } else {
-            alert('Por favor, introduce un código de barras o nombre de producto para buscar.');
-        }
-    });
-
-    document.getElementById('save-button').addEventListener('click', async () => {
-        const product = {
-            barcode: barcodeInput.value.trim(),
-            description: descriptionInput.value.trim(),
-            stock: parseInt(stockInput.value) || 0,
-            price: parseFloat(priceInput.value) || 0,
-            image: productImage.src || ''
-        };
-
-        await db.addProduct(product);
-        alert('Producto guardado correctamente.');
-        clearForm();
-    });
-
-    document.getElementById('clear-button').addEventListener('click', clearForm);
-
-    function clearForm() {
-        barcodeInput.value = '';
-        descriptionInput.value = '';
-        stockInput.value = '';
-        priceInput.value = '';
-        productImage.src = '';
-        productImage.style.display = 'none';
-    }
+    document.getElementById('start-scanner-button').addEventListener('click', startScanner);
 
     lowStockButton.addEventListener('click', async () => {
-        if (lowStockResults.style.display === 'block') {
-            lowStockResults.style.display = 'none';
-            return;
-        }
-
+        const products = await db.getAllProducts();
         lowStockList.innerHTML = '';
-        const allProducts = await db.getAllProducts();
-        const lowStockProducts = allProducts.filter(product => product.stock <= 5);
+
+        const lowStockProducts = products.filter(product => product.stock <= 5);
 
         if (lowStockProducts.length > 0) {
             lowStockProducts.forEach(product => {
-                const li = document.createElement('li');
-                li.textContent = `${product.description} (Código: ${product.barcode}) - Stock: ${product.stock}`;
-                lowStockList.appendChild(li);
+                const item = document.createElement('li');
+                item.textContent = `${product.description} - Stock: ${product.stock}`;
+                lowStockList.appendChild(item);
             });
         } else {
             lowStockList.innerHTML = '<li>No hay productos con stock bajo.</li>';
@@ -317,91 +293,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         lowStockResults.style.display = 'block';
     });
 
-    document.getElementById('import-button').addEventListener('click', () => {
-        fileInput.click();
-    });
+    fileInput.addEventListener('change', async (event) => {
+        const file = event.target.files[0];
+        if (file && file.type === 'text/csv') {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const csvData = e.target.result;
+                const rows = csvData.split('\n').map(row => row.split(','));
 
-    fileInput.addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-
-        reader.onload = async (e) => {
-            try {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, {type: 'array'});
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
-                const products = XLSX.utils.sheet_to_json(worksheet);
-
-                console.log('Productos leídos del archivo:', products);
-
-                let importedCount = 0;
-                for (let product of products) {
-                    console.log('Procesando producto:', product);
-                    
-                    // Función auxiliar para buscar la clave correcta
-                    const findKey = (possibleKeys) => {
-                        return possibleKeys.find(key => product.hasOwnProperty(key));
-                    };
-
-                    // Buscar las claves correctas
-                    const barcodeKey = findKey(['Código de barras', 'Codigo de Barras', 'codigo de barras', 'barcode']);
-                    const descriptionKey = findKey(['Descripción', 'Descripcion', 'descripcion', 'description']);
-                    const stockKey = findKey(['Stock', 'stock']);
-                    const priceKey = findKey(['Precio Costo', 'Precio', 'precio', 'price']);
-                    const imageKey = findKey(['Imagen', 'imagen', 'image']);
-
-                    if (!barcodeKey) {
-                        console.warn('Producto sin código de barras:', product);
-                        continue;
-                    }
-
-                    try {
-                        const newProduct = {
-                            barcode: product[barcodeKey].toString(),
-                            description: product[descriptionKey] || '',
-                            stock: parseInt(product[stockKey] || '0'),
-                            price: parseFloat(product[priceKey] || '0'),
-                            image: product[imageKey] || ''
-                        };
-
-                        console.log('Intentando agregar producto:', newProduct);
-                        await db.addProduct(newProduct);
-                        importedCount++;
-                        console.log('Producto agregado con éxito');
-                    } catch (error) {
-                        console.error('Error al agregar producto:', product, error);
+                // Suponiendo que el CSV tiene las columnas: barcode,description,stock,price
+                for (const row of rows) {
+                    if (row.length === 4) {
+                        const [barcode, description, stock, price] = row;
+                        await db.addProduct({ barcode, description, stock: parseInt(stock), price: parseFloat(price) });
                     }
                 }
-
-                console.log(`Importación completada. ${importedCount} productos importados correctamente.`);
-                alert(`Importación completada. ${importedCount} productos importados correctamente.`);
-            } catch (error) {
-                console.error('Error durante la importación:', error);
-                alert('Error durante la importación. Por favor, revisa la consola para más detalles.');
-            }
-        };
-
-        reader.onerror = (error) => {
-            console.error('Error al leer el archivo:', error);
-            alert('Error al leer el archivo. Por favor, intenta de nuevo.');
-        };
-
-        reader.readAsArrayBuffer(file);
-    });
-
-    document.getElementById('export-button').addEventListener('click', async () => {
-        const allProducts = await db.getAllProducts();
-        const worksheet = XLSX.utils.json_to_sheet(allProducts.map(product => ({
-            'Código de Barras': product.barcode,
-            'Descripción': product.description,
-            'Stock': product.stock,
-            'Precio': product.price
-        })));
-        
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Productos");
-        
-        XLSX.writeFile(workbook, "productos_exportados.xlsx");
+                alert('Productos importados con éxito.');
+            };
+            reader.readAsText(file);
+        } else {
+            alert('Por favor, selecciona un archivo CSV.');
+        }
     });
 });
+
