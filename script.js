@@ -1,5 +1,32 @@
 import { auth } from './firebaseConfig.js';
 import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+// Inicializar Firestore
+const db = getFirestore();
+
+// Función para obtener o generar un ID de dispositivo único
+function getDeviceId() {
+    let deviceId = localStorage.getItem('deviceId');
+    if (!deviceId) {
+        deviceId = crypto.randomUUID();  // Generar un UUID
+        localStorage.setItem('deviceId', deviceId);
+    }
+    return deviceId;
+}
+
+// Función para vincular el ID del dispositivo al usuario en Firestore
+async function linkDeviceToUser(userId, deviceId) {
+    const userRef = doc(db, 'users', userId);
+    await setDoc(userRef, { deviceId }, { merge: true });
+}
+
+// Función para obtener el ID del dispositivo vinculado desde Firestore
+async function getUserDevice(userId) {
+    const userRef = doc(db, 'users', userId);
+    const userDoc = await getDoc(userRef);
+    return userDoc.exists() ? userDoc.data() : null;
+}
 
 // Manejar el formulario de inicio de sesión
 const loginForm = document.getElementById('loginForm');
@@ -12,10 +39,28 @@ loginForm.addEventListener('submit', (e) => {
     
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
-    
+    const deviceId = getDeviceId();
+
     signInWithEmailAndPassword(auth, email, password)
-        .then((userCredential) => {
-            console.log('Usuario autenticado:', userCredential.user);
+        .then(async (userCredential) => {
+            const user = userCredential.user;
+
+            // Recuperar el ID del dispositivo vinculado desde Firestore
+            const userDoc = await getUserDevice(user.uid);
+
+            if (userDoc && userDoc.deviceId && userDoc.deviceId !== deviceId) {
+                // Si hay una discrepancia, cerrar sesión y mostrar un error
+                await auth.signOut();
+                alert('Este usuario ya está vinculado a otro dispositivo.');
+                return;
+            }
+
+            // Vincular el ID del dispositivo actual con la cuenta del usuario si aún no está vinculado
+            if (!userDoc || !userDoc.deviceId) {
+                await linkDeviceToUser(user.uid, deviceId);
+            }
+
+            console.log('Usuario autenticado:', user);
         })
         .catch((error) => {
             console.error('Error de autenticación:', error.code, error.message);
@@ -285,52 +330,124 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('clear-button').addEventListener('click', clearForm);
 
-    async function clearForm() {
+    function clearForm() {
         barcodeInput.value = '';
         descriptionInput.value = '';
         stockInput.value = '';
         priceInput.value = '';
         productImage.src = '';
         productImage.style.display = 'none';
-        cache.clear();
-        barcodeDetector = null;
-        stopScanner();
     }
 
     lowStockButton.addEventListener('click', async () => {
-        const lowStockProducts = await db.getAllProducts();
-        lowStockResults.style.display = 'block';
-        lowStockList.innerHTML = '';
+        if (lowStockResults.style.display === 'block') {
+            lowStockResults.style.display = 'none';
+            return;
+        }
 
-        lowStockProducts.forEach((product) => {
-            if (product.stock < 5) {
-                const listItem = document.createElement('li');
-                listItem.textContent = `${product.description} (Código de barras: ${product.barcode}, Stock: ${product.stock})`;
-                lowStockList.appendChild(listItem);
-            }
-        });
+        lowStockList.innerHTML = '';
+        const allProducts = await db.getAllProducts();
+        const lowStockProducts = allProducts.filter(product => product.stock <= 5);
+
+        if (lowStockProducts.length > 0) {
+            lowStockProducts.forEach(product => {
+                const li = document.createElement('li');
+                li.textContent = `${product.description} (Código: ${product.barcode}) - Stock: ${product.stock}`;
+                lowStockList.appendChild(li);
+            });
+        } else {
+            lowStockList.innerHTML = '<li>No hay productos con stock bajo.</li>';
+        }
+
+        lowStockResults.style.display = 'block';
     });
 
-    fileInput.addEventListener('change', async (event) => {
-        const file = event.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                const data = e.target.result;
-                const workbook = XLSX.read(data, { type: 'binary' });
-                const sheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
+    document.getElementById('import-button').addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+
+        reader.onload = async (e) => {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
                 const products = XLSX.utils.sheet_to_json(worksheet);
 
-                for (const product of products) {
-                    if (product.barcode) {
-                        await db.addProduct(product);
+                console.log('Productos leídos del archivo:', products);
+
+                let importedCount = 0;
+                for (let product of products) {
+                    console.log('Procesando producto:', product);
+                    
+                    // Función auxiliar para buscar la clave correcta
+                    const findKey = (possibleKeys) => {
+                        return possibleKeys.find(key => product.hasOwnProperty(key));
+                    };
+
+                    // Buscar las claves correctas
+                    const barcodeKey = findKey(['Código de barras', 'Codigo de Barras', 'codigo de barras', 'barcode']);
+                    const descriptionKey = findKey(['Descripción', 'Descripcion', 'descripcion', 'description']);
+                    const stockKey = findKey(['Stock', 'stock']);
+                    const priceKey = findKey(['Precio Costo', 'Precio', 'precio', 'price']);
+                    const imageKey = findKey(['Imagen', 'imagen', 'image']);
+
+                    if (!barcodeKey) {
+                        console.warn('Producto sin código de barras:', product);
+                        continue;
+                    }
+
+                    try {
+                        const newProduct = {
+                            barcode: product[barcodeKey].toString(),
+                            description: product[descriptionKey] || '',
+                            stock: parseInt(product[stockKey] || '0'),
+                            price: parseFloat(product[priceKey] || '0'),
+                            image: product[imageKey] || ''
+                        };
+
+                        console.log('Intentando agregar producto:', newProduct);
+                        await db.addProduct(newProduct);
+                        importedCount++;
+                        console.log('Producto agregado con éxito');
+                    } catch (error) {
+                        console.error('Error al agregar producto:', product, error);
                     }
                 }
-                alert('Productos importados correctamente.');
-            };
-            reader.readAsBinaryString(file);
-        }
+
+                console.log(`Importación completada. ${importedCount} productos importados correctamente.`);
+                alert(`Importación completada. ${importedCount} productos importados correctamente.`);
+            } catch (error) {
+                console.error('Error durante la importación:', error);
+                alert('Error durante la importación. Por favor, revisa la consola para más detalles.');
+            }
+        };
+
+        reader.onerror = (error) => {
+            console.error('Error al leer el archivo:', error);
+            alert('Error al leer el archivo. Por favor, intenta de nuevo.');
+        };
+
+        reader.readAsArrayBuffer(file);
+    });
+
+    document.getElementById('export-button').addEventListener('click', async () => {
+        const allProducts = await db.getAllProducts();
+        const worksheet = XLSX.utils.json_to_sheet(allProducts.map(product => ({
+            'Código de Barras': product.barcode,
+            'Descripción': product.description,
+            'Stock': product.stock,
+            'Precio': product.price
+        })));
+        
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Productos");
+        
+        XLSX.writeFile(workbook, "productos_exportados.xlsx");
     });
 });
-;
+
