@@ -1,31 +1,36 @@
-import { auth } from './firebaseConfig.js';
+import { auth, database } from './firebaseConfig.js';
 import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import { ref, set, get } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
 import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
 // Inicializar Firestore
 const db = getFirestore();
 
 // Función para obtener o generar un ID de dispositivo único
-function getDeviceId() {
-    let deviceId = localStorage.getItem('deviceId');
-    if (!deviceId) {
-        deviceId = crypto.randomUUID();  // Generar un UUID
-        localStorage.setItem('deviceId', deviceId);
+async function getDeviceId(userId) {
+    const deviceIdRef = ref(database, `users/${userId}/deviceId`);
+    const snapshot = await get(deviceIdRef);
+    
+    if (snapshot.exists()) {
+        return snapshot.val();
+    } else {
+        const newDeviceId = crypto.randomUUID();
+        await set(deviceIdRef, newDeviceId);
+        return newDeviceId;
     }
-    return deviceId;
 }
 
-// Función para vincular el ID del dispositivo al usuario en Firestore
+// Función para vincular el ID del dispositivo al usuario en Realtime Database
 async function linkDeviceToUser(userId, deviceId) {
-    const userRef = doc(db, 'users', userId);
-    await setDoc(userRef, { deviceId }, { merge: true });
+    const userRef = ref(database, `users/${userId}`);
+    await set(userRef, { deviceId });
 }
 
-// Función para obtener el ID del dispositivo vinculado desde Firestore
+// Función para obtener el ID del dispositivo vinculado desde Realtime Database
 async function getUserDevice(userId) {
-    const userRef = doc(db, 'users', userId);
-    const userDoc = await getDoc(userRef);
-    return userDoc.exists() ? userDoc.data() : null;
+    const userRef = ref(database, `users/${userId}`);
+    const snapshot = await get(userRef);
+    return snapshot.exists() ? snapshot.val() : null;
 }
 
 // Manejar el formulario de inicio de sesión
@@ -34,38 +39,39 @@ const loginContainer = document.getElementById('login-container');
 const appContainer = document.getElementById('app-container');
 const loginError = document.getElementById('login-error');
 
-loginForm.addEventListener('submit', (e) => {
+loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
-    const deviceId = getDeviceId();
 
-    signInWithEmailAndPassword(auth, email, password)
-        .then(async (userCredential) => {
-            const user = userCredential.user;
+    try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
 
-            // Recuperar el ID del dispositivo vinculado desde Firestore
-            const userDoc = await getUserDevice(user.uid);
+        // Obtener o generar el ID del dispositivo
+        const deviceId = await getDeviceId(user.uid);
 
-            if (userDoc && userDoc.deviceId && userDoc.deviceId !== deviceId) {
-                // Si hay una discrepancia, cerrar sesión y mostrar un error
-                await auth.signOut();
-                alert('Este usuario ya está vinculado a otro dispositivo.');
-                return;
-            }
+        // Recuperar el ID del dispositivo vinculado desde Realtime Database
+        const userDoc = await getUserDevice(user.uid);
 
-            // Vincular el ID del dispositivo actual con la cuenta del usuario si aún no está vinculado
-            if (!userDoc || !userDoc.deviceId) {
-                await linkDeviceToUser(user.uid, deviceId);
-            }
+        if (userDoc && userDoc.deviceId && userDoc.deviceId !== deviceId) {
+            // Si hay una discrepancia, cerrar sesión y mostrar un error
+            await auth.signOut();
+            alert('Este usuario ya está vinculado a otro dispositivo.');
+            return;
+        }
 
-            console.log('Usuario autenticado:', user);
-        })
-        .catch((error) => {
-            console.error('Error de autenticación:', error.code, error.message);
-            loginError.textContent = 'Error al iniciar sesión. Verifica tu correo y contraseña.';
-        });
+        // Vincular el ID del dispositivo actual con la cuenta del usuario si aún no está vinculado
+        if (!userDoc || !userDoc.deviceId) {
+            await linkDeviceToUser(user.uid, deviceId);
+        }
+
+        console.log('Usuario autenticado:', user);
+    } catch (error) {
+        console.error('Error de autenticación:', error.code, error.message);
+        loginError.textContent = 'Error al iniciar sesión. Verifica tu correo y contraseña.';
+    }
 });
 
 onAuthStateChanged(auth, (user) => {
@@ -412,7 +418,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                         console.log('Intentando agregar producto:', newProduct);
                         await db.addProduct(newProduct);
-                        importedCount++;
+                        importedCountimportedCount++;
                         console.log('Producto agregado con éxito');
                     } catch (error) {
                         console.error('Error al agregar producto:', product, error);
@@ -450,4 +456,3 @@ document.addEventListener('DOMContentLoaded', async () => {
         XLSX.writeFile(workbook, "productos_exportados.xlsx");
     });
 });
-
