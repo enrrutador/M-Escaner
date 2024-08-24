@@ -1,4 +1,4 @@
- import { auth } from './firebaseConfig.js';
+import { auth } from './firebaseConfig.js';
 import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
@@ -258,7 +258,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function searchInOpenFoodFacts(query) {
         try {
-            const response = await fetch(https://world.openfoodfacts.org/api/v0/product/${query}.json);
+            const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${query}.json`);
             const data = await response.json();
 
             if (data.product) {
@@ -352,7 +352,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (lowStockProducts.length > 0) {
             lowStockProducts.forEach(product => {
                 const li = document.createElement('li');
-                li.textContent = ${product.description} (Código: ${product.barcode}) - Stock: ${product.stock};
+                li.textContent = `${product.description} (Código: ${product.barcode}) - Stock: ${product.stock}`;
                 lowStockList.appendChild(li);
             });
         } else {
@@ -419,8 +419,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 }
 
-                console.log(Importación completada. ${importedCount} productos importados correctamente.);
-                alert(Importación completada. ${importedCount} productos importados correctamente.);
+                console.log(`Importación completada. ${importedCount} productos importados correctamente.`);
+                alert(`Importación completada. ${importedCount} productos importados correctamente.`);
             } catch (error) {
                 console.error('Error durante la importación:', error);
                 alert('Error durante la importación. Por favor, revisa la consola para más detalles.');
