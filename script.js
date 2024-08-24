@@ -1,29 +1,21 @@
 import { auth, database } from './firebaseConfig.js';
 import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-import { ref, set, get } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
-import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
-
-// Inicializar Firestore
-const db = getFirestore();
+import { ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
 
 // Función para obtener o generar un ID de dispositivo único
-async function getDeviceId(userId) {
-    const deviceIdRef = ref(database, `users/${userId}/deviceId`);
-    const snapshot = await get(deviceIdRef);
-    
-    if (snapshot.exists()) {
-        return snapshot.val();
-    } else {
-        const newDeviceId = crypto.randomUUID();
-        await set(deviceIdRef, newDeviceId);
-        return newDeviceId;
+function getDeviceId() {
+    let deviceId = localStorage.getItem('deviceId');
+    if (!deviceId) {
+        deviceId = crypto.randomUUID();
+        localStorage.setItem('deviceId', deviceId);
     }
+    return deviceId;
 }
 
 // Función para vincular el ID del dispositivo al usuario en Realtime Database
 async function linkDeviceToUser(userId, deviceId) {
     const userRef = ref(database, `users/${userId}`);
-    await set(userRef, { deviceId });
+    await set(userRef, { deviceId, lastLogin: new Date().toISOString() });
 }
 
 // Función para obtener el ID del dispositivo vinculado desde Realtime Database
@@ -44,30 +36,34 @@ loginForm.addEventListener('submit', async (e) => {
     
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
+    const deviceId = getDeviceId();
 
     try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // Obtener o generar el ID del dispositivo
-        const deviceId = await getDeviceId(user.uid);
-
         // Recuperar el ID del dispositivo vinculado desde Realtime Database
         const userDoc = await getUserDevice(user.uid);
 
         if (userDoc && userDoc.deviceId && userDoc.deviceId !== deviceId) {
-            // Si hay una discrepancia, cerrar sesión y mostrar un error
-            await auth.signOut();
-            alert('Este usuario ya está vinculado a otro dispositivo.');
-            return;
-        }
-
-        // Vincular el ID del dispositivo actual con la cuenta del usuario si aún no está vinculado
-        if (!userDoc || !userDoc.deviceId) {
+            // Si hay una discrepancia, mostrar un mensaje y ofrecer la opción de desbloquear
+            const unlockConfirm = confirm('Esta cuenta está vinculada a otro dispositivo. ¿Deseas desvincular el dispositivo anterior y usar este?');
+            if (unlockConfirm) {
+                await linkDeviceToUser(user.uid, deviceId);
+                alert('Dispositivo actualizado. Ahora puedes usar esta cuenta en este dispositivo.');
+            } else {
+                await auth.signOut();
+                loginError.textContent = 'Inicio de sesión cancelado. La cuenta sigue vinculada al dispositivo original.';
+                return;
+            }
+        } else if (!userDoc || !userDoc.deviceId) {
+            // Si es la primera vez que se inicia sesión, vincular el dispositivo
             await linkDeviceToUser(user.uid, deviceId);
         }
 
         console.log('Usuario autenticado:', user);
+        loginContainer.style.display = 'none';
+        appContainer.style.display = 'block';
     } catch (error) {
         console.error('Error de autenticación:', error.code, error.message);
         loginError.textContent = 'Error al iniciar sesión. Verifica tu correo y contraseña.';
@@ -76,14 +72,23 @@ loginForm.addEventListener('submit', async (e) => {
 
 onAuthStateChanged(auth, (user) => {
     if (user) {
-        loginContainer.style.display = 'none';
-        appContainer.style.display = 'block';
+        const userRef = ref(database, `users/${user.uid}`);
+        onValue(userRef, (snapshot) => {
+            const userData = snapshot.val();
+            if (userData && userData.deviceId !== getDeviceId()) {
+                auth.signOut();
+                alert('Esta cuenta ha sido iniciada en otro dispositivo. Se ha cerrado la sesión por seguridad.');
+                loginContainer.style.display = 'block';
+                appContainer.style.display = 'none';
+            }
+        });
     } else {
         loginContainer.style.display = 'block';
         appContainer.style.display = 'none';
     }
 });
 
+// ... (el resto del código sigue igual)
 // Clase para la base de datos de productos
 class ProductDatabase {
     constructor() {
