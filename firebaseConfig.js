@@ -1,6 +1,7 @@
 // firebaseConfig.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import { getDatabase } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
 
 // Configuración de tu aplicación Firebase
 const firebaseConfig = {
@@ -10,11 +11,13 @@ const firebaseConfig = {
     storageBucket: "autenticacion-escaner.appspot.com",
     messagingSenderId: "425593572191",
     appId: "1:425593572191:web:ffc9141ff393d17e3f04ea",
-    measurementId: "G-BN79XGDJW5"
+    measurementId: "G-BN79XGDJW5",
+    databaseURL: "https://autenticacion-escaner-default-rtdb.firebaseio.com" // Agrega esta línea
 };
 
 // Inicializa Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const database = getDatabase(app);
 
-export { auth };
+export { auth, database };
