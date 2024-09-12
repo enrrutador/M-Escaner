@@ -1,17 +1,9 @@
-/*
-  © [2024] [SYSMARKETHM]. Todos los derechos reservados.
-  
-  Este archivo es parte de [M-Escaner], propiedad de [SYSMARKETHM].
-  
-  El uso, distribución o reproducción no autorizados de este material están estrictamente prohibidos.
-  Para obtener permiso para usar cualquier parte de este código, por favor contacta a [https://sysmarket-hm.web.app/].
-*/
 :root {
     --primary-color: #0288D1;
     --secondary-color: #0277BD;
     --accent-color: #FF5722;
-    --text-color: #FFFFFF;
-    --background-color: rgba(236, 239, 241, 0.8); /* Fondo más transparente */
+    --text-color: #333;
+    --background-color: rgba(236, 239, 241, 0.8);
 }
 
 body, html {
@@ -36,7 +28,7 @@ body, html {
     margin: auto;
     padding: 20px;
     text-align: center;
-    background-color: var(--background-color); /* Fondo semitransparente */
+    background-color: var(--background-color);
     border-radius: 10px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
@@ -47,7 +39,7 @@ header h1 {
     color: var(--primary-color);
 }
 
-.scanner-section, .form-section, .action-section {
+.scanner-section, .form-section, .action-section, .pedidos-section {
     margin-bottom: 20px;
 }
 
@@ -68,7 +60,7 @@ header h1 {
     background-color: var(--accent-color);
 }
 
-input {
+input, select {
     width: calc(100% - 20px);
     padding: 10px;
     margin: 10px 0;
@@ -77,89 +69,46 @@ input {
     font-size: 1em;
 }
 
-.image-section img {
-    max-width: 100%;
-    margin-top: 20px;
-    border-radius: 5px;
-}
-
-.scanner-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
+table {
     width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
+    border-collapse: collapse;
+    margin-top: 10px;
 }
 
-#video {
-    width: 80%;
-    border: 2px solid var(--primary-color);
-    border-radius: 10px;
-}
-
-#viewfinder {
-    position: absolute;
-    width: 60%;
-    height: 40%;
-    border: 2px solid var(--accent-color);
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    border-radius: 10px;
-}
-
-.results-section {
-    margin-top: 20px;
+th, td {
+    border: 1px solid var(--secondary-color);
+    padding: 8px;
     text-align: left;
 }
 
-.results-section h2 {
+th {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+#nuevo-pedido, #lista-pedidos {
+    margin-top: 20px;
+}
+
+#total-pedido {
+    font-weight: bold;
     color: var(--primary-color);
-}
-
-.results-section ul {
-    list-style-type: none;
-    padding-left: 0;
-}
-
-.results-section li {
-    background-color: var(--background-color);
-    padding: 10px;
-    border-bottom: 1px solid var(--secondary-color);
-    border-radius: 5px;
-    margin-bottom: 5px;
-}
-
-.results-section li:hover {
-    background-color: var(--accent-color);
-    color: var(--text-color);
-    cursor: pointer;
-}
-
-.low-stock-button {
-    background-color: red;
-}
-
-.low-stock-results ul {
-    color: #000;
-}
-
-.low-stock-results li {
-    color: #000;
-}
-
-.login-container h2 {
-    color: var(--primary-color);
-    margin-bottom: 20px;
 }
 
 .error-message {
     color: red;
     font-size: 0.9em;
     margin-top: 10px;
+}
+
+/* Asegúrate de que el contenedor de la aplicación sea visible cuando se muestre */
+#app-container {
+    display: none;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+/* Estilo para cuando la aplicación está visible */
+#app-container.visible {
+    display: block;
 }
