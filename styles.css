@@ -1,15 +1,22 @@
+/* © [2024] [SYSMARKETHM]. Todos los derechos reservados.
+   Este archivo es parte de [M-Escaner], propiedad de [SYSMARKETHM].
+   El uso, distribución o reproducción no autorizados de este material están estrictamente prohibidos.
+   Para obtener permiso para usar cualquier parte de este código, por favor contacta a [https://sysmarket-hm.web.app/].
+*/
+
 :root {
     --primary-color: #0288D1;
     --secondary-color: #0277BD;
     --accent-color: #FF5722;
     --text-color: #FFFFFF;
-    --background-color: rgba(236, 239, 241, 0.8);
+    --background-color: rgba(236, 239, 241, 0.8); /* Fondo más transparente */
 }
 
+/* Estilos generales */
 body, html {
     margin: 0;
     padding: 0;
-    font-family: Arial, sans-serif;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-image: url('https://enrrutador.github.io/M-Escaner/image/1.jpg');
     background-size: cover;
     background-repeat: no-repeat;
@@ -22,15 +29,16 @@ body, html {
     align-items: center;
 }
 
-.container, .login-container {
-    width: 90%;
-    max-width: 400px;
-    margin: auto;
-    padding: 20px;
+body {
+    background-color: #f0f2f5;
+}
+
+header {
+    background-color: #FF00FF;
+    color: white;
+    padding: 20px 0;
     text-align: center;
-    background-color: var(--background-color);
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 header h1 {
@@ -39,8 +47,69 @@ header h1 {
     color: var(--primary-color);
 }
 
-.scanner-section, .form-section, .action-section, .pedidos-section {
+h1 {
+    margin: 0;
+    font-size: 2.5em;
+}
+
+.container, .login-container {
+    width: 90%;
+    max-width: 400px;
+    margin: auto;
+    padding: 20px;
+    text-align: center;
+    background-color: var(--background-color); /* Fondo semitransparente */
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.scanner-section, .form-section, .action-section {
     margin-bottom: 20px;
+}
+
+.sidebar {
+    width: 250px;
+    background-color: #FF00FF;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.sidebar button {
+    display: block;
+    width: 100%;
+    background-color: white;
+    color: #FF00FF;
+    border: none;
+    padding: 12px 15px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.sidebar button:hover {
+    background-color: #f0f0f0;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.content {
+    flex-grow: 1;
+    margin-left: 20px;
+    background-color: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+input {
+    width: calc(100% - 20px);
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+    border: 1px solid var(--secondary-color);
+    font-size: 1em;
 }
 
 .action-button {
@@ -60,13 +129,18 @@ header h1 {
     background-color: var(--accent-color);
 }
 
-input, select {
-    width: calc(100% - 20px);
-    padding: 10px;
-    margin: 10px 0;
-    border-radius: 5px;
-    border: 1px solid var(--secondary-color);
-    font-size: 1em;
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th, .table td {
+    padding: 12px;
+    border-bottom: 1px solid #ddd;
+}
+
+.table th {
+    background-color: #f8f9fa;
 }
 
 .image-section img {
@@ -154,32 +228,4 @@ input, select {
     color: red;
     font-size: 0.9em;
     margin-top: 10px;
-}
-
-/* Estilos para la sección de pedidos */
-#nuevo-pedido, #lista-pedidos {
-    margin-top: 20px;
-}
-
-#pedido-table, #pedidos-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
-}
-
-#pedido-table th, #pedido-table td,
-#pedidos-table th, #pedidos-table td {
-    border: 1px solid var(--secondary-color);
-    padding: 8px;
-    text-align: left;
-}
-
-#pedido-table th, #pedidos-table th {
-    background-color: var(--primary-color);
-    color: white;
-}
-
-#total-pedido {
-    font-weight: bold;
-    color: var(--primary-color);
 }

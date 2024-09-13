@@ -1,118 +1,133 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>M-Scanner 2.0 con Gestión de Pedidos</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Gestión de Pedidos - M-Scanner 2.0</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div id="login-container" class="login-container">
-        <h2>Iniciar Sesión</h2>
-        <form id="loginForm">
-            <input type="email" id="email" placeholder="Correo Electrónico" required>
-            <input type="password" id="password" placeholder="Contraseña" required>
-            <button type="submit" class="action-button">Iniciar Sesión</button>
-            <div id="login-error" class="error-message"></div>
-        </form>
+  <!-- Sección de Inicio de Sesión -->
+  <div id="login-container" class="login-container">
+    <h2>Iniciar Sesión</h2>
+    <form id="loginForm">
+      <input type="email" id="email" placeholder="Correo Electrónico" required>
+      <input type="password" id="password" placeholder="Contraseña" required>
+      <button type="submit" class="action-button">Iniciar Sesión</button>
+      <div id="login-error" class="error-message"></div>
+    </form>
+  </div>
+
+  <!-- Sección Principal del Sistema -->
+  <div id="app-container" class="container" style="display: none;">
+    <header>
+      <div class="container">
+        <h1>Sistema de Gestión de Pedidos - M-Scanner 2.0</h1>
+      </div>
+    </header>
+
+    <div class="main-content">
+      <aside class="sidebar">
+        <h2>Gestión de Pedidos</h2>
+        <button id="nuevoClienteBtn">Nuevo Cliente</button>
+        <button id="nuevoPedidoBtn">Nuevo Pedido</button>
+        <button id="listaClientesBtn">Lista de Clientes</button>
+        <button id="listaPedidosBtn">Lista de Pedidos</button>
+      </aside>
+
+      <main class="content">
+        <!-- Sección Nuevo Cliente -->
+        <div id="nuevoCliente" style="display:none;">
+          <h2>Nuevo Cliente</h2>
+          <input type="text" id="nombreCliente" placeholder="Nombre del Cliente">
+          <input type="text" id="apellidoCliente" placeholder="Apellido del Cliente">
+          <input type="text" id="direccionCliente" placeholder="Dirección del Cliente">
+          <input type="tel" id="telefonoCliente" placeholder="Teléfono del Cliente">
+          <input type="email" id="emailCliente" placeholder="Email del Cliente">
+          <button id="guardarClienteBtn">Guardar Cliente</button>
+        </div>
+        
+        <!-- Sección Nuevo Pedido -->
+        <div id="nuevoPedido" style="display:none;">
+          <h2>Nuevo Pedido</h2>
+          <select id="clienteSelect">
+            <option value="">Seleccione un cliente</option>
+          </select>
+          <button id="scanBarcodeBtn">Escanear Código de Barras</button>
+          <input type="text" id="barcodeInput" placeholder="Código de Barras">
+          <input type="text" id="productoNombre" placeholder="Descripción del Producto">
+          <input type="number" id="cantidadProducto" placeholder="Cantidad">
+          <input type="number" id="precioProducto" placeholder="Precio">
+          <button id="agregarProductoBtn">Agregar Producto</button>
+          <table id="pedidoTable">
+            <thead>
+              <tr>
+                <th>Código de Barras</th>
+                <th>Descripción</th>
+                <th>Cantidad</th>
+                <th>Precio Unitario</th>
+                <th>Subtotal</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <p>Total: $<span id="totalPedido">0.00</span></p>
+          <button id="confirmarPedidoBtn">Confirmar Pedido</button>
+        </div>
+
+        <!-- Sección Lista de Clientes -->
+        <div id="listaClientes" style="display:none;">
+          <h2>Lista de Clientes</h2>
+          <table id="clientesTable">
+            <thead>
+              <tr>
+                <th>Nombre Completo</th>
+                <th>Dirección</th>
+                <th>Teléfono</th>
+                <th>Email</th>
+              </tr>
+            </thead>
+            <tbody id="clientesTableBody"></tbody>
+          </table>
+        </div>
+
+        <!-- Sección Lista de Pedidos -->
+        <div id="listaPedidos" style="display:none;">
+          <h2>Lista de Pedidos</h2>
+          <table id="pedidosTable">
+            <thead>
+              <tr>
+                <th>ID Pedido</th>
+                <th>Cliente</th>
+                <th>Fecha</th>
+                <th>Total</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </main>
     </div>
+  </div>
 
-    <div id="app-container" class="container" style="display: none;">
-        <header>
-            <h1>M-Scanner 2.0 con Gestión de Pedidos</h1>
-        </header>
-        
-        <div class="scanner-section">
-            <button id="scan-button" class="action-button">Escanear Código de Barras</button>
-            <button id="search-button" class="action-button">Buscar Producto</button>
-            <input type="text" id="barcode" placeholder="Código de Barras">
-        </div>
-        
-        <div class="form-section">
-            <input type="text" id="description" placeholder="Descripción del Producto">
-            <input type="number" id="stock" placeholder="Stock">
-            <input type="number" id="price" placeholder="Precio de Venta">
-        </div>
-        
-        <div class="action-section">
-            <button id="save-button" class="action-button">Guardar</button>
-            <button id="clear-button" class="action-button">Borrar</button>
-            <button id="export-button" class="action-button">Exportar a Excel</button>
-            <button id="import-button" class="action-button">Importar</button>
-            <button id="low-stock-button" class="action-button low-stock-button">Ver Productos con Stock Bajo</button>
-        </div>
-        
-        <div id="product-image-container" class="image-section">
-            <img id="product-image" src="" alt="Imagen del Producto" style="display: none;">
-        </div>
-        
-        <div id="scanner-container" class="scanner-overlay" style="display: none;">
-            <video id="video" autoplay></video>
-            <div id="viewfinder"></div>
-        </div>
-        
-        <div id="search-results" class="results-section" style="display: none;">
-            <h2>Resultados de la Búsqueda</h2>
-            <ul id="results-list"></ul>
-        </div>
-        
-        <div id="low-stock-results" class="results-section low-stock-results" style="display: none;">
-            <h2>Productos con Stock Bajo</h2>
-            <ul id="low-stock-list"></ul>
-        </div>
-        
-        <!-- Nuevas secciones para la gestión de pedidos -->
-        <div class="pedidos-section">
-            <button id="nuevo-pedido-btn" class="action-button">Nuevo Pedido</button>
-            <button id="lista-pedidos-btn" class="action-button">Lista de Pedidos</button>
-        </div>
-        
-        <div id="nuevo-pedido" style="display:none;">
-            <h2>Nuevo Pedido</h2>
-            <select id="cliente-select">
-                <option value="">Seleccione un cliente</option>
-            </select>
-            <input type="text" id="producto-barcode" placeholder="Código de Barras del Producto">
-            <input type="number" id="producto-cantidad" placeholder="Cantidad">
-            <button id="agregar-producto-btn" class="action-button">Agregar Producto</button>
-            <table id="pedido-table">
-                <thead>
-                    <tr>
-                        <th>Código</th>
-                        <th>Descripción</th>
-                        <th>Cantidad</th>
-                        <th>Precio</th>
-                        <th>Subtotal</th>
-                        <th>Acción</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-            <p>Total: $<span id="total-pedido">0.00</span></p>
-            <button id="confirmar-pedido-btn" class="action-button">Confirmar Pedido</button>
-        </div>
-        
-        <div id="lista-pedidos" style="display:none;">
-            <h2>Lista de Pedidos</h2>
-            <table id="pedidos-table">
-                <thead>
-                    <tr>
-                        <th>ID Pedido</th>
-                        <th>Cliente</th>
-                        <th>Fecha</th>
-                        <th>Total</th>
-                        <th>Estado</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-    </div>
+  <!-- Incluye la biblioteca XLSX -->
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+  
+  <!-- Tu configuración de Firebase -->
+  <script type="module" src="firebaseConfig.js"></script>
+  
+  <!-- Tu script principal -->
+  <script type="module" src="script.js"></script>
 
-    <input type="file" id="fileInput" accept=".xlsx, .xls" style="display: none;" />
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
-    <script type="module" src="firebaseConfig.js"></script>
-    <script type="module" src="script.js"></script>
+  <!-- Derechos reservados -->
+  <!-- 
+    © [2024] [SYSMARKETHM]. Todos los derechos reservados.
+    Este archivo es parte de [M-Escaner], propiedad de [SYSMARKETHM].
+    El uso, distribución o reproducción no autorizados de este material están estrictamente prohibidos.
+    Para obtener permiso para usar cualquier parte de este código, por favor contacta a [https://sysmarket-hm.web.app/].
+  -->
 </body>
 </html>
