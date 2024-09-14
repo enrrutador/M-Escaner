@@ -427,12 +427,4 @@ function loadClients() {
   });
 }
 
-// Función para mostrar la lista de clientes
-function showClientsList() {
-  const clients = getClientsFromLocalStorage();
-  const tbody = document.getElementById("clientesTableBody");
-  tbody.innerHTML = "";
-  clients.forEach((client) => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-            <td><a href="#" class="clienteLink" data-id="${client.id}">${client.nombre} ${client.apellido}</a>
+
