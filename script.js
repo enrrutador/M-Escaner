@@ -1,30 +1,24 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
 import { firebaseConfig } from "./firebaseConfig.js";
 
 // Inicializa Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
 // Inicializa Quagga
-const scanner = new Quagga({
+const scanner = new Quagga.Scanner({
   inputStream: {
     name: "Live",
-    type: "Live",
-    target: "#video",
+    type: "LiveStream",
+    target: document.querySelector("#video"),
   },
   decoder: {
     readers: ["code_128_reader"],
   },
   locate: true,
-  numOfWorkers: 2,
-  frequency: 10,
-  debug: {
-    drawBoundingBox: true,
-    showFrequency: true,
-    drawScanline: true,
-    showPattern: true,
-  },
 });
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -39,8 +33,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const password = document.getElementById("password").value;
 
     // Autenticar al usuario con Firebase
-    firebase.auth()
-      .signInWithEmailAndPassword(email, password)
+    signInWithEmailAndPassword(auth, email, password)
       .then((userCredential) => {
         // Inicio de sesión exitoso
         const user = userCredential.user;
@@ -118,9 +111,6 @@ document.addEventListener("DOMContentLoaded", () => {
     importFromExcel(file);
   });
 
-  // Inicializa Quagga
-  scanner.start();
-
   // Inicializa la base de datos local
   loadProducts();
   loadClients();
@@ -173,7 +163,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Mostrar detalles del pedido
   document.querySelector("#pedidosTable tbody").addEventListener("click", (e) => {
     if (e.target.classList.contains("pedido-id")) {
-      const pedidoId = parseInt(e.target.getAttribute("data-pedido-id"));
+      const pedidoId = e.target.getAttribute("data-pedido-id");
       showOrderDetails(pedidoId);
     }
   });
@@ -189,20 +179,11 @@ document.addEventListener("DOMContentLoaded", () => {
     .querySelector("#clientesTable tbody")
     .addEventListener("click", (e) => {
       if (e.target.classList.contains("clienteLink")) {
-        const clienteId = parseInt(e.target.getAttribute("data-id"));
-        const clienteNombre =
-          e.target.textContent.split(" ")[0] +
-          " " +
-          e.target.textContent.split(" ")[1];
+        const clienteId = e.target.getAttribute("data-id");
+        const clienteNombre = e.target.textContent;
         showClientOrders(clienteId, clienteNombre);
       }
     });
-
-  // Mostrar la lista de clientes
-  showClientsList();
-
-  // Mostrar la lista de pedidos
-  showOrdersList();
 
   // Maneja el botón "Cerrar Scanner"
   document
@@ -223,9 +204,9 @@ function scanBarcode(code) {
     document.getElementById("description").value = product.description;
     document.getElementById("stock").value = product.stock;
     document.getElementById("price").value = product.price;
-    document.getElementById("product-image").src = product.image;
+    document.getElementById("product-image").src = product.image || "";
     document.getElementById("product-image-container").style.display =
-      "block";
+      product.image ? "block" : "none";
   } else {
     // Si no se encuentra el producto, muestra un mensaje
     alert("Producto no encontrado.");
@@ -242,9 +223,9 @@ function searchProduct(barcode) {
     document.getElementById("description").value = product.description;
     document.getElementById("stock").value = product.stock;
     document.getElementById("price").value = product.price;
-    document.getElementById("product-image").src = product.image;
+    document.getElementById("product-image").src = product.image || "";
     document.getElementById("product-image-container").style.display =
-      "block";
+      product.image ? "block" : "none";
   } else {
     // Si no se encuentra el producto, muestra un mensaje
     alert("Producto no encontrado.");
@@ -289,8 +270,7 @@ function getProductsFromLocalStorage() {
 // Función para encontrar un producto por código de barras
 function findProductByBarcode(barcode) {
   const products = getProductsFromLocalStorage();
-  const product = products.find((p) => p.barcode === barcode);
-  return product;
+  return products.find((p) => p.barcode === barcode);
 }
 
 // Función para exportar los productos a Excel
@@ -404,6 +384,7 @@ function saveClient() {
   const email = document.getElementById("emailCliente").value;
 
   const newClient = {
+    id: generateClientId(),
     nombre: nombre,
     apellido: apellido,
     direccion: direccion,
@@ -421,6 +402,11 @@ function saveClient() {
   clearClientForm();
 }
 
+// Función para generar un ID de cliente
+function generateClientId() {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
+
 // Función para guardar un cliente en localStorage
 function saveClientToLocalStorage(client) {
   let clients = getClientsFromLocalStorage();
@@ -435,7 +421,7 @@ function loadClients() {
   select.innerHTML = '<option value="">Seleccione un cliente</option>';
   clients.forEach((client) => {
     const option = document.createElement("option");
-    option.value = client.nombre;
+    option.value = client.id;
     option.textContent = `${client.nombre} ${client.apellido}`;
     select.appendChild(option);
   });
@@ -449,332 +435,4 @@ function showClientsList() {
   clients.forEach((client) => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-            <td><a href="#" class="clienteLink" data-id="${
-              client.nombre
-            }">${client.nombre} ${client.apellido}</a></td>
-            <td>${client.direccion}</td>
-            <td>${client.telefono}</td>
-            <td>${client.email}</td>
-          `;
-    tbody.appendChild(tr);
-  });
-}
-
-// Función para limpiar el formulario de cliente
-function clearClientForm() {
-  document.getElementById("nombreCliente").value = "";
-  document.getElementById("apellidoCliente").value = "";
-  document.getElementById("direccionCliente").value = "";
-  document.getElementById("telefonoCliente").value = "";
-  document.getElementById("emailCliente").value = "";
-}
-
-// Función para obtener los pedidos de localStorage
-function getOrdersFromLocalStorage() {
-  const orders = localStorage.getItem("orders");
-  return orders ? JSON.parse(orders) : [];
-}
-
-// Función para guardar un nuevo pedido
-function saveOrderToLocalStorage(order) {
-  let orders = getOrdersFromLocalStorage();
-  orders.push(order);
-  localStorage.setItem("orders", JSON.stringify(orders));
-}
-
-// Función para cargar los pedidos de la base de datos local
-function loadOrders() {
-  const orders = getOrdersFromLocalStorage();
-  const tbody = document.querySelector("#pedidosTable tbody");
-  tbody.innerHTML = "";
-  orders.forEach((order) => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-            <td><span class="pedido-id" data-pedido-id="${
-              order.id
-            }">${order.id}</span></td>
-            <td>${order.cliente}</td>
-            <td>${new Date(order.fecha).toLocaleString()}</td>
-            <td>$${order.total.toFixed(2)}</td>
-            <td><div class="estado-circulo ${
-              order.entregado
-                ? "estado-entregado"
-                : "estado-pendiente"
-            }"></div></td>
-          `;
-    tbody.appendChild(tr);
-  });
-}
-
-// Función para mostrar la lista de pedidos
-function showOrdersList() {
-  loadOrders();
-}
-
-// Función para mostrar la lista de clientes
-function showClientsList() {
-  loadClients();
-}
-
-// Función para agregar un producto a un pedido
-function addProductToOrder() {
-  const barcode = document.getElementById("barcodeInput").value;
-  const nombre = document.getElementById("productoNombre").value;
-  const cantidad = parseInt(document.getElementById("cantidadProducto").value);
-  const precio = parseFloat(document.getElementById("precioProducto").value);
-
-  const subtotal = cantidad * precio;
-  const tbody = document.querySelector("#pedidoTable tbody");
-  const tr = document.createElement("tr");
-  tr.innerHTML = `
-        <td>${barcode}</td>
-        <td>${nombre}</td>
-        <td>${cantidad}</td>
-        <td>$${precio.toFixed(2)}</td>
-        <td>$${subtotal.toFixed(2)}</td>
-        <td><button class="remove-item">❌</button></td>
-      `;
-  tbody.appendChild(tr);
-
-  actualizarTotalPedido();
-  clearFormFields("nuevoPedido");
-}
-
-// Función para actualizar el total del pedido
-function actualizarTotalPedido() {
-  const filas = document.querySelectorAll("#pedidoTable tbody tr");
-  let total = 0;
-  filas.forEach((fila) => {
-    const subtotal = parseFloat(fila.cells[4].textContent.replace("$", ""));
-    total += subtotal;
-  });
-  document.getElementById("totalPedido").textContent = total.toFixed(2);
-}
-
-// Función para limpiar los campos del formulario
-function clearFormFields(formId) {
-  const form = document.getElementById(formId);
-  const inputs = form.querySelectorAll("input, select");
-  inputs.forEach((input) => {
-    input.value = "";
-  });
-}
-
-// Función para confirmar un pedido
-function confirmOrder() {
-  const clienteId = document.getElementById("clienteSelect").value;
-
-  const filas = document.querySelectorAll("#pedidoTable tbody tr");
-
-  const items = Array.from(filas).map((fila) => ({
-    barcode: fila.cells[0].textContent,
-    descripcion: fila.cells[1].textContent,
-    cantidad: parseInt(fila.cells[2].textContent),
-    precioUnitario: parseFloat(fila.cells[3].textContent.replace("$", "")),
-    subtotal: parseFloat(fila.cells[4].textContent.replace("$", "")),
-  }));
-
-  const total = parseFloat(document.getElementById("totalPedido").textContent);
-  const newOrder = {
-    id: generateOrderId(),
-    cliente: clienteId,
-    fecha: new Date(),
-    total: total,
-    items: items,
-    entregado: false,
-  };
-
-  saveOrderToLocalStorage(newOrder);
-
-  alert("Pedido confirmado exitosamente");
-  clearFormFields("nuevoPedido");
-  document.querySelector("#pedidoTable tbody").innerHTML = "";
-  document.getElementById("totalPedido").textContent = "0.00";
-  loadOrders();
-}
-
-// Función para generar un ID de pedido
-function generateOrderId() {
-  const characters =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  let result = "";
-  for (let i = 0; i < 6; i++) {
-    result += characters.charAt(Math.floor(Math.random() * characters.length));
-  }
-  return result;
-}
-
-// Función para mostrar detalles del pedido
-function showOrderDetails(pedidoId) {
-  const orders = getOrdersFromLocalStorage();
-  const pedido = orders.find((order) => order.id === pedidoId);
-
-  document.getElementById("pedidoDetalleId").textContent = pedido.id;
-  const content = document.getElementById("pedidoDetalleContent");
-  content.innerHTML = `
-        <p><strong>Cliente:</strong> ${pedido.cliente}</p>
-        <p><strong>Fecha:</strong> ${new Date(
-          pedido.fecha
-        ).toLocaleString()}</p>
-        <p><strong>Total:</strong> $${pedido.total.toFixed(2)}</p>
-        <p><strong>Estado:</strong> ${
-          pedido.entregado ? "Entregado" : "Pendiente"
-        }</p>
-        <h3>Productos:</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Código de Barras</th>
-              <th>Descripción</th>
-              <th>Cantidad</th>
-              <th>Precio Unitario</th>
-              <th>Subtotal</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${pedido.items
-              .map(
-                (item) => `
-              <tr>
-                <td>${item.barcode}</td>
-                <td>${item.descripcion}</td>
-                <td>${item.cantidad}</td>
-                <td>$${item.precioUnitario.toFixed(2)}</td>
-                <td>$${item.subtotal.toFixed(2)}</td>
-              </tr>
-            `
-              )
-              .join("")}
-          </tbody>
-        </table>
-      `;
-
-  mostrarSeccion("pedidoDetalle");
-}
-
-// Función para mostrar pedidos del cliente
-function showClientOrders(clienteId, clienteNombre) {
-  mostrarSeccion("clientePedidos");
-  const clienteNombreElement = document.getElementById("clienteNombre");
-  if (clienteNombreElement) clienteNombreElement.textContent = clienteNombre;
-
-  const orders = getOrdersFromLocalStorage();
-  const clientOrders = orders.filter((order) => order.cliente === clienteId);
-  const container = document.getElementById("clientePedidosContainer");
-  container.innerHTML = "";
-
-  const volverButton = document.createElement("button");
-  volverButton.textContent = "Volver a Lista de Pedidos";
-  volverButton.addEventListener("click", () => {
-    mostrarSeccion("listaPedidos");
-    showOrdersList();
-  });
-  container.appendChild(volverButton);
-
-  clientOrders.forEach((order) => {
-    const pedidoDiv = document.createElement("div");
-    pedidoDiv.classList.add("pedido-detalle");
-    pedidoDiv.innerHTML = `
-            <h3>Fecha: ${new Date(order.fecha).toLocaleString()}</h3>
-            <p>Total: $${order.total.toFixed(2)}</p>
-            <p>Estado: <span class="${
-              order.entregado ? "" : "pending-status"
-            }">${order.entregado ? "Entregado" : "Pendiente"}</span></p>
-            <button class="marcar-entregado" data-pedido-id="${
-              order.id
-            }" ${order.entregado ? "disabled" : ""}>
-              ${order.entregado ? "Entregado" : "Marcar como entregado"}
-            </button>
-            <table class="pedido-productos">
-              <thead>
-                <tr>
-                  <th>Código de Barras</th>
-                  <th>Descripción</th>
-                  <th>Cantidad</th>
-                  <th>Precio Unitario</th>
-                  <th>Subtotal</th>
-                </tr>
-              </thead>
-              <tbody>
-              </tbody>
-            </table>
-          `;
-
-    const tbody = pedidoDiv.querySelector("tbody");
-    order.items.forEach((item) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-                <td>${item.barcode || "N/A"}</td>
-                <td>${item.descripcion}</td>
-                <td>${item.cantidad}</td>
-                <td>$${item.precioUnitario.toFixed(2)}</td>
-                <td>$${item.subtotal.toFixed(2)}</td>
-              `;
-      tbody.appendChild(tr);
-    });
-
-    container.appendChild(pedidoDiv);
-  });
-
-  container.addEventListener("click", handleMarcarEntregado);
-}
-
-// Función para marcar un pedido como entregado
-function handleMarcarEntregado(event) {
-  if (event.target.classList.contains("marcar-entregado")) {
-    const pedidoId = parseInt(event.target.getAttribute("data-pedido-id"));
-    const orders = getOrdersFromLocalStorage();
-    const orderIndex = orders.findIndex((order) => order.id === pedidoId);
-    orders[orderIndex].entregado = true;
-    localStorage.setItem("orders", JSON.stringify(orders));
-    event.target.textContent = "Entregado";
-    event.target.disabled = true;
-    const statusElement = event.target.parentNode.querySelector(
-      "p:nth-of-type(2) span"
-    );
-    statusElement.textContent = "Entregado";
-    statusElement.classList.remove("pending-status");
-    alert("Pedido marcado como entregado");
-  }
-}
-
-// Función para mostrar una sección
-function mostrarSeccion(sectionId) {
-  const sections = [
-    "nuevoCliente",
-    "nuevoPedido",
-    "listaClientes",
-    "listaPedidos",
-    "pedidoDetalle",
-    "clientePedidos",
-  ];
-  sections.forEach((id) => {
-    document.getElementById(id).style.display = "none";
-  });
-  document.getElementById(sectionId).style.display = "block";
-}
-
-// Función para cargar los clientes
-function cargarClientes() {
-  const clients = getClientsFromLocalStorage();
-  const select = document.getElementById("clienteSelect");
-  select.innerHTML = '<option value="">Seleccione un cliente</option>';
-  clients.forEach((client) => {
-    const option = document.createElement("option");
-    option.value = client.nombre;
-    option.textContent = `${client.nombre} ${client.apellido}`;
-    select.appendChild(option);
-  });
-}
-
-// Event listener para el escáner de código de barras
-Quagga.onProcessed(function (result) {
-  if (result.codeResult.code) {
-    // Detener el escáner
-    scanner.stop();
-    // Mostrar el código de barras escaneado
-    scanBarcode(result.codeResult.code);
-    // Ocultar el contenedor del escáner
-    document.getElementById("scanner-container").style.display = "none";
-  }
-});
+            <td><a href="#" class="clienteLink" data-id="${client.id}">${client.nombre} ${client.apellido}</a>
