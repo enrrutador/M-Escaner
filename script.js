@@ -38,26 +38,35 @@ document.addEventListener("DOMContentLoaded", () => {
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
 
-    // Verifica si el usuario existe en la base de datos
-    db.collection("users")
-      .where("email", "==", email)
-      .where("password", "==", password)
-      .get()
-      .then((querySnapshot) => {
-        if (querySnapshot.empty) {
-          // El usuario no existe
-          document.getElementById("login-error").textContent =
-            "Usuario o contraseña incorrecta";
-        } else {
-          // El usuario existe, inicia sesión
-          document.getElementById("login-container").style.display = "none";
-          document.getElementById("app-container").style.display = "block";
-        }
+    // Autenticar al usuario con Firebase
+    firebase.auth()
+      .signInWithEmailAndPassword(email, password)
+      .then((userCredential) => {
+        // Inicio de sesión exitoso
+        const user = userCredential.user;
+        console.log("Usuario autenticado:", user);
+
+        // Mostrar el contenedor de la aplicación
+        document.getElementById("login-container").style.display = "none";
+        document.getElementById("app-container").style.display = "block";
+
+        // Inicializar la base de datos local
+        loadProducts();
+        loadClients();
+        loadOrders();
+
+        // Mostrar la lista de clientes
+        showClientsList();
+
+        // Mostrar la lista de pedidos
+        showOrdersList();
       })
       .catch((error) => {
-        console.error("Error al verificar la autenticación:", error);
-        document.getElementById("login-error").textContent =
-          "Error al verificar la autenticación";
+        // Error de autenticación
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        console.error("Error de autenticación:", errorCode, errorMessage);
+        document.getElementById("login-error").textContent = errorMessage;
       });
   });
 
@@ -380,13 +389,6 @@ function loadProducts() {
   showProductsList();
 }
 
-// Función para guardar un cliente en la base de datos local
-function saveClientToLocalStorage(client) {
-  let clients = getClientsFromLocalStorage();
-  clients.push(client);
-  localStorage.setItem("clients", JSON.stringify(clients));
-}
-
 // Función para obtener los clientes de localStorage
 function getClientsFromLocalStorage() {
   const clients = localStorage.getItem("clients");
@@ -419,10 +421,11 @@ function saveClient() {
   clearClientForm();
 }
 
-// Función para obtener la lista de clientes de localStorage
-function getClientsFromLocalStorage() {
-  const clients = localStorage.getItem("clients");
-  return clients ? JSON.parse(clients) : [];
+// Función para guardar un cliente en localStorage
+function saveClientToLocalStorage(client) {
+  let clients = getClientsFromLocalStorage();
+  clients.push(client);
+  localStorage.setItem("clients", JSON.stringify(clients));
 }
 
 // Función para cargar los clientes de la base de datos local
