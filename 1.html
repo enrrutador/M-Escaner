@@ -1,0 +1,764 @@
+<html><head><base href="https://example.com?">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Gestión de Pedidos - M-Scanner 2.0</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f0f2f5;
+      color: #333;
+    }
+    header {
+      background-color: #FF00FF;
+      color: white;
+      padding: 20px 0;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 {
+      margin: 0;
+      font-size: 2.5em;
+    }
+    .main-content {
+      display: flex;
+      margin-top: 20px;
+    }
+    .sidebar {
+      width: 250px;
+      background-color: #FF00FF;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .sidebar h2 {
+      color: white;
+      margin-bottom: 20px;
+    }
+    .sidebar button {
+      display: block;
+      width: 100%;
+      background-color: white;
+      color: #FF00FF;
+      border: none;
+      padding: 12px 15px;
+      margin-bottom: 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .sidebar button:hover {
+      background-color: #f0f0f0;
+      transform: translateY(-2px);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .sidebar button:active {
+      transform: translateY(0);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+    .content {
+      flex-grow: 1;
+      margin-left: 20px;
+      background-color: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    button {
+      background-color: #4a90e2;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #3a7bc8;
+    }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      text-align: left;
+      padding: 12px;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background-color: #f8f9fa;
+    }
+    .pedido-detalle {
+      background-color: #f8f9fa;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .pedido-detalle h3 {
+      color: #3498db;
+      margin-top: 0;
+    }
+    .pedido-productos {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    .pedido-productos th, .pedido-productos td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    .pedido-productos th {
+      background-color: #3498db;
+      color: white;
+    }
+    .barcode {
+      display: inline-block;
+      vertical-align: middle;
+    }
+    #barcodeScanner {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.8);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    #barcodeVideo {
+      width: 100%;
+      max-width: 640px;
+      height: auto;
+    }
+    #closeScannerBtn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #f44336;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .marcar-entregado {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      margin: 10px 0;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .marcar-entregado:hover {
+      background-color: #45a049;
+    }
+    .marcar-entregado:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    @keyframes blink {
+      0% { opacity: 1; }
+      50% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+    .pending-status {
+      color: red;
+      animation: blink 1s linear infinite;
+    }
+    .remove-item {
+      background-color: transparent;
+      border: none;
+      color: red;
+      font-size: 1.2em;
+      cursor: pointer;
+      padding: 0;
+      margin: 0;
+    }
+    .remove-item:hover {
+      opacity: 0.7;
+    }
+    .pedido-id {
+      color: #007bff;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    .estado-circulo {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: inline-block;
+      animation: spin 2s linear infinite;
+    }
+    .estado-entregado {
+      background-color: #28a745;
+    }
+    .estado-pendiente {
+      background-color: #dc3545;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    #volverListaPedidos {
+      margin-top: 20px;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dexie/3.0.3/dexie.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+</head>
+<body>
+  <div id="app-container" class="container" style="display: block;">
+    <header>
+      <div class="container">
+      </div>
+    </header>
+
+    <div class="main-content">
+      <aside class="sidebar">
+        <h2>Gestión de Pedidos</h2>
+        <button id="nuevoClienteBtn">Nuevo Cliente</button>
+        <button id="nuevoPedidoBtn">Nuevo Pedido</button>
+        <button id="listaClientesBtn">Lista de Clientes</button>
+        <button id="listaPedidosBtn">Lista de Pedidos</button>
+      </aside>
+
+      <main class="content">
+        <div id="nuevoCliente" style="display:none;">
+          <h2>Nuevo Cliente</h2>
+          <input type="text" id="nombreCliente" placeholder="Nombre del Cliente">
+          <input type="text" id="apellidoCliente" placeholder="Apellido del Cliente">
+          <input type="text" id="direccionCliente" placeholder="Dirección del Cliente">
+          <input type="tel" id="telefonoCliente" placeholder="Teléfono del Cliente">
+          <input type="email" id="emailCliente" placeholder="Email del Cliente">
+          <button id="guardarClienteBtn">Guardar Cliente</button>
+        </div>
+        
+        <div id="nuevoPedido" style="display:none;">
+          <h2>Nuevo Pedido</h2>
+          <select id="clienteSelect">
+            <option value="">Seleccione un cliente</option>
+          </select>
+          <button id="scanBarcodeBtn">Escanear Código de Barras</button>
+          <input type="text" id="barcodeInput" placeholder="Código de Barras">
+          <input type="text" id="productoNombre" placeholder="Descripción del Producto">
+          <input type="number" id="cantidadProducto" placeholder="Cantidad">
+          <input type="number" id="precioProducto" placeholder="Precio">
+          <button id="agregarProductoBtn">Agregar Producto</button>
+          <table id="pedidoTable">
+            <thead>
+              <tr>
+                <th>Código de Barras</th>
+                <th>Descripción</th>
+                <th>Cantidad</th>
+                <th>Precio Unitario</th>
+                <th>Subtotal</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <p>Total: $<span id="totalPedido">0.00</span></p>
+          <button id="confirmarPedidoBtn">Confirmar Pedido</button>
+        </div>
+        
+        <div id="listaClientes" style="display:none;">
+          <h2>Lista de Clientes</h2>
+          <table id="clientesTable">
+            <thead>
+              <tr>
+                <th>Nombre Completo</th>
+                <th>Dirección</th>
+                <th>Teléfono</th>
+                <th>Email</th>
+              </tr>
+            </thead>
+            <tbody id="clientesTableBody"></tbody>
+          </table>
+        </div>
+
+        <div id="listaPedidos" style="display:none;">
+          <h2>Lista de Pedidos</h2>
+          <table id="pedidosTable">
+            <thead>
+              <tr>
+                <th>ID Pedido</th>
+                <th>Cliente</th>
+                <th>Fecha</th>
+                <th>Total</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div id="pedidoDetalle" style="display:none;">
+          <h2>Detalles del Pedido: <span id="pedidoDetalleId"></span></h2>
+          <div id="pedidoDetalleContent"></div>
+          <button id="volverListaPedidos">Volver a Lista de Pedidos</button>
+        </div>
+
+        <div id="clientePedidos" style="display:none;">
+          <h2>Pedidos del Cliente: <span id="clienteNombre"></span></h2>
+          <div id="clientePedidosContainer"></div>
+        </div>
+
+        <div id="barcodeScanner" style="display:none;">
+          <video id="barcodeVideo"></video>
+          <canvas id="barcodeCanvas" style="display:none;" willReadFrequently="true"></canvas>
+          <button id="closeScannerBtn">Cerrar Scanner</button>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script type="module">
+    function mostrarSeccion(sectionId) {
+      const sections = ['nuevoCliente', 'nuevoPedido', 'listaClientes', 'listaPedidos', 'pedidoDetalle', 'clientePedidos'];
+      sections.forEach(id => {
+        document.getElementById(id).style.display = 'none';
+      });
+      document.getElementById(sectionId).style.display = 'block';
+    }
+
+    const db = new Dexie('TiendaDB');
+    db.version(7).stores({
+      clientes: '++id, codigoCliente, nombre, apellido, direccion, telefono, email',
+      productos: '++id, nombre, precio, barcode',
+      pedidos: '++id, customId, clienteId, fecha, total, items, entregado'
+    });
+
+    function generateClientCode() {
+      return 'CL' + Math.random().toString(36).substr(2, 8).toUpperCase();
+    }
+
+    function generatePedidoId() {
+      const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      let result = '';
+      for (let i = 0; i < 6; i++) {
+        result += characters.charAt(Math.floor(Math.random() * characters.length));
+      }
+      return result;
+    }
+
+    async function cargarClientes() {
+      try {
+        const clientes = await db.clientes.toArray();
+        const select = document.getElementById('clienteSelect');
+        select.innerHTML = '<option value="">Seleccione un cliente</option>';
+        clientes.forEach(cliente => {
+          const option = document.createElement('option');
+          option.value = cliente.id;
+          option.textContent = `${cliente.nombre} ${cliente.apellido}`;
+          select.appendChild(option);
+        });
+        console.log('Clients loaded successfully');
+      } catch (error) {
+        logError(error);
+      }
+    }
+
+    async function cargarProductos() {
+      try {
+        const productos = await db.productos.toArray();
+        const select = document.getElementById('productoSelect');
+        select.innerHTML = '<option value="">Seleccione un producto</option>';
+        productos.forEach(producto => {
+          const option = document.createElement('option');
+          option.value = producto.id;
+          option.textContent = `${producto.nombre} - $${producto.precio.toFixed(2)}`;
+          select.appendChild(option);
+        });
+        console.log('Products loaded successfully');
+      } catch (error) {
+        logError(error);
+      }
+    }
+
+    function clearFormFields(formId) {
+      const form = document.getElementById(formId);
+      const inputs = form.querySelectorAll('input, select');
+      inputs.forEach(input => {
+        input.value = '';
+      });
+    }
+
+    (async () => {
+      try {
+        await db.open();
+        console.log('Database opened successfully');
+        
+        if ((await db.clientes.count()) === 0) {
+          await db.clientes.bulkAdd([
+            { codigoCliente: generateClientCode(), nombre: 'Juan', apellido: 'Pérez', direccion: 'Calle 123', telefono: '1234567890', email: 'juan@example.com' },
+            { codigoCliente: generateClientCode(), nombre: 'María', apellido: 'García', direccion: 'Avenida 456', telefono: '0987654321', email: 'maria@example.com' }
+          ]);
+          console.log('Sample clients added');
+        }
+        if ((await db.productos.count()) === 0) {
+          await db.productos.bulkAdd([
+            { nombre: 'Camisa', precio: 25.99, barcode: 'PRD00001' },
+            { nombre: 'Pantalón', precio: 35.50, barcode: 'PRD00002' },
+            { nombre: 'Zapatos', precio: 59.99, barcode: 'PRD00003' }
+          ]);
+          console.log('Sample products added');
+        }
+      } catch (error) {
+        logError(error);
+      }
+    })();
+
+    document.getElementById('nuevoClienteBtn').addEventListener('click', () => mostrarSeccion('nuevoCliente'));
+    document.getElementById('nuevoPedidoBtn').addEventListener('click', () => {
+      mostrarSeccion('nuevoPedido');
+      cargarClientes();
+      cargarProductos();
+    });
+
+    document.getElementById('listaClientesBtn').addEventListener('click', async () => {
+      mostrarSeccion('listaClientes');
+      const clientes = await db.clientes.toArray();
+      const tbody = document.getElementById('clientesTableBody');
+      tbody.innerHTML = '';
+      clientes.forEach(cliente => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><a href="#" class="clienteLink" data-id="${cliente.id}">${cliente.nombre} ${cliente.apellido}</a></td>
+          <td>${cliente.direccion}</td>
+          <td>${cliente.telefono}</td>
+          <td>${cliente.email}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    });
+
+    document.getElementById('clientesTableBody').addEventListener('click', async (e) => {
+      if (e.target.classList.contains('clienteLink')) {
+        e.preventDefault();
+        const clienteId = parseInt(e.target.getAttribute('data-id'));
+        const cliente = await db.clientes.get(clienteId);
+        mostrarPedidosCliente(clienteId, `${cliente.nombre} ${cliente.apellido}`);
+      }
+    });
+
+    document.querySelector('#pedidosTable tbody').addEventListener('click', async (e) => {
+      if (e.target.classList.contains('pedido-id')) {
+        const pedidoId = parseInt(e.target.getAttribute('data-pedido-id'));
+        const pedido = await db.pedidos.get(pedidoId);
+        const cliente = await db.clientes.get(pedido.clienteId);
+        mostrarPedidosCliente(cliente.id, `${cliente.nombre} ${cliente.apellido}`);
+      }
+    });
+
+    async function mostrarPedidosCliente(clienteId, clienteNombre) {
+      try {
+        mostrarSeccion('clientePedidos');
+        const clienteNombreElement = document.getElementById('clienteNombre');
+        if (clienteNombreElement) clienteNombreElement.textContent = clienteNombre;
+        
+        const pedidos = await db.pedidos.where('clienteId').equals(clienteId).toArray();
+        const container = document.getElementById('clientePedidosContainer');
+        if (!container) {
+          console.error('Cliente pedidos container not found');
+          return;
+        }
+        container.innerHTML = '';
+        
+        const volverButton = document.createElement('button');
+        volverButton.textContent = 'Volver a Lista de Pedidos';
+        volverButton.addEventListener('click', () => {
+          mostrarSeccion('listaPedidos');
+          cargarListaPedidos();
+        });
+        container.appendChild(volverButton);
+        
+        for (const pedido of pedidos) {
+          const pedidoDiv = document.createElement('div');
+          pedidoDiv.classList.add('pedido-detalle');
+          pedidoDiv.innerHTML = `
+            <h3>Fecha: ${new Date(pedido.fecha).toLocaleString()}</h3>
+            <p>Total: $${pedido.total.toFixed(2)}</p>
+            <p>Estado: <span class="${pedido.entregado ? '' : 'pending-status'}">${pedido.entregado ? 'Entregado' : 'Pendiente'}</span></p>
+            <button class="marcar-entregado" data-pedido-id="${pedido.id}" ${pedido.entregado ? 'disabled' : ''}>
+              ${pedido.entregado ? 'Entregado' : 'Marcar como entregado'}
+            </button>
+            <table class="pedido-productos">
+              <thead>
+                <tr>
+                  <th>Código de Barras</th>
+                  <th>Descripción</th>
+                  <th>Cantidad</th>
+                  <th>Precio Unitario</th>
+                  <th>Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+              </tbody>
+            </table>
+          `;
+          
+          const tbody = pedidoDiv.querySelector('tbody');
+          for (const item of pedido.items) {
+            try {
+              let producto = null;
+              if (item.barcode) {
+                producto = await db.productos.where('barcode').equals(item.barcode).first();
+              }
+
+              const tr = document.createElement('tr');
+              tr.innerHTML = `
+                <td>${item.barcode || 'N/A'}</td>
+                <td>${producto ? producto.nombre : item.descripcion}</td>
+                <td>${item.cantidad}</td>
+                <td>$${item.precioUnitario.toFixed(2)}</td>
+                <td>$${item.subtotal.toFixed(2)}</td>
+              `;
+              tbody.appendChild(tr);
+            } catch (error) {
+              console.error(`Error al procesar el item: ${JSON.stringify(item)}`, error);
+              const tr = document.createElement('tr');
+              tr.innerHTML = `
+                <td colspan="5">Error al cargar el producto: ${error.message}</td>
+              `;
+              tbody.appendChild(tr);
+            }
+          }
+          
+          container.appendChild(pedidoDiv);
+        }
+
+        container.addEventListener('click', handleMarcarEntregado);
+      } catch (error) {
+        logError(error);
+      }
+    }
+
+    async function handleMarcarEntregado(event) {
+      if (event.target.classList.contains('marcar-entregado')) {
+        const pedidoId = parseInt(event.target.getAttribute('data-pedido-id'));
+        try {
+          await db.pedidos.update(pedidoId, { entregado: true });
+          event.target.textContent = 'Entregado';
+          event.target.disabled = true;
+          const statusElement = event.target.parentNode.querySelector('p:nth-of-type(2) span');
+          statusElement.textContent = 'Entregado';
+          statusElement.classList.remove('pending-status');
+          alert('Pedido marcado como entregado');
+        } catch (error) {
+          logError(error);
+        }
+      }
+    }
+
+    document.getElementById('listaPedidosBtn').addEventListener('click', async () => {
+      cargarListaPedidos();
+    });
+
+    async function cargarListaPedidos() {
+      mostrarSeccion('listaPedidos');
+      let pedidos = await db.pedidos.toArray();
+      
+      pedidos.sort((a, b) => {
+        if (a.entregado === b.entregado) {
+          return new Date(b.fecha) - new Date(a.fecha);
+        }
+        return a.entregado ? 1 : -1;
+      });
+
+      const tbody = document.querySelector('#pedidosTable tbody');
+      tbody.innerHTML = '';
+      for (const pedido of pedidos) {
+        const cliente = await db.clientes.get(pedido.clienteId);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><span class="pedido-id" data-pedido-id="${pedido.id}">${pedido.customId}</span></td>
+          <td>${cliente.nombre} ${cliente.apellido}</td>
+          <td>${new Date(pedido.fecha).toLocaleString()}</td>
+          <td>$${pedido.total.toFixed(2)}</td>
+          <td><div class="estado-circulo ${pedido.entregado ? 'estado-entregado' : 'estado-pendiente'}"></div></td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    document.querySelector('#pedidosTable tbody').addEventListener('click', async (e) => {
+      if (e.target.classList.contains('pedido-id')) {
+        const pedidoId = parseInt(e.target.getAttribute('data-pedido-id'));
+        const pedido = await db.pedidos.get(pedidoId);
+        const cliente = await db.clientes.get(pedido.clienteId);
+        mostrarPedidosCliente(cliente.id, `${cliente.nombre} ${cliente.apellido}`);
+      }
+    });
+
+    async function mostrarDetallePedido(pedidoId) {
+      const pedido = await db.pedidos.get(pedidoId);
+      const cliente = await db.clientes.get(pedido.clienteId);
+      
+      document.getElementById('pedidoDetalleId').textContent = pedido.customId;
+      const content = document.getElementById('pedidoDetalleContent');
+      content.innerHTML = `
+        <p><strong>Cliente:</strong> ${cliente.nombre} ${cliente.apellido}</p>
+        <p><strong>Fecha:</strong> ${new Date(pedido.fecha).toLocaleString()}</p>
+        <p><strong>Total:</strong> $${pedido.total.toFixed(2)}</p>
+        <p><strong>Estado:</strong> ${pedido.entregado ? 'Entregado' : 'Pendiente'}</p>
+        <h3>Productos:</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Código de Barras</th>
+              <th>Descripción</th>
+              <th>Cantidad</th>
+              <th>Precio Unitario</th>
+              <th>Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${pedido.items.map(item => `
+              <tr>
+                <td>${item.barcode}</td>
+                <td>${item.descripcion}</td>
+                <td>${item.cantidad}</td>
+                <td>$${item.precioUnitario.toFixed(2)}</td>
+                <td>$${item.subtotal.toFixed(2)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+      
+      mostrarSeccion('pedidoDetalle');
+    }
+
+    document.getElementById('volverListaPedidos').addEventListener('click', () => {
+      mostrarSeccion('listaPedidos');
+    });
+
+    document.getElementById('guardarClienteBtn').addEventListener('click', async () => {
+      try {
+        const nombre = document.getElementById('nombreCliente').value;
+        const apellido = document.getElementById('apellidoCliente').value;
+        const direccion = document.getElementById('direccionCliente').value;
+        const telefono = document.getElementById('telefonoCliente').value;
+        const email = document.getElementById('emailCliente').value;
+        const codigoCliente = generateClientCode();
+
+        await db.clientes.add({
+          codigoCliente,
+          nombre,
+          apellido,
+          direccion,
+          telefono,
+          email
+        });
+
+        alert('Cliente guardado exitosamente');
+        clearFormFields('nuevoCliente');
+      } catch (error) {
+        logError(error);
+      }
+    });
+
+    document.getElementById('agregarProductoBtn').addEventListener('click', async () => {
+      const barcode = document.getElementById('barcodeInput').value;
+      const nombre = document.getElementById('productoNombre').value;
+      const cantidad = parseInt(document.getElementById('cantidadProducto').value);
+      const precio = parseFloat(document.getElementById('precioProducto').value);
+
+      if (!barcode || !nombre || isNaN(cantidad) || isNaN(precio)) {
+        alert('Por favor, complete todos los campos correctamente.');
+        return;
+      }
+
+      const subtotal = cantidad * precio;
+      const tbody = document.querySelector('#pedidoTable tbody');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${barcode}</td>
+        <td>${nombre}</td>
+        <td>${cantidad}</td>
+        <td>$${precio.toFixed(2)}</td>
+        <td>$${subtotal.toFixed(2)}</td>
+        <td><button class="remove-item">❌</button></td>
+      `;
+      tbody.appendChild(tr);
+
+      actualizarTotalPedido();
+      clearFormFields('nuevoPedido');
+    });
+
+    function actualizarTotalPedido() {
+      const filas = document.querySelectorAll('#pedidoTable tbody tr');
+      let total = 0;
+      filas.forEach(fila => {
+        const subtotal = parseFloat(fila.cells[4].textContent.replace('$', ''));
+        total += subtotal;
+      });
+      document.getElementById('totalPedido').textContent = total.toFixed(2);
+    }
+
+    document.querySelector('#pedidoTable tbody').addEventListener('click', (e) => {
+      if (e.target.classList.contains('remove-item')) {
+        e.target.closest('tr').remove();
+        actualizarTotalPedido();
+      }
+    });
+
+    document.getElementById('confirmarPedidoBtn').addEventListener('click', async () => {
+      const clienteId = document.getElementById('clienteSelect').value;
+      if (!clienteId) {
+        alert('Por favor, seleccione un cliente.');
+        return;
+      }
+
+      const filas = document.querySelectorAll('#pedidoTable tbody tr');
+      if (filas.length === 0) {
+        alert('Por favor, agregue al menos un producto al pedido.');
+        return;
+      }
+
+      const items = Array.from(filas).map(fila => ({
+        barcode: fila.cells[0].textContent,
+        descripcion: fila.cells[1].textContent,
+        cantidad: parseInt(fila.cells[2].textContent),
+        precioUnitario: parseFloat(fila.cells[3].textContent.replace('$', '')),
+        subtotal: parseFloat(fila.cells[4].textContent.replace('$', ''))
+      }));
+
+      const total = parseFloat(document.getElementById('totalPedido').textContent);
+      const customId = generatePedidoId();
+
+      try {
+        await db.pedidos.add({
+          customId,
+          clienteId: parseInt(clienteId),
+          fecha: new Date(),
+          total,
+          items,
+          entregado: false
+        });
+
+        alert('Pedido confirmado exitosamente');
+        clearFormFields('nuevoPedido');
+        document.querySelector('#pedidoTable tbody').innerHTML = '';
+        document.getElementById('totalPedido').textContent = '0.00';
+      } catch (error) {
+        logError(error);
+      }
+    });
+  </script>
+</body>
+</html>
