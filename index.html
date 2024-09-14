@@ -5,16 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>M-Scanner 2.0</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
 </head>
 <body>
     <div id="login-container" class="login-container">
         <h2>Iniciar Sesión</h2>
         <form id="loginForm">
-            <input type="email" id="email" placeholder="Correo Electrónico" required>
-            <input type="password" id="password" placeholder="Contraseña" required>
-            <button type="submit" class="action-button">Iniciar Sesión</button>
-            <div id="login-error" class="error-message"></div>
+            <input type="email" id="email" placeholder="Correo electrónico" required>
+            <input type="password" id="password" placeholder="Contraseña" required autocomplete="current-password">
+            <button type="submit">Iniciar Sesión</button>
         </form>
+        <div id="login-error" class="error-message"></div>
     </div>
 
     <div id="app-container" class="container" style="display: none;">
@@ -24,21 +26,21 @@
 
         <div class="scanner-section">
             <button id="scan-button" class="action-button">Escanear Código de Barras</button>
+            <input type="text" id="barcode" placeholder="Código de barras">
             <button id="search-button" class="action-button">Buscar Producto</button>
-            <input type="text" id="barcode" placeholder="Código de Barras">
         </div>
 
         <div class="form-section">
-            <input type="text" id="description" placeholder="Descripción del Producto">
+            <input type="text" id="description" placeholder="Descripción">
             <input type="number" id="stock" placeholder="Stock">
-            <input type="number" id="price" placeholder="Precio de Venta">
-            <input type="file" id="fileInput" accept=".xlsx, .xls" style="display: none;" />
+            <input type="number" id="price" placeholder="Precio">
         </div>
 
         <div class="action-section">
             <button id="save-button" class="action-button">Guardar</button>
             <button id="clear-button" class="action-button">Borrar</button>
             <button id="export-button" class="action-button">Exportar a Excel</button>
+            <input type="file" id="fileInput" style="display: none;">
             <button id="import-button" class="action-button">Importar</button>
             <button id="low-stock-button" class="action-button low-stock-button">Ver Productos con Stock Bajo</button>
         </div>
@@ -48,7 +50,6 @@
         </div>
 
         <div id="scanner-container" class="scanner-overlay" style="display: none;">
-            <video id="video" autoplay></video>
             <div id="viewfinder"></div>
         </div>
 
@@ -61,104 +62,93 @@
             <h2>Productos con Stock Bajo</h2>
             <ul id="low-stock-list"></ul>
         </div>
-
-        <!--  Secciones de `añadir.html` -->
-        <div id="nuevoCliente" style="display:none;">
-            <h2>Nuevo Cliente</h2>
-            <input type="text" id="nombreCliente" placeholder="Nombre del Cliente">
-            <input type="text" id="apellidoCliente" placeholder="Apellido del Cliente">
-            <input type="text" id="direccionCliente" placeholder="Dirección del Cliente">
-            <input type="tel" id="telefonoCliente" placeholder="Teléfono del Cliente">
-            <input type="email" id="emailCliente" placeholder="Email del Cliente">
-            <button id="guardarClienteBtn">Guardar Cliente</button>
-        </div>
-
-        <div id="nuevoPedido" style="display:none;">
-            <h2>Nuevo Pedido</h2>
-            <select id="clienteSelect">
-                <option value="">Seleccione un cliente</option>
-            </select>
-            <button id="scanBarcodeBtn">Escanear Código de Barras</button>
-            <input type="text" id="barcodeInput" placeholder="Código de Barras">
-            <input type="text" id="productoNombre" placeholder="Descripción del Producto">
-            <input type="number" id="cantidadProducto" placeholder="Cantidad">
-            <input type="number" id="precioProducto" placeholder="Precio">
-            <button id="agregarProductoBtn">Agregar Producto</button>
-            <table id="pedidoTable">
-                <thead>
-                    <tr>
-                        <th>Código de Barras</th>
-                        <th>Descripción</th>
-                        <th>Cantidad</th>
-                        <th>Precio Unitario</th>
-                        <th>Subtotal</th>
-                        <th>Acción</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-            <p>Total: $<span id="totalPedido">0.00</span></p>
-            <button id="confirmarPedidoBtn">Confirmar Pedido</button>
-        </div>
-
-        <div id="listaClientes" style="display:none;">
-            <h2>Lista de Clientes</h2>
-            <table id="clientesTable">
-                <thead>
-                    <tr>
-                        <th>Nombre Completo</th>
-                        <th>Dirección</th>
-                        <th>Teléfono</th>
-                        <th>Email</th>
-                    </tr>
-                </thead>
-                <tbody id="clientesTableBody"></tbody>
-            </table>
-        </div>
-
-        <div id="listaPedidos" style="display:none;">
-            <h2>Lista de Pedidos</h2>
-            <table id="pedidosTable">
-                <thead>
-                    <tr>
-                        <th>ID Pedido</th>
-                        <th>Cliente</th>
-                        <th>Fecha</th>
-                        <th>Total</th>
-                        <th>Estado</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-
-        <div id="pedidoDetalle" style="display:none;">
-            <h2>Detalles del Pedido: <span id="pedidoDetalleId"></span></h2>
-            <div id="pedidoDetalleContent"></div>
-            <button id="volverListaPedidos">Volver a Lista de Pedidos</button>
-        </div>
-
-        <div id="clientePedidos" style="display:none;">
-            <h2>Pedidos del Cliente: <span id="clienteNombre"></span></h2>
-            <div id="clientePedidosContainer"></div>
-        </div>
-
-        <div id="barcodeScanner" style="display:none;">
-            <video id="barcodeVideo"></video>
-            <canvas id="barcodeCanvas" style="display:none;" willReadFrequently="true"></canvas>
-            <button id="closeScannerBtn">Cerrar Scanner</button>
-        </div>
     </div>
 
-    <!-- Incluye la biblioteca XLSX -->
-    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <div id="nuevoCliente" style="display:none;">
+        <h2>Nuevo Cliente</h2>
+        <input type="text" id="nombreCliente" placeholder="Nombre">
+        <input type="text" id="apellidoCliente" placeholder="Apellido">
+        <input type="text" id="direccionCliente" placeholder="Dirección">
+        <input type="tel" id="telefonoCliente" placeholder="Teléfono">
+        <input type="email" id="emailCliente" placeholder="Email">
+        <button id="guardarClienteBtn">Guardar Cliente</button>
+    </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <div id="nuevoPedido" style="display:none;">
+        <h2>Nuevo Pedido</h2>
+        <select id="clienteSelect">
+            <option value="">Seleccione un cliente</option>
+        </select>
+        <input type="text" id="barcodeInput" placeholder="Código de Barras">
+        <input type="text" id="productoNombre" placeholder="Nombre del Producto">
+        <input type="number" id="cantidadProducto" placeholder="Cantidad">
+        <input type="number" id="precioProducto" placeholder="Precio Unitario">
+        <button id="agregarProductoBtn">Agregar Producto</button>
+        <table id="pedidoTable">
+            <thead>
+                <tr>
+                    <th>Código de Barras</th>
+                    <th>Descripción</th>
+                    <th>Cantidad</th>
+                    <th>Precio Unitario</th>
+                    <th>Subtotal</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <p>Total: $<span id="totalPedido">0.00</span></p>
+        <button id="confirmarPedidoBtn">Confirmar Pedido</button>
+    </div>
 
-    <!-- Tu configuración de Firebase -->
+    <div id="listaClientes" style="display:none;">
+        <h2>Lista de Clientes</h2>
+        <table id="clientesTable">
+            <thead>
+                <tr>
+                    <th>Nombre Completo</th>
+                    <th>Dirección</th>
+                    <th>Teléfono</th>
+                    <th>Email</th>
+                </tr>
+            </thead>
+            <tbody id="clientesTableBody"></tbody>
+        </table>
+    </div>
+
+    <div id="listaPedidos" style="display:none;">
+        <h2>Lista de Pedidos</h2>
+        <table id="pedidosTable">
+            <thead>
+                <tr>
+                    <th>ID Pedido</th>
+                    <th>Cliente</th>
+                    <th>Fecha</th>
+                    <th>Total</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div id="pedidoDetalle" style="display:none;">
+        <h2>Detalles del Pedido: <span id="pedidoDetalleId"></span></h2>
+        <div id="pedidoDetalleContent"></div>
+        <button id="volverListaPedidos">Volver a Lista de Pedidos</button>
+    </div>
+
+    <div id="clientePedidos" style="display:none;">
+        <h2>Pedidos del Cliente: <span id="clienteNombre"></span></h2>
+        <div id="clientePedidosContainer"></div>
+    </div>
+
+    <div id="barcodeScanner" style="display:none;">
+        <video id="barcodeVideo"></video>
+        <button id="closeScannerBtn">Cerrar Scanner</button>
+    </div>
+
     <script type="module" src="firebaseConfig.js"></script>
-
-    <!-- Tu script principal -->
     <script type="module" src="script.js"></script>
 </body>
 </html>
