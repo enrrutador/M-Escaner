@@ -1,9 +1,11 @@
-/* © [2024] [SYSMARKETHM]. Todos los derechos reservados.
-   Este archivo es parte de [M-Escaner], propiedad de [SYSMARKETHM].
-   El uso, distribución o reproducción no autorizados de este material están estrictamente prohibidos.
-   Para obtener permiso para usar cualquier parte de este código, por favor contacta a [https://sysmarket-hm.web.app/].
-*/
+/*
+  © [2024] [SYSMARKETHM]. Todos los derechos reservados.
 
+  Este archivo es parte de [M-Escaner], propiedad de [SYSMARKETHM].
+
+  El uso, distribución o reproducción no autorizados de este material están estrictamente prohibidos.
+  Para obtener permiso para usar cualquier parte de este código, por favor contacta a [https://sysmarket-hm.web.app/].
+*/
 :root {
     --primary-color: #0288D1;
     --secondary-color: #0277BD;
@@ -12,12 +14,10 @@
     --background-color: rgba(236, 239, 241, 0.8); /* Fondo más transparente */
 }
 
-/* Estilos generales */
 body, html {
     margin: 0;
     padding: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-image: url('https://enrrutador.github.io/M-Escaner/image/1.jpg');
+    font-family: Arial, sans-serif;
     background-size: cover;
     background-repeat: no-repeat;
     background-attachment: fixed;
@@ -27,29 +27,6 @@ body, html {
     display: flex;
     justify-content: center;
     align-items: center;
-}
-
-body {
-    background-color: #f0f2f5;
-}
-
-header {
-    background-color: #FF00FF;
-    color: white;
-    padding: 20px 0;
-    text-align: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-header h1 {
-    font-size: 1.5em;
-    margin-bottom: 20px;
-    color: var(--primary-color);
-}
-
-h1 {
-    margin: 0;
-    font-size: 2.5em;
 }
 
 .container, .login-container {
@@ -63,53 +40,14 @@ h1 {
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
+header h1 {
+    font-size: 1.5em;
+    margin-bottom: 20px;
+    color: var(--primary-color);
+}
+
 .scanner-section, .form-section, .action-section {
     margin-bottom: 20px;
-}
-
-.sidebar {
-    width: 250px;
-    background-color: #FF00FF;
-    border-radius: 8px;
-    padding: 20px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-}
-
-.sidebar button {
-    display: block;
-    width: 100%;
-    background-color: white;
-    color: #FF00FF;
-    border: none;
-    padding: 12px 15px;
-    margin-bottom: 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.sidebar button:hover {
-    background-color: #f0f0f0;
-    transform: translateY(-2px);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-
-.content {
-    flex-grow: 1;
-    margin-left: 20px;
-    background-color: white;
-    border-radius: 8px;
-    padding: 20px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-input {
-    width: calc(100% - 20px);
-    padding: 10px;
-    margin: 10px 0;
-    border-radius: 5px;
-    border: 1px solid var(--secondary-color);
-    font-size: 1em;
 }
 
 .action-button {
@@ -129,18 +67,13 @@ input {
     background-color: var(--accent-color);
 }
 
-.table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.table th, .table td {
-    padding: 12px;
-    border-bottom: 1px solid #ddd;
-}
-
-.table th {
-    background-color: #f8f9fa;
+input {
+    width: calc(100% - 20px);
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+    border: 1px solid var(--secondary-color);
+    font-size: 1em;
 }
 
 .image-section img {
@@ -228,4 +161,243 @@ input {
     color: red;
     font-size: 0.9em;
     margin-top: 10px;
+}
+
+/* Estilos para las nuevas secciones */
+#nuevoCliente, #nuevoPedido, #listaClientes, #listaPedidos, #pedidoDetalle, #clientePedidos {
+    display: none; /* Ocultar las secciones por defecto */
+    width: 90%;
+    max-width: 400px;
+    margin: auto;
+    padding: 20px;
+    background-color: var(--background-color);
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    text-align: left; /* Ajustar la alineación del texto */
+}
+
+#nuevoCliente h2, #nuevoPedido h2, #listaClientes h2, #listaPedidos h2, #pedidoDetalle h2, #clientePedidos h2 {
+    color: var(--primary-color);
+    margin-bottom: 20px;
+}
+
+#nuevoCliente input, #nuevoPedido input, #nuevoCliente select, #nuevoPedido select {
+    width: calc(100% - 20px);
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+    border: 1px solid var(--secondary-color);
+    font-size: 1em;
+}
+
+#nuevoCliente button, #nuevoPedido button {
+    background-color: var(--primary-color);
+    border: none;
+    color: white;
+    padding: 12px 15px;
+    margin: 5px 0;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+    width: 100%;
+    font-size: 1em;
+}
+
+#nuevoCliente button:hover, #nuevoPedido button:hover {
+    background-color: var(--accent-color);
+}
+
+/* Estilos para las tablas */
+#clientesTable, #pedidosTable, #pedidoTable, .pedido-productos {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+#clientesTable th, #pedidosTable th, #pedidoTable th, .pedido-productos th {
+    text-align: left;
+    padding: 12px;
+    border-bottom: 1px solid #ddd;
+    background-color: var(--primary-color);
+    color: white;
+}
+
+#clientesTable td, #pedidosTable td, #pedidoTable td, .pedido-productos td {
+    text-align: left;
+    padding: 12px;
+    border-bottom: 1px solid #ddd;
+}
+
+/* Estilos para la sección de detalles del pedido */
+#pedidoDetalleContent {
+    margin-top: 20px;
+}
+
+/* Estilos para el botón "Marcar como entregado" */
+.marcar-entregado {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    margin: 10px 0;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    width: 100%; /* Ajustar el ancho del botón */
+    font-size: 1em; /* Ajustar el tamaño de la fuente */
+}
+
+.marcar-entregado:hover {
+    background-color: #45a049;
+}
+
+.marcar-entregado:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+/* Estilos para el botón "Volver a Lista de Pedidos" */
+#volverListaPedidos {
+    margin-top: 20px;
+    width: 100%; /* Ajustar el ancho del botón */
+    font-size: 1em; /* Ajustar el tamaño de la fuente */
+}
+
+/* Estilos para la lista de pedidos del cliente */
+#clientePedidosContainer {
+    margin-top: 20px;
+}
+
+/* Estilos para la lista de pedidos del cliente */
+.pedido-detalle {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.pedido-detalle h3 {
+    color: #3498db;
+    margin-top: 0;
+}
+
+.pedido-productos th, .pedido-productos td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+/* Estilos para el escáner de código de barras */
+#barcodeScanner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+#barcodeVideo {
+    width: 100%;
+    max-width: 640px;
+    height: auto;
+}
+
+#closeScannerBtn {
+    margin-top: 20px;
+    padding: 10px 20px;
+    background-color: #f44336;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    width: 100%; /* Ajustar el ancho del botón */
+    font-size: 1em; /* Ajustar el tamaño de la fuente */
+}
+
+/* Estilos para la tabla de pedidos */
+#pedidoTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+#pedidoTable th {
+    text-align: left;
+    padding: 12px;
+    border-bottom: 1px solid #ddd;
+    background-color: #f8f9fa;
+}
+
+#pedidoTable td {
+    text-align: left;
+    padding: 12px;
+    border-bottom: 1px solid #ddd;
+}
+
+/* Estilos para la lista de clientes */
+#clientesTableBody {
+    margin-top: 20px;
+}
+
+/* Estilos para la lista de clientes */
+.clienteLink {
+    color: #007bff;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+/* Estilos para el estado del pedido */
+.estado-circulo {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: inline-block;
+    animation: spin 2s linear infinite;
+}
+
+.estado-entregado {
+    background-color: #28a745;
+}
+
+.estado-pendiente {
+    background-color: #dc3545;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Estilos para la lista de pedidos del cliente */
+.pending-status {
+    color: red;
+    animation: blink 1s linear infinite;
+}
+
+@keyframes blink {
+    0% { opacity: 1; }
+    50% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+/* Estilos para el botón "Eliminar" */
+.remove-item {
+    background-color: transparent;
+    border: none;
+    color: red;
+    font-size: 1.2em;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+}
+
+.remove-item:hover {
+    opacity: 0.7;
 }
