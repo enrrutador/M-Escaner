@@ -1,456 +1,460 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
-import { firebaseConfig } from "./firebaseConfig.js";
+/*
+  © [2024] [SYSMARKETHM]. Todos los derechos reservados.
+  
+  Este archivo es parte de [M-Escaner], propiedad de [SYSMARKETHM].
+  
+  El uso, distribución o reproducción no autorizados de este material están estrictamente prohibidos.
+  Para obtener permiso para usar cualquier parte de este código, por favor contacta a [https://sysmarket-hm.web.app/].
+*/
+import { auth, database } from './firebaseConfig.js';
+import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import { ref, set, get } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
 
-// Inicializa Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+// Función para obtener o generar un ID de dispositivo único
+function getDeviceId() {
+    let deviceId = localStorage.getItem('deviceId');
+    if (!deviceId) {
+        deviceId = crypto.randomUUID();
+        localStorage.setItem('deviceId', deviceId);
+    }
+    return deviceId;
+}
 
-// Inicializa Quagga
-const scanner = new Quagga({
-  inputStream: {
-    name: "Live",
-    type: "Live",
-    target: "#video",
-  },
-  decoder: {
-    readers: ["code_128_reader"],
-  },
-  locate: true,
-  numOfWorkers: 2,
-  frequency: 10,
-  debug: {
-    drawBoundingBox: true,
-    showFrequency: true,
-    drawScanline: true,
-    showPattern: true,
-  },
-});
+// Función para vincular el ID del dispositivo al usuario en Realtime Database
+async function linkDeviceToUser(userId, deviceId) {
+    const userRef = ref(database, `users/${userId}`);
+    await set(userRef, { deviceId, lastLogin: new Date().toISOString() });
+}
 
-document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("app-container").style.display = "none";
+// Función para obtener el ID del dispositivo vinculado desde Realtime Database
+async function getUserDevice(userId) {
+    const userRef = ref(database, `users/${userId}`);
+    const snapshot = await get(userRef);
+    return snapshot.exists() ? snapshot.val() : null;
+}
 
-  document.getElementById("loginForm").addEventListener("submit", (event) => {
-    event.preventDefault();
+// Manejar el formulario de inicio de sesión
+const loginForm = document.getElementById('loginForm');
+const loginContainer = document.getElementById('login-container');
+const appContainer = document.getElementById('app-container');
+const loginError = document.getElementById('login-error');
 
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
+loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const deviceId = getDeviceId();
 
-    firebase.auth()
-      .signInWithEmailAndPassword(email, password)
-      .then((userCredential) => {
+    try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
-        console.log("Usuario autenticado:", user);
 
-        document.getElementById("login-container").style.display = "none";
-        document.getElementById("app-container").style.display = "block";
+        // Recuperar el ID del dispositivo vinculado desde Realtime Database
+        const userDoc = await getUserDevice(user.uid);
 
-        loadProducts();
-        loadClients();
-        loadOrders();
+        if (userDoc && userDoc.deviceId) {
+            // Si ya existe un dispositivo vinculado
+            if (userDoc.deviceId !== deviceId) {
+                // Si el dispositivo actual no coincide con el vinculado, denegar acceso
+                await auth.signOut();
+                loginError.textContent = 'Acceso denegado. Esta cuenta está vinculada a otro dispositivo.';
+                return;
+            }
+        } else {
+            // Si es la primera vez que se inicia sesión, vincular el dispositivo
+            await linkDeviceToUser(user.uid, deviceId);
+        }
 
-        showClientsList();
-        showOrdersList();
-      })
-      .catch((error) => {
-        const errorCode = error.code;
-        const errorMessage = error.message;
-        console.error("Error de autenticación:", errorCode, errorMessage);
-        document.getElementById("login-error").textContent = errorMessage;
-      });
-  });
-
-  document.getElementById("scan-button").addEventListener("click", () => {
-    scanner.start();
-    document.getElementById("scanner-container").style.display = "block";
-  });
-
-  document.getElementById("search-button").addEventListener("click", () => {
-    const barcode = document.getElementById("barcode").value;
-    searchProduct(barcode);
-  });
-
-  document.getElementById("save-button").addEventListener("click", () => {
-    const description = document.getElementById("description").value;
-    const stock = parseInt(document.getElementById("stock").value);
-    const price = parseFloat(document.getElementById("price").value);
-    const barcode = document.getElementById("barcode").value;
-
-    saveProduct(barcode, description, stock, price);
-  });
-
-  document.getElementById("clear-button").addEventListener("click", () => {
-    clearForm();
-  });
-
-  document.getElementById("export-button").addEventListener("click", () => {
-    exportToExcel();
-  });
-
-  document.getElementById("import-button").addEventListener("click", () => {
-    document.getElementById("fileInput").click();
-  });
-
-  document.getElementById("low-stock-button").addEventListener("click", () => {
-    showLowStockProducts();
-  });
-
-  document.getElementById("fileInput").addEventListener("change", (event) => {
-    const file = event.target.files[0];
-    importFromExcel(file);
-  });
-
-  scanner.start();
-
-  loadProducts();
-  loadClients();
-  loadOrders();
-
-  showClientsList();
-  showOrdersList();
-
-  document.getElementById("nuevoClienteBtn").addEventListener("click", () => {
-    mostrarSeccion("nuevoCliente");
-  });
-
-  document.getElementById("nuevoPedidoBtn").addEventListener("click", () => {
-    mostrarSeccion("nuevoPedido");
-    cargarClientes();
-  });
-
-  document.getElementById("listaClientesBtn").addEventListener("click", () => {
-    mostrarSeccion("listaClientes");
-    showClientsList();
-  });
-
-  document.getElementById("listaPedidosBtn").addEventListener("click", () => {
-    mostrarSeccion("listaPedidos");
-    showOrdersList();
-  });
-
-  document.getElementById("guardarClienteBtn").addEventListener("click", () => {
-    saveClient();
-  });
-
-  document.getElementById("agregarProductoBtn").addEventListener("click", () => {
-    addProductToOrder();
-  });
-
-  document.getElementById("confirmarPedidoBtn").addEventListener("click", () => {
-    confirmOrder();
-  });
-
-  document.querySelector("#pedidosTable tbody").addEventListener("click", (e) => {
-    if (e.target.classList.contains("pedido-id")) {
-      const pedidoId = parseInt(e.target.getAttribute("data-pedido-id"));
-      showOrderDetails(pedidoId);
+        console.log('Usuario autenticado:', user);
+        loginContainer.style.display = 'none';
+        appContainer.style.display = 'block';
+    } catch (error) {
+        console.error('Error de autenticación:', error.code, error.message);
+        loginError.textContent = 'Error al iniciar sesión. Verifica tu correo y contraseña.';
     }
-  });
-
-  document.getElementById("volverListaPedidos").addEventListener("click", () => {
-    mostrarSeccion("listaPedidos");
-    showOrdersList();
-  });
-
-  document.querySelector("#clientesTable tbody").addEventListener("click", (e) => {
-    if (e.target.classList.contains("clienteLink")) {
-      const clienteId = parseInt(e.target.getAttribute("data-id"));
-      const clienteNombre = e.target.textContent.split(" ")[0] + " " + e.target.textContent.split(" ")[1];
-      showClientOrders(clienteId, clienteNombre);
-    }
-  });
-
-  showClientsList();
-  showOrdersList();
-
-  document.getElementById("closeScannerBtn").addEventListener("click", () => {
-    scanner.stop();
-    document.getElementById("scanner-container").style.display = "none";
-  });
 });
 
-function scanBarcode(code) {
-  const product = findProductByBarcode(code);
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        loginContainer.style.display = 'none';
+        appContainer.style.display = 'block';
+    } else {
+        loginContainer.style.display = 'block';
+        appContainer.style.display = 'none';
+    }
+});
 
-  if (product) {
-    document.getElementById("description").value = product.description;
-    document.getElementById("stock").value = product.stock;
-    document.getElementById("price").value = product.price;
-    document.getElementById("product-image").src = product.image;
-    document.getElementById("product-image-container").style.display = "block";
-  } else {
-    alert("Producto no encontrado.");
-  }
+// ... (el resto del código sigue igual)
+// Clase para la base de datos de productos
+class ProductDatabase {
+    constructor() {
+        this.dbName = 'MScannerDB';
+        this.dbVersion = 1;
+        this.storeName = 'products';
+        this.db = null;
+    }
+
+    async init() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(this.dbName, this.dbVersion);
+
+            request.onerror = (event) => reject('Error opening database:', event.target.error);
+
+            request.onsuccess = (event) => {
+                this.db = event.target.result;
+                resolve();
+            };
+
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                const store = db.createObjectStore(this.storeName, { keyPath: 'barcode' });
+                store.createIndex('description', 'description', { unique: false });
+            };
+        });
+    }
+
+    async addProduct(product) {
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([this.storeName], 'readwrite');
+            const store = transaction.objectStore(this.storeName);
+            const request = store.put(product);
+
+            request.onsuccess = () => resolve();
+            request.onerror = (event) => reject('Error adding product:', event.target.error);
+        });
+    }
+
+    async getProduct(barcode) {
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([this.storeName], 'readonly');
+            const request = transaction.objectStore(this.storeName).get(barcode);
+
+            request.onsuccess = (event) => resolve(event.target.result);
+            request.onerror = (event) => reject('Error getting product:', event.target.error);
+        });
+    }
+
+    async getAllProducts() {
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([this.storeName], 'readonly');
+            const request = transaction.objectStore(this.storeName).getAll();
+
+            request.onsuccess = (event) => resolve(event.target.result);
+            request.onerror = (event) => reject('Error getting all products:', event.target.error);
+        });
+    }
+
+    async searchProducts(query) {
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([this.storeName], 'readonly');
+            const store = transaction.objectStore(this.storeName);
+            const index = store.index('description');
+            const request = index.openCursor();
+            const results = [];
+
+            request.onsuccess = (event) => {
+                const cursor = event.target.result;
+                if (cursor) {
+                    const normalizedDescription = normalizeText(cursor.value.description);
+                    const normalizedQuery = normalizeText(query);
+                    if (normalizedDescription.includes(normalizedQuery)) {
+                        results.push(cursor.value);
+                    }
+                    cursor.continue();
+                } else {
+                    resolve(results);
+                }
+            };
+
+            request.onerror = (event) => reject('Error searching products:', event.target.error);
+        });
+    }
 }
 
-function searchProduct(barcode) {
-  const product = findProductByBarcode(barcode);
-
-  if (product) {
-    document.getElementById("description").value = product.description;
-    document.getElementById("stock").value = product.stock;
-    document.getElementById("price").value = product.price;
-    document.getElementById("product-image").src = product.image;
-    document.getElementById("product-image-container").style.display = "block";
-  } else {
-    alert("Producto no encontrado.");
-  }
+// Función para normalizar texto
+function normalizeText(text) {
+    return text
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
 }
 
-function saveProduct(barcode, description, stock, price) {
-  const newProduct = {
-    barcode: barcode,
-    description: description,
-    stock: stock,
-    price: price,
-    image: "",
-  };
+document.addEventListener('DOMContentLoaded', async () => {
+    const db = new ProductDatabase();
+    await db.init();
 
-  saveProductToLocalStorage(newProduct);
+    const barcodeInput = document.getElementById('barcode');
+    const descriptionInput = document.getElementById('description');
+    const stockInput = document.getElementById('stock');
+    const priceInput = document.getElementById('price');
+    const productImage = document.getElementById('product-image');
+    const scannerContainer = document.getElementById('scanner-container');
+    const video = document.getElementById('video');
+    const lowStockButton = document.getElementById('low-stock-button');
+    const lowStockResults = document.getElementById('low-stock-results');
+    const lowStockList = document.getElementById('low-stock-list');
+    const fileInput = document.getElementById('fileInput');
+    let barcodeDetector;
+    let productNotFoundAlertShown = false;
 
-  loadProducts();
-  showProductsList();
-  clearForm();
-}
+    const cache = new Map();
 
-function saveProductToLocalStorage(product) {
-  let products = getProductsFromLocalStorage();
-  products.push(product);
-  localStorage.setItem("products", JSON.stringify(products));
-}
+    async function startScanner() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+            video.srcObject = stream;
+            scannerContainer.style.display = 'flex';
+            video.play();
+            scan();
+        } catch (error) {
+            alert('Error accediendo a la cámara. Asegúrate de que tu navegador tiene permiso para usar la cámara.');
+        }
+    }
 
-function getProductsFromLocalStorage() {
-  const products = localStorage.getItem("products");
-  return products ? JSON.parse(products) : [];
-}
+    async function scan() {
+        if (barcodeDetector && video.readyState === video.HAVE_ENOUGH_DATA) {
+            const barcodes = await barcodeDetector.detect(video);
+            if (barcodes.length > 0) {
+                barcodeInput.value = barcodes[0].rawValue;
+                stopScanner();
+                searchProduct(barcodes[0].rawValue);
+            }
+        }
+        requestAnimationFrame(scan);
+    }
 
-function findProductByBarcode(barcode) {
-  const products = getProductsFromLocalStorage();
-  return products.find((p) => p.barcode === barcode);
-}
+    function stopScanner() {
+        video.srcObject.getTracks().forEach(track => track.stop());
+        scannerContainer.style.display = 'none';
+    }
 
-function exportToExcel() {
-  const products = getProductsFromLocalStorage();
-  const workbook = XLSX.utils.book_new();
-  const worksheet = XLSX.utils.aoa_to_sheet([
-    ["Código de Barras", "Descripción", "Stock", "Precio"],
-    ...products.map((product) => [
-      product.barcode,
-      product.description,
-      product.stock,
-      product.price,
-    ]),
-  ]);
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Productos");
-  XLSX.writeFile(workbook, "productos.xlsx");
-}
+    async function searchProduct(query) {
+        const isBarcode = /^\d+$/.test(query);
 
-function importFromExcel(file) {
-  const reader = new FileReader();
-  reader.onload = (event) => {
-    const data = new Uint8Array(event.target.result);
-    const workbook = XLSX.read(data, { type: "array" });
-    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-    const products = XLSX.utils.sheet_to_json(worksheet);
-    products.forEach((product) => {
-      saveProductToLocalStorage(product);
+        if (cache.has(query)) {
+            fillForm(cache.get(query));
+            return;
+        }
+
+        let product;
+
+        if (isBarcode) {
+            product = await db.getProduct(query);
+        } else {
+            const results = await db.searchProducts(query);
+            if (results.length > 0) {
+                product = results[0];
+            }
+        }
+
+        if (!product) {
+            product = await searchInOpenFoodFacts(query);
+        }
+
+        if (product) {
+            cache.set(query, product);
+            fillForm(product);
+            productNotFoundAlertShown = false;
+        } else {
+            if (!productNotFoundAlertShown) {
+                alert('Producto no encontrado.');
+                productNotFoundAlertShown = true;
+            }
+        }
+    }
+
+    async function searchInOpenFoodFacts(query) {
+        try {
+            const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${query}.json`);
+            const data = await response.json();
+
+            if (data.product) {
+                const product = {
+                    barcode: data.product.code,
+                    description: data.product.product_name || 'Sin nombre',
+                    stock: 0,
+                    price: 0,
+                    image: data.product.image_url || ''
+                };
+
+                await db.addProduct(product);
+                return product;
+            }
+        } catch (error) {
+            console.error('Error al buscar en OpenFoodFacts:', error);
+        }
+        return null;
+    }
+
+    function fillForm(product) {
+        barcodeInput.value = product.barcode || '';
+        descriptionInput.value = product.description || '';
+        stockInput.value = product.stock || '';
+        priceInput.value = product.price || '';
+        if (product.image) {
+            productImage.src = product.image;
+            productImage.style.display = 'block';
+        } else {
+            productImage.style.display = 'none';
+        }
+    }
+
+    document.getElementById('scan-button').addEventListener('click', async () => {
+        if (!('BarcodeDetector' in window)) {
+            alert('API de detección de códigos de barras no soportada en este navegador.');
+            return;
+        }
+
+        if (!barcodeDetector) {
+            barcodeDetector = new BarcodeDetector({ formats: ['ean_13'] });
+        }
+
+        startScanner();
     });
-    loadProducts();
-    showProductsList();
-  };
-  reader.readAsArrayBuffer(file);
-}
 
-function showLowStockProducts() {
-  const products = getProductsFromLocalStorage();
-  const lowStockProducts = products.filter((p) => p.stock < 5);
+    document.getElementById('search-button').addEventListener('click', () => {
+        const query = barcodeInput.value.trim() || descriptionInput.value.trim();
+        if (query) {
+            searchProduct(query);
+        } else {
+            alert('Por favor, introduce un código de barras o nombre de producto para buscar.');
+        }
+    });
 
-  const lowStockList = document.getElementById("low-stock-list");
-  lowStockList.innerHTML = "";
+    document.getElementById('save-button').addEventListener('click', async () => {
+        const product = {
+            barcode: barcodeInput.value.trim(),
+            description: descriptionInput.value.trim(),
+            stock: parseInt(stockInput.value) || 0,
+            price: parseFloat(priceInput.value) || 0,
+            image: productImage.src || ''
+        };
 
-  lowStockProducts.forEach((product) => {
-    const listItem = document.createElement("li");
-    listItem.textContent = `${product.description} - Stock: ${product.stock}`;
-    lowStockList.appendChild(listItem);
-  });
+        await db.addProduct(product);
+        alert('Producto guardado correctamente.');
+        clearForm();
+    });
 
-  document.getElementById("low-stock-results").style.display = "block";
-}
+    document.getElementById('clear-button').addEventListener('click', clearForm);
 
-function clearForm() {
-  document.getElementById("description").value = "";
-  document.getElementById("stock").value = "";
-  document.getElementById("price").value = "";
-  document.getElementById("barcode").value = "";
-  document.getElementById("product-image-container").style.display = "none";
-}
+    function clearForm() {
+        barcodeInput.value = '';
+        descriptionInput.value = '';
+        stockInput.value = '';
+        priceInput.value = '';
+        productImage.src = '';
+        productImage.style.display = 'none';
+    }
 
-function showProductsList() {
-  const products = getProductsFromLocalStorage();
-  const resultsList = document.getElementById("results-list");
-  resultsList.innerHTML = "";
+    lowStockButton.addEventListener('click', async () => {
+        if (lowStockResults.style.display === 'block') {
+            lowStockResults.style.display = 'none';
+            return;
+        }
 
-  products.forEach((product) => {
-    const listItem = document.createElement("li");
-    listItem.textContent = `${product.description} - Stock: ${product.stock}`;
-    resultsList.appendChild(listItem);
-  });
+        lowStockList.innerHTML = '';
+        const allProducts = await db.getAllProducts();
+        const lowStockProducts = allProducts.filter(product => product.stock <= 5);
 
-  document.getElementById("search-results").style.display = "block";
-}
+        if (lowStockProducts.length > 0) {
+            lowStockProducts.forEach(product => {
+                const li = document.createElement('li');
+                li.textContent = `${product.description} (Código: ${product.barcode}) - Stock: ${product.stock}`;
+                lowStockList.appendChild(li);
+            });
+        } else {
+            lowStockList.innerHTML = '<li>No hay productos con stock bajo.</li>';
+        }
 
-function loadProducts() {
-  const products = getProductsFromLocalStorage();
-  showProductsList();
-}
-// Función para guardar un cliente en localStorage
-function saveClientToLocalStorage(client) {
-  let clients = getClientsFromLocalStorage();
-  clients.push(client);
-  localStorage.setItem("clients", JSON.stringify(clients));
-}
+        lowStockResults.style.display = 'block';
+    });
 
-// Función para cargar los clientes de la base de datos local
-function loadClients() {
-  const clients = getClientsFromLocalStorage();
-  const select = document.getElementById("clienteSelect");
-  select.innerHTML = '<option value="">Seleccione un cliente</option>';
-  clients.forEach((client) => {
-    const option = document.createElement("option");
-    option.value = client.nombre;
-    option.textContent = `${client.nombre} ${client.apellido}`;
-    select.appendChild(option);
-  });
-}
+    document.getElementById('import-button').addEventListener('click', () => {
+        fileInput.click();
+    });
 
-// Función para mostrar la lista de clientes
-function showClientsList() {
-  const clients = getClientsFromLocalStorage();
-  const tbody = document.getElementById("clientesTableBody");
-  tbody.innerHTML = "";
-  clients.forEach((client) => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td><a href="#" class="clienteLink" data-id="${client.nombre}">${client.nombre} ${client.apellido}</a></td>
-      <td>${client.direccion}</td>
-      <td>${client.telefono}</td>
-      <td>${client.email}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
+    fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
 
-// Función para limpiar el formulario de cliente
-function clearClientForm() {
-  document.getElementById("nombreCliente").value = "";
-  document.getElementById("apellidoCliente").value = "";
-  document.getElementById("direccionCliente").value = "";
-  document.getElementById("telefonoCliente").value = "";
-  document.getElementById("emailCliente").value = "";
-}
+        reader.onload = async (e) => {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const products = XLSX.utils.sheet_to_json(worksheet);
 
-// Función para guardar un pedido en localStorage
-function saveOrderToLocalStorage(order) {
-  let orders = getOrdersFromLocalStorage();
-  orders.push(order);
-  localStorage.setItem("orders", JSON.stringify(orders));
-}
+                console.log('Productos leídos del archivo:', products);
 
-// Función para cargar los pedidos de la base de datos local
-function loadOrders() {
-  const orders = getOrdersFromLocalStorage();
-  const tbody = document.querySelector("#pedidosTable tbody");
-  tbody.innerHTML = "";
-  orders.forEach((order) => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td><span class="pedido-id" data-pedido-id="${order.id}">${order.id}</span></td>
-      <td>${order.cliente}</td>
-      <td>${new Date(order.fecha).toLocaleString()}</td>
-      <td>$${order.total.toFixed(2)}</td>
-      <td><div class="estado-circulo ${order.entregado ? "estado-entregado" : "estado-pendiente"}"></div></td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
+                let importedCount = 0;
+                for (let product of products) {
+                    console.log('Procesando producto:', product);
+                    
+                    // Función auxiliar para buscar la clave correcta
+                    const findKey = (possibleKeys) => {
+                        return possibleKeys.find(key => product.hasOwnProperty(key));
+                    };
 
-// Función para mostrar la lista de pedidos
-function showOrdersList() {
-  loadOrders();
-}
+                    // Buscar las claves correctas
+                    const barcodeKey = findKey(['Código de barras', 'Codigo de Barras', 'codigo de barras', 'barcode']);
+                    const descriptionKey = findKey(['Descripción', 'Descripcion', 'descripcion', 'description']);
+                    const stockKey = findKey(['Stock', 'stock']);
+                    const priceKey = findKey(['Precio Costo', 'Precio', 'precio', 'price']);
+                    const imageKey = findKey(['Imagen', 'imagen', 'image']);
 
-// Función para confirmar un pedido
-function confirmOrder() {
-  const clienteId = document.getElementById("clienteSelect").value;
-  const filas = document.querySelectorAll("#pedidoTable tbody tr");
+                    if (!barcodeKey) {
+                        console.warn('Producto sin código de barras:', product);
+                        continue;
+                    }
 
-  const items = Array.from(filas).map((fila) => ({
-    barcode: fila.cells[0].textContent,
-    descripcion: fila.cells[1].textContent,
-    cantidad: parseInt(fila.cells[2].textContent),
-    precioUnitario: parseFloat(fila.cells[3].textContent.replace("$", "")),
-    subtotal: parseFloat(fila.cells[4].textContent.replace("$", "")),
-  }));
+                    try {
+                        const newProduct = {
+                            barcode: product[barcodeKey].toString(),
+                            description: product[descriptionKey] || '',
+                            stock: parseInt(product[stockKey] || '0'),
+                            price: parseFloat(product[priceKey] || '0'),
+                            image: product[imageKey] || ''
+                        };
 
-  const total = parseFloat(document.getElementById("totalPedido").textContent);
-  const newOrder = {
-    id: generateOrderId(),
-    cliente: clienteId,
-    fecha: new Date(),
-    total: total,
-    items: items,
-    entregado: false,
-  };
+                        console.log('Intentando agregar producto:', newProduct);
+                        await db.addProduct(newProduct);
+                        importedCountimportedCount++;
+                        console.log('Producto agregado con éxito');
+                    } catch (error) {
+                        console.error('Error al agregar producto:', product, error);
+                    }
+                }
 
-  saveOrderToLocalStorage(newOrder);
+                console.log(`Importación completada. ${importedCount} productos importados correctamente.`);
+                alert(`Importación completada. ${importedCount} productos importados correctamente.`);
+            } catch (error) {
+                console.error('Error durante la importación:', error);
+                alert('Error durante la importación. Por favor, revisa la consola para más detalles.');
+            }
+        };
 
-  alert("Pedido confirmado exitosamente");
-  clearFormFields("nuevoPedido");
-  document.querySelector("#pedidoTable tbody").innerHTML = "";
-  document.getElementById("totalPedido").textContent = "0.00";
-  loadOrders();
-}
+        reader.onerror = (error) => {
+            console.error('Error al leer el archivo:', error);
+            alert('Error al leer el archivo. Por favor, intenta de nuevo.');
+        };
 
-// Función para mostrar detalles del pedido
-function showOrderDetails(pedidoId) {
-  const orders = getOrdersFromLocalStorage();
-  const pedido = orders.find((order) => order.id === pedidoId);
+        reader.readAsArrayBuffer(file);
+    });
 
-  document.getElementById("pedidoDetalleId").textContent = pedido.id;
-  const content = document.getElementById("pedidoDetalleContent");
-  content.innerHTML = `
-    <p><strong>Cliente:</strong> ${pedido.cliente}</p>
-    <p><strong>Fecha:</strong> ${new Date(pedido.fecha).toLocaleString()}</p>
-    <p><strong>Total:</strong> $${pedido.total.toFixed(2)}</p>
-    <p><strong>Estado:</strong> ${pedido.entregado ? "Entregado" : "Pendiente"}</p>
-    <h3>Productos:</h3>
-    <table>
-      <thead>
-        <tr>
-          <th>Código de Barras</th>
-          <th>Descripción</th>
-          <th>Cantidad</th>
-          <th>Precio Unitario</th>
-          <th>Subtotal</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${pedido.items
-          .map(
-            (item) => `
-              <tr>
-                <td>${item.barcode}</td>
-                <td>${item.descripcion}</td>
-                <td>${item.cantidad}</td>
-                <td>$${item.precioUnitario.toFixed(2)}</td>
-                <td>$${item.subtotal.toFixed(2)}</td>
-              </tr>
-            `
-          )
-          .join("")}
-      </tbody>
-    </table>
-  `;
-
-  mostrarSeccion("pedidoDetalle");
-}
+    document.getElementById('export-button').addEventListener('click', async () => {
+        const allProducts = await db.getAllProducts();
+        const worksheet = XLSX.utils.json_to_sheet(allProducts.map(product => ({
+            'Código de Barras': product.barcode,
+            'Descripción': product.description,
+            'Stock': product.stock,
+            'Precio': product.price
+        })));
+        
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Productos");
+        
+        XLSX.writeFile(workbook, "productos_exportados.xlsx");
+    });
+});
