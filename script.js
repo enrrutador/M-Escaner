@@ -457,4 +457,61 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         XLSX.writeFile(workbook, "productos_exportados.xlsx");
     });
+	// Escucha el evento del nuevo botón
+    document.getElementById('view-all-products-button').addEventListener('click', async () => {
+    const allProducts = await db.getAllProducts();
+    
+    // Ordenar los productos alfabéticamente por la descripción
+    allProducts.sort((a, b) => a.description.localeCompare(b.description));
+    
+    const resultsList = document.getElementById('results-list');
+    resultsList.innerHTML = '';  // Limpiar la lista actual
+
+    // Mostrar los productos ordenados
+    allProducts.forEach(product => {
+        const li = document.createElement('li');
+        li.textContent = `${product.description} (Código: ${product.barcode}) - Stock: ${product.stock}`;
+        resultsList.appendChild(li);
+    });
+
+    // Mostrar la sección de resultados
+    document.getElementById('search-results').style.display = 'block';
+	// Modificar la función para guardar el producto, ahora con el stock mínimo
+document.getElementById('save-button').addEventListener('click', async () => {
+    const product = {
+        barcode: barcodeInput.value.trim(),
+        description: descriptionInput.value.trim(),
+        stock: parseInt(stockInput.value) || 0,
+        minStock: parseInt(document.getElementById('min-stock').value) || 0,  // Añadir el stock mínimo
+        price: parseFloat(priceInput.value) || 0,
+        image: productImage.src || ''
+    };
+
+    await db.addProduct(product);
+    alert('Producto guardado correctamente.');
+    clearForm();
+});
+
+// Modificar la función de `fillForm` para rellenar el campo de stock mínimo
+function fillForm(product) {
+    barcodeInput.value = product.barcode || '';
+    descriptionInput.value = product.description || '';
+    stockInput.value = product.stock || '';
+    document.getElementById('min-stock').value = product.minStock || '';  // Añadir el stock mínimo
+    priceInput.value = product.price || '';
+    if (product.image) {
+        productImage.src = product.image;
+        productImage.style.display = 'block';
+    } else {
+        productImage.style.display = 'none';
+    }
+}
+request.onupgradeneeded = (event) => {
+    const db = event.target.result;
+    const store = db.createObjectStore(this.storeName, { keyPath: 'barcode' });
+    store.createIndex('description', 'description', { unique: false });
+    // Añadir el campo de stock mínimo
+    store.createIndex('minStock', 'minStock', { unique: false });
+};
+
 });

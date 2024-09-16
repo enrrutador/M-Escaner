@@ -42,6 +42,9 @@
             <input type="number" id="stock" placeholder="Stock">
             <input type="number" id="price" placeholder="Precio de Venta">
             <input type="file" id="fileInput" accept=".xlsx, .xls" style="display: none;" />
+			<!-- Campo para definir el stock mínimo -->
+            <input type="number" id="min-stock" placeholder="Stock Mínimo">
+
         </div>
         
         <div class="action-section">
@@ -50,6 +53,9 @@
             <button id="export-button" class="action-button">Exportar a Excel</button>
             <button id="import-button" class="action-button">Importar</button>
             <button id="low-stock-button" class="action-button low-stock-button">Ver Productos con Stock Bajo</button>
+			<!-- Botón para visualizar todos los productos -->
+            <button id="view-all-products-button" class="action-button">Ver Todos los Productos</button>
+
         </div>
         
         <div id="product-image-container" class="image-section">
