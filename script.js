@@ -558,4 +558,4 @@ function clearForm() {
     priceInput.value = '';
     productImage.src = '';
     productImage.style.display = 'none';
-}
+};
