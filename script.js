@@ -506,6 +506,8 @@ function fillForm(product) {
         productImage.style.display = 'none';
     }
 }
+
+// Lógica para actualizar la base de datos (IndexedDB)
 request.onupgradeneeded = (event) => {
     const db = event.target.result;
     const store = db.createObjectStore(this.storeName, { keyPath: 'barcode' });
