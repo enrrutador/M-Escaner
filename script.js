@@ -475,9 +475,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // Mostrar la sección de resultados
-    document.getElementById('search-results').style.display = 'block';
-	// Modificar la función para guardar el producto, ahora con el stock mínimo
+document.getElementById('search-results').style.display = 'block';
+
+// Modificar la función para guardar el producto, ahora con el stock mínimo
 document.getElementById('save-button').addEventListener('click', async () => {
+    const barcodeInput = document.getElementById('barcode'); // Asegúrate de tener los elementos definidos
+    const descriptionInput = document.getElementById('description');
+    const stockInput = document.getElementById('stock');
+    const priceInput = document.getElementById('price');
+    const productImage = document.getElementById('product-image');
+
     const product = {
         barcode: barcodeInput.value.trim(),
         description: descriptionInput.value.trim(),
@@ -494,10 +501,17 @@ document.getElementById('save-button').addEventListener('click', async () => {
 
 // Modificar la función de `fillForm` para rellenar el campo de stock mínimo
 function fillForm(product) {
+    const barcodeInput = document.getElementById('barcode'); // Asegúrate de tener los elementos definidos
+    const descriptionInput = document.getElementById('description');
+    const stockInput = document.getElementById('stock');
+    const minStockInput = document.getElementById('min-stock');
+    const priceInput = document.getElementById('price');
+    const productImage = document.getElementById('product-image');
+
     barcodeInput.value = product.barcode || '';
     descriptionInput.value = product.description || '';
     stockInput.value = product.stock || '';
-    document.getElementById('min-stock').value = product.minStock || '';  // Añadir el stock mínimo
+    minStockInput.value = product.minStock || '';  // Añadir el stock mínimo
     priceInput.value = product.price || '';
     if (product.image) {
         productImage.src = product.image;
@@ -508,11 +522,40 @@ function fillForm(product) {
 }
 
 // Lógica para actualizar la base de datos (IndexedDB)
+const request = indexedDB.open('your-database-name', 1); // Asegúrate de definir la base de datos
+
 request.onupgradeneeded = (event) => {
     const db = event.target.result;
-    const store = db.createObjectStore(this.storeName, { keyPath: 'barcode' });
+    const store = db.createObjectStore('your-store-name', { keyPath: 'barcode' }); // Usa el nombre correcto de la tienda
     store.createIndex('description', 'description', { unique: false });
     // Añadir el campo de stock mínimo
     store.createIndex('minStock', 'minStock', { unique: false });
 };
 
+// Asegúrate de manejar el error y el éxito de la solicitud
+request.onerror = (event) => {
+    console.error('Error al abrir la base de datos:', event.target.errorCode);
+};
+
+request.onsuccess = (event) => {
+    const db = event.target.result;
+    console.log('Base de datos abierta con éxito');
+};
+
+// Define la función clearForm (si no la tienes)
+function clearForm() {
+    const barcodeInput = document.getElementById('barcode');
+    const descriptionInput = document.getElementById('description');
+    const stockInput = document.getElementById('stock');
+    const minStockInput = document.getElementById('min-stock');
+    const priceInput = document.getElementById('price');
+    const productImage = document.getElementById('product-image');
+
+    barcodeInput.value = '';
+    descriptionInput.value = '';
+    stockInput.value = '';
+    minStockInput.value = '';
+    priceInput.value = '';
+    productImage.src = '';
+    productImage.style.display = 'none';
+}
