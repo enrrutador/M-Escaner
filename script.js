@@ -514,4 +514,3 @@ request.onupgradeneeded = (event) => {
     store.createIndex('minStock', 'minStock', { unique: false });
 };
 
-});
