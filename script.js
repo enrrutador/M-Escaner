@@ -305,6 +305,7 @@ function startScanner() {
             const barcode = result.codeResult.code;
             alert("Código escaneado: " + barcode);
             document.getElementById('barcode').value = barcode; // Rellenar el campo del código de barras
+            fetchProductDetails(barcode); // Buscar producto por código escaneado
             stopScanner(); // Detener el escáner
         }
     });
@@ -319,4 +320,82 @@ function stopScanner() {
 window.addEventListener('load', () => {
     showPage('scanner-page');
     displayLowStockProducts();
+});
+
+// **Funcionalidad para exportar productos a un archivo Excel**
+document.getElementById('export-button').addEventListener('click', function() {
+    const products = JSON.parse(localStorage.getItem('products')) || [];
+
+    // Formato de los datos
+    const exportData = products.map(product => ({
+        "Código de Barras": product.barcode,
+        "Nombre del Producto": product.name,
+        "Precio de Compra": product.purchasePrice || '',
+        "Precio de Venta": product.salePrice || '',
+        "Stock": product.stock,
+        "Stock Mínimo": product.minimumStock
+    }));
+
+    // Crear una hoja de trabajo (worksheet)
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+
+    // Crear un nuevo libro de trabajo (workbook)
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Productos");
+
+    // Exportar el archivo Excel
+    XLSX.writeFile(workbook, 'productos.xlsx');
+});
+
+// **Funcionalidad para importar productos desde un archivo Excel**
+document.getElementById('import-button').addEventListener('click', function() {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.xlsx, .xls';
+
+    fileInput.addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        const reader = new FileReader();
+
+        reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+
+            // Asumimos que los datos están en la primera hoja
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const importedData = XLSX.utils.sheet_to_json(firstSheet);
+
+            // Procesar y guardar los datos en localStorage
+            const products = JSON.parse(localStorage.getItem('products')) || [];
+
+            importedData.forEach(row => {
+                const existingProductIndex = products.findIndex(p => p.barcode === row['Código de Barras']);
+                
+                const newProduct = {
+                    barcode: row['Código de Barras'],
+                    name: row['Nombre del Producto'],
+                    purchasePrice: parseFloat(row['Precio de Compra']) || null,
+                    salePrice: parseFloat(row['Precio de Venta']) || null,
+                    stock: parseInt(row['Stock']),
+                    minimumStock: parseInt(row['Stock Mínimo'])
+                };
+
+                if (existingProductIndex !== -1) {
+                    // Actualizar producto existente
+                    products[existingProductIndex] = newProduct;
+                } else {
+                    // Agregar nuevo producto
+                    products.push(newProduct);
+                }
+            });
+
+            // Guardar los productos actualizados en localStorage
+            localStorage.setItem('products', JSON.stringify(products));
+            alert('Productos importados correctamente.');
+        };
+
+        reader.readAsArrayBuffer(file);
+    });
+
+    fileInput.click();
 });
