@@ -5,6 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Productos</title>
     <link rel="stylesheet" href="styles.css">
+    <style>
+        .shadow-flashing {
+            animation: flashing-shadow 1s infinite;
+        }
+
+        @keyframes flashing-shadow {
+            0% { box-shadow: 0 0 5px rgba(255, 0, 0, 0.5); }
+            50% { box-shadow: 0 0 10px rgba(255, 0, 0, 0.5); }
+            100% { box-shadow: 0 0 5px rgba(255, 0, 0, 0.5); }
+        }
+
+        #stop-flashing-button {
+            display: none;
+        }
+    </style>
 </head>
 <body>
     <div id="app-container">
@@ -12,15 +27,16 @@
         <div id="scanner-page" class="page">
             <div class="header">
                 <button id="search-button" class="blue-button">Buscar</button>
-                <button id="scan-button" class="red-button">Escaner</button>
+                <button id="scan-button" class="red-button">Escáner</button>
                 <div class="menu-container">
                     <button id="menu-button" class="blue-button">Menú</button>
                     <ul class="menu-list">
                         <li><a href="#productos">Productos</a></li>
                         <li><a href="#stock-Mínimo">Stock mínimo</a></li>
                         <li><a href="#dash">Dash</a></li>
-                              <li><button id="import-button" class="menu-button">Importar</button></li>
-        <li><button id="export-button" class="menu-button">Exportar</button></li>
+                        <li><button id="import-button" class="menu-button">Importar</button></li>
+                        <li><button id="export-button" class="menu-button">Exportar</button></li>
+                        <li><a href="#expiration">Expiración</a></li> <!-- Nuevo enlace al menú -->
                     </ul>
                 </div>
             </div>
@@ -54,6 +70,13 @@
                     </div>
                 </div>
 
+                <div class="stock-container">
+                    <div class="stock-item">
+                        <label for="expiration-date">Expiración:</label> <!-- Campo de Expiración añadido -->
+                        <input type="date" id="expiration-date" class="editable" />
+                    </div>
+                </div>
+
                 <div class="button-container">
                     <button type="submit" id="save-button">Guardar</button>
                     <button type="button" id="clear-button">Borrar</button>
@@ -80,17 +103,24 @@
             <button class="back-button">Volver al Escáner</button>
         </div>
 
+        <!-- Página de Expiración -->
+        <div id="expiration-page" class="page" style="display:none;">
+            <h1>Expiración</h1>
+            <div id="expiration-list"></div>
+            <button id="stop-flashing-button">Detener Titilación</button> <!-- Botón para detener la titilación -->
+            <button class="back-button">Volver al Escáner</button>
+        </div>
+
         <!-- Página de Dash -->
         <div id="dash-page" class="page" style="display:none;">
             <h1>Dash</h1>
             <button class="back-button">Volver al Escáner</button>
         </div>
     </div>
- 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
-<input type="file" id="file-input" accept=".xlsx, .xls" style="display:none;">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+    <input type="file" id="file-input" accept=".xlsx, .xls" style="display:none;">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

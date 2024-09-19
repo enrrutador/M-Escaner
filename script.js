@@ -121,18 +121,19 @@ function removeMenuFlashing() {
 document.getElementById('product-form').addEventListener('submit', function(event) {
     event.preventDefault();
 
-    // Recopilar y validar los datos ingresados
+    // Recopilar los datos ingresados
     const product = {
-        name: document.getElementById('product-name').value.trim(),
-        barcode: document.getElementById('barcode').value.trim(),
-        purchasePrice: parseFloat(document.getElementById('purchase-price').value) || null,
-        salePrice: parseFloat(document.getElementById('sale-price').value) || null,
-        stock: parseInt(document.getElementById('stock').value),
-        minimumStock: parseInt(document.getElementById('minimum-stock').value)
+        name: document.getElementById('product-name').value.trim() || '', // Campo opcional
+        barcode: document.getElementById('barcode').value.trim(), // Campo obligatorio
+        purchasePrice: parseFloat(document.getElementById('purchase-price').value) || null, // Campo opcional
+        salePrice: parseFloat(document.getElementById('sale-price').value) || null, // Campo opcional
+        stock: parseInt(document.getElementById('stock').value) || null, // Campo opcional
+        minimumStock: parseInt(document.getElementById('minimum-stock').value) || null // Campo opcional
     };
 
-    if (!product.name || !product.barcode || isNaN(product.stock) || isNaN(product.minimumStock)) {
-        alert("Por favor, complete todos los campos correctamente.");
+    // Validar que al menos el campo código de barras esté lleno
+    if (!product.barcode) {
+        alert("El campo 'Código de Barras' es obligatorio.");
         return;
     }
 
@@ -208,8 +209,8 @@ function fillProductFields(product) {
     document.getElementById('barcode').value = product.barcode;
     document.getElementById('purchase-price').value = product.purchasePrice || '';
     document.getElementById('sale-price').value = product.salePrice || '';
-    document.getElementById('stock').value = product.stock;
-    document.getElementById('minimum-stock').value = product.minimumStock;
+    document.getElementById('stock').value = product.stock || '';
+    document.getElementById('minimum-stock').value = product.minimumStock || '';
 }
 
 // Evento del botón "Buscar"
