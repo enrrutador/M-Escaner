@@ -1,5 +1,76 @@
 /* Estilos base */
 body {
+    background-color: #1a1a1a;
+    color: #eaeaea;
+    font-family: 'Arial', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* Alineación desde el inicio (arriba) */
+    height: 100vh;
+    margin: 0;
+    padding-top: 20px; /* Añade un poco de espacio en la parte superior */
+}
+
+.container {
+    width: 90%;
+    max-width: 1200px;
+    background-color: #2a2a2a;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    margin: 0 auto;
+    text-align: center; /* Centrar todo el contenido dentro del contenedor */
+}
+
+h2 {
+    margin-bottom: 20px;
+}
+
+table {
+    width: center; /* Cambia de 100% a auto para que no ocupe todo el contenedor */
+    margin: 0 center; /* Centrar la tabla dentro del contenedor */
+    border-collapse: collapse;
+}
+
+table th, table td {
+    border: 1px solid #444;
+    padding: 10px;
+    text-align: center;
+}
+
+table th {
+    background-color: #333;
+}
+
+table td {
+    word-wrap: break-word;
+    font-size: 14px;
+}
+
+/* Controlar el ancho de las celdas */
+table td:nth-child(2) {
+    max-width: 180px;
+}
+
+table td:nth-child(3), 
+table td:nth-child(4) {
+    max-width: 80px;
+}
+
+table td:nth-child(5), 
+table td:nth-child(6) {
+    max-width: 45px;
+}
+
+/* Ajuste para pantallas pequeñas */
+@media (max-width: 768px) {
+    table th, table td {
+        font-size: 12px;
+    }
+}
+
+
+body {
     background-color: #1a1a1a; /* Fondo oscuro para resaltar los colores neón */
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;

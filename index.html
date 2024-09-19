@@ -5,25 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Productos</title>
     <link rel="stylesheet" href="styles.css">
-    <style>
-        .shadow-flashing {
-            animation: flashing-shadow 1s infinite;
-        }
-
-        @keyframes flashing-shadow {
-            0% { box-shadow: 0 0 5px rgba(255, 0, 0, 0.5); }
-            50% { box-shadow: 0 0 10px rgba(255, 0, 0, 0.5); }
-            100% { box-shadow: 0 0 5px rgba(255, 0, 0, 0.5); }
-        }
-
-        #stop-flashing-button {
-            display: none;
-        }
-    </style>
 </head>
 <body>
     <div id="app-container">
-        <!-- Página principal (Escaner) -->
+        <!-- Página principal (Escáner) -->
         <div id="scanner-page" class="page">
             <div class="header">
                 <button id="search-button" class="blue-button">Buscar</button>
@@ -36,7 +21,6 @@
                         <li><a href="#dash">Dash</a></li>
                         <li><button id="import-button" class="menu-button">Importar</button></li>
                         <li><button id="export-button" class="menu-button">Exportar</button></li>
-
                     </ul>
                 </div>
             </div>
@@ -70,24 +54,8 @@
                     </div>
                 </div>
 
-               
-
                 <div class="button-container">
                     <button type="submit" id="save-button">Guardar</button>
-                  
-                  
-                   <div class="stock-container">
-                    <div class="stock-item">
-                        <label for="expiration-date">Expiración:</label> 
-                      
-                      <!-- Campo de Expiración añadido -->
-                        <input type="date" id="expiration-date" class="editable" />
-                    </div>
-                </div>
-                  
-                  
-                  
-                  
                     <button type="button" id="clear-button">Borrar</button>
                 </div>
             </form>
@@ -101,7 +69,23 @@
         <!-- Página de Productos -->
         <div id="productos-page" class="page" style="display:none;">
             <h1>Productos</h1>
-            <div id="productos-list"></div>
+            <div id="productos-list">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Código de Barras</th>
+                            <th>Precio de Compra</th>
+                            <th>Precio de Venta</th>
+                            <th>Stock</th>
+                            <th>Stock Mínimo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Los productos se añadirán dinámicamente aquí -->
+                    </tbody>
+                </table>
+            </div>
             <button class="back-button">Volver al Escáner</button>
         </div>
 
@@ -109,14 +93,6 @@
         <div id="stock-Mínimo-page" class="page" style="display:none;">
             <h1>Stock Mínimo</h1>
             <div id="stock-bajo-list"></div>
-            <button class="back-button">Volver al Escáner</button>
-        </div>
-
-        <!-- Página de Expiración -->
-        <div id="expiration-page" class="page" style="display:none;">
-            <h1>Expiración</h1>
-            <div id="expiration-list"></div>
-            <button id="stop-flashing-button">Detener Titilación</button> <!-- Botón para detener la titilación -->
             <button class="back-button">Volver al Escáner</button>
         </div>
 
