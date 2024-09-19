@@ -357,3 +357,13 @@ body {
     font-weight: bold;
     color: white;
 }
+.stock-container {
+    display: flex;
+    justify-content: center; /* Centra horizontalmente */
+    align-items: center; /* Centra verticalmente si hay suficiente altura */
+    margin-bottom: 20px;
+}
+
+.stock-item {
+    text-align: center; /* Centra el texto dentro del stock-item */
+}
