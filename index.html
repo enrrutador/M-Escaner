@@ -100,9 +100,22 @@
         <!-- Página de Dash con Dashboard dinámico -->
         <div id="dash-page" class="page" style="display:none;">
             <h1>Dashboard</h1>
+
+            <!-- Selector para elegir el gráfico -->
+            <select id="chartSelector" onchange="updateChart()">
+                <option value="top10MaxStock">Top 10 productos con más stock</option>
+                <option value="top10MinStock">Top 10 productos con menor stock</option>
+                <option value="lowStockPie">Proporción de Productos con Bajo Stock</option>
+                <option value="stockComparisonPie">Porcentaje de productos en stock normal vs. bajo stock</option>
+                <option value="replenishmentBar">Productos que necesitan reabastecimiento</option>
+                <option value="valuableStockBar">Stock de productos valiosos vs. productos menos valiosos</option>
+                <option value="priceComparisonBar">Comparación de precios de compra y venta</option>
+            </select>
+
             <div id="dashboard-container">
                 <canvas id="stockChart"></canvas>
             </div>
+
             <button class="back-button" onclick="showPage('scanner-page')">Volver al Escáner</button>
         </div>
     </div>
@@ -120,8 +133,14 @@
             document.getElementById(pageId).classList.add('active');
         }
 
+        // Función para actualizar el gráfico basado en el selector
+        function updateChart() {
+            const chartType = document.getElementById('chartSelector').value;
+            generateDashboard(chartType);  // Llama a la función de generación de gráficos con el tipo seleccionado
+        }
+
         // Generar el Dashboard usando la API de Google Gemini
-        async function generateDashboard() {
+        async function generateDashboard(chartType) {
             const localData = JSON.parse(localStorage.getItem('products')) || [];
 
             try {
@@ -139,26 +158,56 @@
                 }
 
                 const geminiData = await response.json();
-                displayCharts(geminiData);
+                displayCharts(geminiData, chartType);  // Pasa el tipo de gráfico a la función
             } catch (error) {
                 console.error('Error al comunicarse con la API de Google Gemini:', error);
                 alert('Hubo un error al cargar los datos del Dashboard.');
             }
         }
 
-        // Mostrar gráficos usando Chart.js
-        function displayCharts(data) {
+        // Mostrar gráficos usando Chart.js basado en la selección del usuario
+        function displayCharts(data, chartType) {
             const ctx = document.getElementById('stockChart').getContext('2d');
-            const productNames = data.map(product => product.name);
-            const productStock = data.map(product => product.stock);
+            let productNames, productData;
+
+            switch (chartType) {
+                case 'top10MaxStock':
+                    productNames = data.map(product => product.name);
+                    productData = data.map(product => product.stock);
+                    break;
+                case 'top10MinStock':
+                    productNames = data.map(product => product.name);
+                    productData = data.map(product => product.stock);  // Ajustar lógica para top 10 mínimo
+                    break;
+                case 'lowStockPie':
+                    productNames = ['Bajo Stock', 'Stock Normal'];
+                    productData = [data.filter(p => p.stock < p.minimumStock).length, data.filter(p => p.stock >= p.minimumStock).length];
+                    break;
+                case 'stockComparisonPie':
+                    productNames = ['Por debajo del mínimo', 'Stock normal'];
+                    productData = [data.filter(p => p.stock < p.minimumStock).length, data.filter(p => p.stock >= p.minimumStock).length];
+                    break;
+                case 'replenishmentBar':
+                    productNames = data.filter(p => p.stock < p.minimumStock).map(p => p.name);
+                    productData = data.filter(p => p.stock < p.minimumStock).map(p => p.stock);
+                    break;
+                case 'valuableStockBar':
+                    productNames = data.sort((a, b) => b.salePrice - a.salePrice).map(p => p.name);
+                    productData = data.map(p => p.salePrice);
+                    break;
+                case 'priceComparisonBar':
+                    productNames = data.map(p => p.name);
+                    productData = data.map(p => p.purchasePrice);  // Cambiar para comparar compra y venta
+                    break;
+            }
 
             new Chart(ctx, {
-                type: 'bar',
+                type: chartType.includes('Pie') ? 'pie' : 'bar',
                 data: {
                     labels: productNames,
                     datasets: [{
-                        label: 'Stock de Productos',
-                        data: productStock,
+                        label: 'Datos del Producto',
+                        data: productData,
                         backgroundColor: 'rgba(75, 192, 192, 0.2)',
                         borderColor: 'rgba(75, 192, 192, 1)',
                         borderWidth: 1
@@ -166,9 +215,7 @@
                 },
                 options: {
                     scales: {
-                        y: {
-                            beginAtZero: true
-                        }
+                        y: { beginAtZero: true }
                     }
                 }
             });
@@ -176,8 +223,8 @@
 
         // Cargar el Dashboard al acceder a la página
         document.addEventListener('DOMContentLoaded', function() {
-            showPage('dash-page'); // Muestra la página del Dashboard para pruebas
-            generateDashboard();  // Genera el Dashboard con la API de Google Gemini
+            showPage('dash-page');  // Muestra la página del Dashboard para pruebas
+            updateChart();  // Genera el Dashboard con el gráfico seleccionado
         });
     </script>
 </body>
