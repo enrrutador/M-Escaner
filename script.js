@@ -1,402 +1,304 @@
-// Inicialización de variables
-const scannerPage = document.getElementById('scanner-page');
-const productosPage = document.getElementById('productos-page');
-const stockBajoPage = document.getElementById('stock-Mínimo-page');
-const dashPage = document.getElementById('dash-page');
-const menuButton = document.getElementById('menu-button');
+// Add this function definition before the existing script
+function showEditProductModal(barcode) {
+  const modal = document.getElementById('editProductModal');
+  const barcodeInput = document.getElementById('barcode');
+  const barcodePreview = document.getElementById('barcodePreview');
+  
+  // Set the scanned barcode
+  if (barcodeInput) {
+    barcodeInput.value = barcode;
+  }
 
-// Función para cambiar entre páginas
-function showPage(pageId) {
-    const pages = document.querySelectorAll('.page');
-    pages.forEach(page => page.style.display = 'none');
-    document.getElementById(pageId).style.display = 'block';
-
-    if (pageId === 'productos-page') {
-        displayAllProducts();
-    } else if (pageId === 'stock-Mínimo-page') {
-        displayLowStockProducts();
+  // Generate barcode preview
+  if (barcodePreview) {
+    // Clear previous barcode
+    barcodePreview.innerHTML = '<svg id="barcodeDisplay"></svg>';
+    
+    try {
+      JsBarcode("#barcodeDisplay", barcode, {
+        format: "CODE128",
+        width: 2,
+        height: 100,
+        displayValue: true
+      });
+    } catch (err) {
+      console.error("Error generating barcode preview:", err);
+      barcodePreview.innerHTML = '<p>Error generating barcode preview</p>';
     }
+  }
+
+  // Show the modal
+  if (modal) {
+    modal.classList.add('active');
+  }
 }
 
-// Eventos de navegación del menú
-document.querySelectorAll('.menu-list a').forEach(link => {
-    link.addEventListener('click', (e) => {
-        e.preventDefault();
-        const pageId = e.target.getAttribute('href').substring(1) + '-page';
-        showPage(pageId);
+document.querySelector('.menu-button').addEventListener('click', function() {
+  document.querySelector('.menu').classList.toggle('active');
+  document.querySelector('.content').classList.toggle('menu-active');
+});
+
+const floatingButton = document.querySelector('.floating-button');
+floatingButton.addEventListener('click', async function() {
+  document.hasInteracted = true; // Mark that user has interacted
+  if (Quagga && typeof Quagga.stop === 'function') {
+    try {
+      Quagga.stop(); // Stop any existing instance
+    } catch (err) {
+      console.log('No previous Quagga instance running');
+    }
+  }
+  
+  document.querySelector('.scanner-view').classList.add('active');
+  
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ 
+      video: { 
+        facingMode: 'environment',
+        width: { min: 640 },
+        height: { min: 480 },
+        aspectRatio: { min: 1, max: 2 }
+      } 
     });
-});
-
-// Eventos para los botones "Volver al Escáner"
-document.querySelectorAll('.back-button').forEach(button => {
-    button.addEventListener('click', () => showPage('scanner-page'));
-});
-
-// Función para mostrar productos con stock bajo
-function displayLowStockProducts() {
-    const products = JSON.parse(localStorage.getItem('products')) || [];
-    const lowStockList = document.getElementById('stock-bajo-list');
-    lowStockList.innerHTML = '';
-
-    // Filtrar productos con stock menor o igual al stock mínimo
-    const lowStockProducts = products.filter(product => product.stock <= product.minimumStock);
-
-    if (lowStockProducts.length === 0) {
-        lowStockList.innerHTML = '<p>No hay productos con stock mínimo.</p>';
-        removeMenuFlashing();
-    } else {
-        const table = document.createElement('table');
-        table.innerHTML = `
-            <tr>
-                <th>Nombre</th>
-                <th>Código de Barras</th>
-                <th>Stock Actual</th>
-                <th>Stock Mínimo</th>
-            </tr>
-        `;
-
-        lowStockProducts.forEach(product => {
-            const row = table.insertRow();
-            row.innerHTML = `
-                <td>${product.name}</td>
-                <td>${product.barcode}</td>
-                <td>${product.stock}</td>
-                <td>${product.minimumStock}</td>
-            `;
-        });
-
-        lowStockList.appendChild(table);
-        applyMenuFlashing();  // Aplicar el efecto de titilación cuando haya productos en stock mínimo
+    const videoElement = document.getElementById('camera-feed');
+    if (videoElement) {
+      videoElement.srcObject = stream;
     }
-}
-
-// Función para mostrar todos los productos
-function displayAllProducts() {
-    const products = JSON.parse(localStorage.getItem('products')) || [];
-    const productsList = document.getElementById('productos-list');
-    productsList.innerHTML = '';
-
-    if (products.length === 0) {
-        productsList.innerHTML = '<p>No hay productos registrados.</p>';
-    } else {
-        const table = document.createElement('table');
-        table.innerHTML = `
-            <tr>
-                <th>Nombre</th>
-                <th>Código de Barras</th>
-                <th>Precio de Compra</th>
-                <th>Precio de Venta</th>
-                <th>Stock</th>
-                <th>Stock Mínimo</th>
-            </tr>
-        `;
-
-        products.forEach(product => {
-            const row = table.insertRow();
-            row.innerHTML = `
-                <td>${product.name}</td>
-                <td>${product.barcode}</td>
-                <td>${product.purchasePrice || '-'}</td>
-                <td>${product.salePrice || '-'}</td>
-                <td>${product.stock}</td>
-                <td>${product.minimumStock}</td>
-            `;
-        });
-
-        productsList.appendChild(table);
-    }
-}
-
-// Función para aplicar el efecto de titilación en el botón del menú
-function applyMenuFlashing() {
-    menuButton.classList.add('shadow-flashing');
-}
-
-// Función para remover el efecto de titilación en el botón del menú
-function removeMenuFlashing() {
-    menuButton.classList.remove('shadow-flashing');
-}
-
-// Guardar producto en localStorage o actualizarlo si ya existe
-document.getElementById('product-form').addEventListener('submit', function(event) {
-    event.preventDefault();
-
-    // Recopilar los datos ingresados
-    const product = {
-        name: document.getElementById('product-name').value.trim() || '', // Campo opcional
-        barcode: document.getElementById('barcode').value.trim(), // Campo obligatorio
-        purchasePrice: parseFloat(document.getElementById('purchase-price').value) || null, // Campo opcional
-        salePrice: parseFloat(document.getElementById('sale-price').value) || null, // Campo opcional
-        stock: parseInt(document.getElementById('stock').value) || null, // Campo opcional
-        minimumStock: parseInt(document.getElementById('minimum-stock').value) || null // Campo opcional
-    };
-
-    // Validar que al menos el campo código de barras esté lleno
-    if (!product.barcode) {
-        alert("El campo 'Código de Barras' es obligatorio.");
-        return;
-    }
-
-    saveOrUpdateProduct(product);  // Guardar o actualizar producto
-    this.reset();
-    displayLowStockProducts();  // Actualizar el stock bajo después de guardar
-});
-
-// Función para guardar o actualizar el producto en localStorage
-function saveOrUpdateProduct(product) {
-    let products = JSON.parse(localStorage.getItem('products')) || [];
-    
-    // Verificar si el producto ya existe
-    const index = products.findIndex(p => p.barcode === product.barcode);
-    
-    if (index !== -1) {
-        // Actualizar producto existente
-        products[index] = {
-            ...products[index],
-            name: product.name,
-            purchasePrice: product.purchasePrice,
-            salePrice: product.salePrice,
-            stock: product.stock,
-            minimumStock: product.minimumStock
-        };
-    } else {
-        // Agregar nuevo producto
-        products.push(product);
-    }
-
-    // Guardar en localStorage
-    localStorage.setItem('products', JSON.stringify(products));
-}
-
-// Evento del botón "Borrar"
-document.getElementById('clear-button').addEventListener('click', function() {
-    document.querySelectorAll('.editable').forEach(input => input.value = '');
-});
-
-// Mostrar/Ocultar menú
-menuButton.addEventListener('click', function() {
-    const menuList = document.querySelector('.menu-list');
-    menuList.style.display = menuList.style.display === 'block' ? 'none' : 'block';
-});
-
-// Función para buscar el producto por nombre
-function fetchProductByName(productName) {
-    const products = JSON.parse(localStorage.getItem('products')) || [];
-    const product = products.find(p => p.name.toLowerCase() === productName.toLowerCase());
-
-    if (product) {
-        fillProductFields(product);
-    } else {
-        alert("Producto no encontrado.");
-    }
-}
-
-// Función para buscar el producto por código de barras
-function fetchProductDetails(barcode) {
-    const products = JSON.parse(localStorage.getItem('products')) || [];
-    let product = products.find(p => p.barcode === barcode);
-
-    if (product) {
-        fillProductFields(product);
-    } else {
-        alert("Producto no encontrado.");
-    }
-}
-
-// Función para rellenar los campos del formulario
-function fillProductFields(product) {
-    document.getElementById('product-name').value = product.name;
-    document.getElementById('barcode').value = product.barcode;
-    document.getElementById('purchase-price').value = product.purchasePrice || '';
-    document.getElementById('sale-price').value = product.salePrice || '';
-    document.getElementById('stock').value = product.stock || '';
-    document.getElementById('minimum-stock').value = product.minimumStock || '';
-}
-
-// Evento del botón "Buscar"
-document.getElementById('search-button').addEventListener('click', function() {
-    const barcode = document.getElementById('barcode').value;
-    const productName = document.getElementById('product-name').value;
-
-    if (barcode) {
-        fetchProductDetails(barcode);
-    } else if (productName) {
-        fetchProductByName(productName);
-    } else {
-        alert("Por favor, ingrese un Código de Barras o Nombre de Producto para buscar.");
-    }
-});
-
-// **Nuevo código para el botón Escanear** (Aquí está la nueva funcionalidad)
-document.getElementById('scan-button').addEventListener('click', function() {
-    const scannerOverlay = document.getElementById('scanner-overlay');
-    scannerOverlay.style.display = 'flex'; // Mostrar el escáner
-    startScanner();
-});
-
-function startScanner() {
     Quagga.init({
-        inputStream: {
-            name: "Live",
-            type: "LiveStream",
-            target: document.querySelector('#scanner-container'),
-            constraints: {
-                width: 640,
-                height: 480,
-                facingMode: "environment" // Usar la cámara trasera
-            }
-        },
-        decoder: {
-            readers: [
-                "code_128_reader", 
-                "ean_reader", 
-                "ean_8_reader", 
-                "upc_reader", 
-                "code_39_reader"
-            ],
-            multiple: false // Detectar solo un código de barras a la vez
-        },
-        locator: {
-            patchSize: "large", // Aumentar el área de localización para mejorar la precisión
-            halfSample: false // Procesar la imagen completa para mayor precisión
-        },
-        locate: true, // Activar localización en toda la imagen
-        numOfWorkers: 4, // Incrementar el número de workers para procesar más rápido
+      inputStream: {
+        name: "Live",
+        type: "LiveStream",
+        target: videoElement,
+        constraints: {
+          facingMode: "environment",
+          width: { min: 640 },
+          height: { min: 480 },
+          aspectRatio: { min: 1, max: 2 }
+        }
+      },
+      locator: {
+        patchSize: "medium",
+        halfSample: true
+      },
+      numOfWorkers: navigator.hardwareConcurrency || 4,
+      decoder: {
+        readers: [
+          "ean_reader",
+          "ean_8_reader",
+          "code_128_reader",
+          "code_39_reader",
+          "upc_reader",
+          "upc_e_reader"
+        ]
+      },
+      locate: true
     }, function(err) {
-        if (err) {
-            console.error(err);
-            return;
-        }
-        console.log("Escáner iniciado.");
-        Quagga.start(); // Iniciar el escaneo
+      if (err) {
+        console.error(err);
+        return;
+      }
+      console.log("Quagga initialization succeeded");
+      Quagga.start();
     });
 
-    // Filtrar y procesar resultados para mejorar la precisión del escaneo
-    Quagga.onProcessed(function(result) {
-        const drawingCtx = Quagga.canvas.ctx.overlay;
-        const drawingCanvas = Quagga.canvas.dom.overlay;
+    Quagga.onDetected(async function(result) {
+      const code = result.codeResult.code;
+      console.log("Barcode detected and processed : [" + code + "]");
+      
+      showEditProductModal(code);
 
-        if (result) {
-            // Limpiar el canvas
-            drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
-
-            if (result.boxes) {
-                // Dibuja los rectángulos de detección (muestra cómo está buscando)
-                result.boxes.filter(box => box !== result.box).forEach(box => {
-                    Quagga.ImageDebug.drawPath(box, {x: 0, y: 1}, drawingCtx, {
-                        color: "green",
-                        lineWidth: 2
-                    });
-                });
-            }
-
-            if (result.box) {
-                // Dibuja el cuadro sobre el código de barras detectado
-                Quagga.ImageDebug.drawPath(result.box, {x: 0, y: 1}, drawingCtx, {
-                    color: "blue",
-                    lineWidth: 2
-                });
-            }
+      try {
+        if (document.hasInteracted) {
+          const beep = new Audio("data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YWoGAACBhYqFbF1FVU1aZH2Sqa3wdnaBjpacopuYn6eipZ+RhoJ6hpGUeqxhTlFKSlBYY36GmZyQhHp1hI6apK2up7KzqJyYkZCJhH58R0xGR0RBPkRPVlVZXl9ubXh3gYOMjYmFf4eDgH58f4GBgoKIipCMmI6Ihn1tZV9jZ2dvb25qbmyhoJ2koZ6Wk5edm5KKkZSVkpKVm5eTkYt7l4zhSUJGSEIxP0hOUVZhY21wbG1wcnR2eHZwb3N5fHp0cG9ubGlvcXR3eHZwb3N5fHp0cG9ubGlvcXR3eHZwb3N5fHp0cG9ubGlvcXR3eHZwb3N5fHp0cG9ubGlvcXR3eHZwb3N5f");
+          await beep.play();
         }
+
+        // Stop video stream and Quagga
+        if (videoElement.srcObject) {
+          videoElement.srcObject.getTracks().forEach(track => track.stop());
+        }
+        Quagga.stop();
+        
+        // Hide scanner view
+        document.querySelector('.scanner-view').classList.remove('active');
+      } catch (error) {
+        console.error("Error playing beep:", error);
+      }
     });
 
-    // Captura el código de barras una vez detectado correctamente
-    Quagga.onDetected(function(result) {
-        if (result && result.codeResult && result.codeResult.code) {
-            const barcode = result.codeResult.code;
-            alert("Código escaneado: " + barcode);
-            document.getElementById('barcode').value = barcode; // Rellenar el campo del código de barras
-            fetchProductDetails(barcode); // Buscar producto por código escaneado
-            stopScanner(); // Detener el escáner
-        }
-    });
-}
-
-function stopScanner() {
-    Quagga.stop(); // Detener el escáner
-    document.getElementById('scanner-overlay').style.display = 'none'; // Ocultar el overlay del escáner
-}
-
-// Inicialización: mostrar la página del escáner al cargar y verificar el stock bajo
-window.addEventListener('load', () => {
-    showPage('scanner-page');
-    displayLowStockProducts();
+  } catch (err) {
+    console.error('Error accessing camera:', err);
+    showNotification('Error al acceder a la cámara', 'error');
+  }
 });
 
-// **Funcionalidad para exportar productos a un archivo Excel**
-document.getElementById('export-button').addEventListener('click', function() {
-    const products = JSON.parse(localStorage.getItem('products')) || [];
-
-    // Formato de los datos
-    const exportData = products.map(product => ({
-        "Código de Barras": product.barcode,
-        "Nombre del Producto": product.name,
-        "Precio de Compra": product.purchasePrice || '',
-        "Precio de Venta": product.salePrice || '',
-        "Stock": product.stock,
-        "Stock Mínimo": product.minimumStock
-    }));
-
-    // Crear una hoja de trabajo (worksheet)
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-
-    // Crear un nuevo libro de trabajo (workbook)
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Productos");
-
-    // Exportar el archivo Excel
-    XLSX.writeFile(workbook, 'productos.xlsx');
+// Cancel scan button handler
+document.getElementById('cancelScan').addEventListener('click', function() {
+  const videoElement = document.getElementById('camera-feed');
+  if (videoElement.srcObject) {
+    videoElement.srcObject.getTracks().forEach(track => track.stop());
+  }
+  if (Quagga && typeof Quagga.stop === 'function') {
+    Quagga.stop();
+  }
+  document.querySelector('.scanner-view').classList.remove('active');
 });
 
-// **Funcionalidad para importar productos desde un archivo Excel**
-document.getElementById('import-button').addEventListener('click', function() {
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = '.xlsx, .xls';
+// Card click handlers for modals
+document.querySelectorAll('.card').forEach((card, index) => {
+  card.addEventListener('click', function() {
+    switch(index) {
+      case 0: // Inventario Total
+        showInventoryDetails();
+        break;
+      case 1: // Productos Bajos
+        showLowStockDetails();
+        break;
+      case 2: // Último Escaneo
+        showLastScanDetails();
+        break;
+    }
+  });
+});
 
-    fileInput.addEventListener('change', function(event) {
-        const file = event.target.files[0];
-        const reader = new FileReader();
+// Modal functions
+function showInventoryDetails() {
+  const modal = document.getElementById('inventoryDetailsModal');
+  const detailsList = document.getElementById('inventoryDetailsList');
+  
+  // Example data - replace with actual inventory data
+  const inventoryHTML = `
+    <div class="inventory-summary">
+      <h3>Resumen de Inventario</h3>
+      <p>Total de Productos: 1,234</p>
+      <p>Categorías: 8</p>
+      <p>Valor Total: $45,678</p>
+    </div>
+  `;
+  
+  detailsList.innerHTML = inventoryHTML;
+  modal.classList.add('active');
+}
 
-        reader.onload = function(e) {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
+function showLowStockDetails() {
+  const modal = document.getElementById('lowStockModal');
+  const lowStockList = document.getElementById('lowStockList');
+  
+  // Example data - replace with actual low stock data
+  const lowStockHTML = `
+    <div class="low-stock-items">
+      <div class="low-stock-item">
+        <h4>Producto A</h4>
+        <p>Stock: 2 unidades</p>
+        <p class="status-badge low">Crítico</p>
+      </div>
+      <div class="low-stock-item">
+        <h4>Producto B</h4>
+        <p>Stock: 5 unidades</p>
+        <p class="status-badge warning">Bajo</p>
+      </div>
+    </div>
+  `;
+  
+  lowStockList.innerHTML = lowStockHTML;
+  modal.classList.add('active');
+}
 
-            // Asumimos que los datos están en la primera hoja
-            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-            const importedData = XLSX.utils.sheet_to_json(firstSheet);
-
-            // Procesar y guardar los datos en localStorage
-            const products = JSON.parse(localStorage.getItem('products')) || [];
-
-            importedData.forEach(row => {
-                const existingProductIndex = products.findIndex(p => p.barcode === row['Código de Barras']);
-                
-                const newProduct = {
-                    barcode: row['Código de Barras'],
-                    name: row['Nombre del Producto'],
-                    purchasePrice: parseFloat(row['Precio de Compra']) || null,
-                    salePrice: parseFloat(row['Precio de Venta']) || null,
-                    stock: parseInt(row['Stock']),
-                    minimumStock: parseInt(row['Stock Mínimo'])
-                };
-
-                if (existingProductIndex !== -1) {
-                    // Actualizar producto existente
-                    products[existingProductIndex] = newProduct;
-                } else {
-                    // Agregar nuevo producto
-                    products.push(newProduct);
-                }
-            });
-
-            // Guardar los productos actualizados en localStorage
-            localStorage.setItem('products', JSON.stringify(products));
-            alert('Productos importados correctamente.');
-        };
-
-        reader.readAsArrayBuffer(file);
+function showLastScanDetails() {
+  const modal = document.getElementById('lastScanModal');
+  const lastScanDetails = document.getElementById('lastScanDetails');
+  
+  // Example data - replace with actual last scan data
+  const lastScanHTML = `
+    <div class="last-scan-info">
+      <h3>Último Producto Escaneado</h3>
+      <div class="barcode-display">
+        <svg id="lastScanBarcode"></svg>
+      </div>
+      <p>SKU: SKU-123456</p>
+      <p>Producto: Ejemplo Producto</p>
+      <p>Fecha: ${new Date().toLocaleDateString()}</p>
+      <p class="status-badge good">Escaneado Correctamente</p>
+    </div>
+  `;
+  
+  lastScanDetails.innerHTML = lastScanHTML;
+  
+  // Generate barcode
+  try {
+    JsBarcode("#lastScanBarcode", "SKU-123456", {
+      format: "CODE128",
+      width: 2,
+      height: 100,
+      displayValue: true
     });
+  } catch (err) {
+    console.error("Error generating barcode:", err);
+  }
+  
+  modal.classList.add('active');
+}
 
-    fileInput.click();
+// Close modal handlers
+document.querySelectorAll('.modal-content button[id^="close"]').forEach(button => {
+  button.addEventListener('click', function() {
+    const modal = button.closest('.inventory-details-modal, .low-stock-modal, .last-scan-modal');
+    if (modal) {
+      modal.classList.remove('active');
+    }
+  });
+});
+
+// Add these event handlers at the end of your existing script
+document.getElementById('saveProduct').addEventListener('click', function() {
+  // Save product logic here
+  const modal = document.getElementById('editProductModal');
+  if (modal) {
+    modal.classList.remove('active');
+  }
+  showNotification('Producto guardado correctamente', 'success');
+});
+
+document.getElementById('cancelEdit').addEventListener('click', function() {
+  const modal = document.getElementById('editProductModal');
+  if (modal) {
+    modal.classList.remove('active');
+  }
+});
+
+document.getElementById('generateBarcode').addEventListener('click', function() {
+  const barcodeInput = document.getElementById('barcode');
+  const randomBarcode = Math.floor(Math.random() * 1000000000000).toString();
+  barcodeInput.value = randomBarcode;
+  showEditProductModal(randomBarcode);
+});
+
+// Notification function
+function showNotification(message, type = 'success') {
+  const notification = document.createElement('div');
+  notification.className = `notification ${type}`;
+  notification.textContent = message;
+  
+  const container = document.getElementById('notification-container');
+  container.appendChild(notification);
+  
+  setTimeout(() => {
+    notification.remove();
+  }, 3000);
+}
+
+// Handle ripple effect
+document.addEventListener('click', function(e) {
+  if (e.target.closest('.card, .floating-button, .menu-item')) {
+    const ripple = document.createElement('div');
+    ripple.className = 'ripple';
+    const rect = e.target.getBoundingClientRect();
+    ripple.style.left = e.clientX - rect.left + 'px';
+    ripple.style.top = e.clientY - rect.top + 'px';
+    e.target.appendChild(ripple);
+    
+    setTimeout(() => {
+      ripple.remove();
+    }, 600);
+  }
 });
