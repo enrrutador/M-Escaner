@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
   async function updateProductCount() {
     await waitForDB(); // Esperar a que IndexedDB esté lista
     const products = await getAllProducts();
-    const productCountElement = document.querySelector('.card-subtitle');
+    const productCountElement = document.getElementById('totalProducts');
     if (productCountElement) {
       productCountElement.textContent = `${products.length} productos`;
     }
@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', function() {
     await waitForDB(); // Esperar a que IndexedDB esté lista
     const products = await getAllProducts();
     const lowStockProducts = products.filter(product => product.stock <= 5);
-    const lowStockCountElement = document.querySelectorAll('.card-subtitle')[1];
+    const lowStockCountElement = document.getElementById('lowStockProducts');
     if (lowStockCountElement) {
       lowStockCountElement.textContent = `${lowStockProducts.length} items`;
     }
@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', function() {
     await waitForDB(); // Esperar a que IndexedDB esté lista
     const products = await getAllProducts();
     const lastScannedProduct = products[products.length - 1];
-    const lastScannedElement = document.querySelectorAll('.card-subtitle')[2];
+    const lastScannedElement = document.getElementById('lastScannedProduct');
     if (lastScannedElement && lastScannedProduct) {
       lastScannedElement.textContent = `${lastScannedProduct.barcode} ${lastScannedProduct.stock <= 5 ? '<span class="status-badge low">Alerta</span>' : '<span class="status-badge good">OK</span>'}`;
     }
@@ -491,5 +491,49 @@ document.addEventListener('DOMContentLoaded', function() {
     if (descriptionInput) descriptionInput.value = product.description;
     if (stockInput) stockInput.value = product.stock;
     if (priceInput) priceInput.value = product.price;
+  }
+
+  // Search functionality
+  document.getElementById('searchButton').addEventListener('click', async () => {
+    const searchQuery = document.getElementById('searchBar').value.trim().toLowerCase();
+    if (searchQuery) {
+      const products = await getAllProducts();
+      const filteredProducts = products.filter(product => 
+        product.barcode.toLowerCase().includes(searchQuery) ||
+        product.description.toLowerCase().includes(searchQuery)
+      );
+      displaySearchResults(filteredProducts);
+    } else {
+      alert('Por favor, ingrese un término de búsqueda.');
+    }
+  });
+
+  function displaySearchResults(products) {
+    const searchResultsContainer = document.createElement('div');
+    searchResultsContainer.id = 'searchResultsContainer';
+    searchResultsContainer.style.display = 'block';
+
+    if (products.length > 0) {
+      products.forEach(product => {
+        const productItem = document.createElement('div');
+        productItem.className = 'search-result-item';
+        productItem.innerHTML = `
+          <h4>${product.description}</h4>
+          <p>Código de Barras: ${product.barcode}</p>
+          <p>Stock: ${product.stock}</p>
+          <p>Precio: $${product.price}</p>
+        `;
+        searchResultsContainer.appendChild(productItem);
+      });
+    } else {
+      searchResultsContainer.innerHTML = '<p>No se encontraron productos.</p>';
+    }
+
+    const existingContainer = document.getElementById('searchResultsContainer');
+    if (existingContainer) {
+      existingContainer.remove();
+    }
+
+    document.body.appendChild(searchResultsContainer);
   }
 });
