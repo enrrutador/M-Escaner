@@ -1,6 +1,9 @@
 document.addEventListener('DOMContentLoaded', function() {
+  console.log("DOM fully loaded and parsed");
+
   // Add this function definition before the existing script
   function showEditProductModal(barcode) {
+    console.log("Showing edit product modal for barcode:", barcode);
     const modal = document.getElementById('editProductModal');
     const barcodeInput = document.getElementById('barcode');
     const barcodePreview = document.getElementById('barcodePreview');
@@ -35,12 +38,14 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   document.querySelector('.menu-button').addEventListener('click', function() {
+    console.log("Menu button clicked");
     document.querySelector('.menu').classList.toggle('active');
     document.querySelector('.content').classList.toggle('menu-active');
   });
 
   const floatingButton = document.querySelector('.floating-button');
   floatingButton.addEventListener('click', async function() {
+    console.log("Floating button clicked");
     document.hasInteracted = true; // Mark that user has interacted
     if (Quagga && typeof Quagga.stop === 'function') {
       try {
@@ -135,6 +140,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Cancel scan button handler
   document.getElementById('cancelScan').addEventListener('click', function() {
+    console.log("Cancel scan button clicked");
     const videoElement = document.getElementById('camera-feed');
     if (videoElement.srcObject) {
       videoElement.srcObject.getTracks().forEach(track => track.stop());
@@ -148,6 +154,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Card click handlers for modals
   document.querySelectorAll('.card').forEach((card, index) => {
     card.addEventListener('click', function() {
+      console.log("Card clicked with index:", index);
       switch(index) {
         case 0: // Inventario Total
           showInventoryDetails();
@@ -164,6 +171,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Modal functions
   function showInventoryDetails() {
+    console.log("Showing inventory details modal");
     const modal = document.getElementById('inventoryDetailsModal');
     const detailsList = document.getElementById('inventoryDetailsList');
     
@@ -182,6 +190,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function showLowStockDetails() {
+    console.log("Showing low stock details modal");
     const modal = document.getElementById('lowStockModal');
     const lowStockList = document.getElementById('lowStockList');
     
@@ -206,6 +215,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function showLastScanDetails() {
+    console.log("Showing last scan details modal");
     const modal = document.getElementById('lastScanModal');
     const lastScanDetails = document.getElementById('lastScanDetails');
     
@@ -243,6 +253,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Close modal handlers
   document.querySelectorAll('.modal-content button[id^="close"]').forEach(button => {
     button.addEventListener('click', function() {
+      console.log("Close modal button clicked");
       const modal = button.closest('.inventory-details-modal, .low-stock-modal, .last-scan-modal');
       if (modal) {
         modal.classList.remove('active');
@@ -252,6 +263,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Add these event handlers at the end of your existing script
   document.getElementById('saveProduct').addEventListener('click', function() {
+    console.log("Save product button clicked");
     // Save product logic here
     const modal = document.getElementById('editProductModal');
     if (modal) {
@@ -261,6 +273,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   document.getElementById('cancelEdit').addEventListener('click', function() {
+    console.log("Cancel edit button clicked");
     const modal = document.getElementById('editProductModal');
     if (modal) {
       modal.classList.remove('active');
@@ -268,6 +281,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   document.getElementById('generateBarcode').addEventListener('click', function() {
+    console.log("Generate barcode button clicked");
     const barcodeInput = document.getElementById('barcode');
     const randomBarcode = Math.floor(Math.random() * 1000000000000).toString();
     barcodeInput.value = randomBarcode;
@@ -276,6 +290,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Notification function
   function showNotification(message, type = 'success') {
+    console.log("Showing notification:", message, type);
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
     notification.textContent = message;
