@@ -58,9 +58,7 @@
         <div class="search-box">
           <input type="text" id="searchBar" placeholder="Buscar productos..." />
         </div>
-        <button id="searchButton" class="search-button">
-          Buscar
-        </button>
+        <button id="searchButton" class="search-button">Buscar</button>
       </div>
 
       <div class="card" data-category="Electrónica" data-status="good">
@@ -128,50 +126,6 @@
       </div>
     </div>
 
-    <div class="edit-category-modal" id="editCategoryModal">
-      <div class="modal-content">
-        <h2>Gestionar Categorías</h2>
-        
-        <label for="newCategory">Nueva Categoría:</label>
-        <input type="text" id="newCategory" placeholder="Ingrese nueva categoría" />
-        <button id="addCategory" class="modal-button primary">Agregar</button>
-        
-        <ul id="categoryList" class="category-list"></ul>
-        
-        <div class="modal-actions">
-          <button id="closeCategoryModal" class="modal-button warning">Cerrar</button>
-        </div>
-      </div>
-    </div>
-    
-    <div class="import-export-modal" id="importExportModal">
-      <div class="modal-content">
-        <h2>Importar/Exportar Inventario</h2>
-        <div class="import-section">
-          <h3>Importar CSV</h3>
-          <input type="file" id="importFile" accept=".csv" />
-          <button id="importBtn">Importar</button>
-        </div>
-        <div class="export-section">
-          <h3>Exportar CSV</h3>
-          <button id="exportBtn">Exportar</button>
-        </div>
-        <div class="modal-actions">
-          <button id="closeImportExportModal">Cerrar</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="reports-modal" id="reportsModal">
-      <div class="modal-content">
-        <h2>Reportes de Inventario</h2>
-        <canvas id="inventoryChart" width="400" height="200"></canvas>
-        <div class="modal-actions">
-          <button id="closeReportsModal">Cerrar</button>
-        </div>
-      </div>
-    </div>
-
     <div class="login-modal" id="loginModal">
       <div class="modal-content">
         <h2>Iniciar Sesión</h2>
@@ -180,7 +134,7 @@
           <input type="text" id="username" name="username" />
           
           <label for="password">Contraseña:</label>
-          <input type="password" id="password" name="password" />
+          <input type="password" id="password" name="password" autocomplete="current-password" />
           
           <div class="modal-actions">
             <button id="loginBtn">Entrar</button>
@@ -190,46 +144,6 @@
       </div>
     </div>
 
-    <div class="history-modal" id="historyModal">
-      <div class="modal-content">
-        <h2>Historial de Productos</h2>
-        <ul id="historyList"></ul>
-        <div class="modal-actions">
-          <button id="closeHistoryModal">Cerrar</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="inventory-details-modal" id="inventoryDetailsModal">
-      <div class="modal-content">
-        <h2>Detalles de Inventario</h2>
-        <div id="inventoryDetailsList"></div>
-        <div class="modal-actions">
-          <button id="closeInventoryDetailsModal">Cerrar</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="low-stock-modal" id="lowStockModal">
-      <div class="modal-content">
-        <h2>Productos con Stock Bajo</h2>
-        <div id="lowStockList"></div>
-        <div class="modal-actions">
-          <button id="closeLowStockModal">Cerrar</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="last-scan-modal" id="lastScanModal">
-      <div class="modal-content">
-        <h2>Último Escaneo</h2>
-        <div id="lastScanDetails"></div>
-        <div class="modal-actions">
-          <button id="closeLastScanModal">Cerrar</button>
-        </div>
-      </div>
-    </div>
-    
     <div id="notification-container"></div>
 
     <div class="floating-button">
@@ -239,6 +153,6 @@
     </div>
   </div>
 
-  <script src="scripts.js"></script>
+  <script src="./scripts.js"></script>
 </body>
 </html>
