@@ -136,7 +136,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const code = result.codeResult.code;
         console.log("Barcode detected and processed : [" + code + "]");
         
-        showEditProductModal(code);
+        const product = await getProduct(code);
+        if (product) {
+          fillForm(product);
+        } else {
+          showEditProductModal(code);
+        }
 
         try {
           if (document.hasInteracted) {
@@ -308,7 +313,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const transaction = db.transaction([storeName], "readwrite");
     const store = transaction.objectStore(storeName);
-    const request = store.add(product);
+    const request = store.put(product);
 
     request.onsuccess = function(event) {
       console.log("Product saved successfully");
@@ -394,6 +399,17 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
+  // Get product by barcode from IndexedDB
+  async function getProduct(barcode) {
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction([storeName], 'readonly');
+      const request = transaction.objectStore(storeName).get(barcode);
+
+      request.onsuccess = event => resolve(event.target.result);
+      request.onerror = event => reject('Error getting product:', event.target.error);
+    });
+  }
+
   // Show low stock products
   document.getElementById('low-stock-button').addEventListener('click', async () => {
     const products = await getAllProducts();
@@ -424,5 +440,18 @@ document.addEventListener('DOMContentLoaded', function() {
     if (descriptionInput) descriptionInput.value = '';
     if (stockInput) stockInput.value = '';
     if (priceInput) priceInput.value = '';
+  }
+
+  // Fill form fields with product data
+  function fillForm(product) {
+    const barcodeInput = document.getElementById('barcode');
+    const descriptionInput = document.getElementById('description');
+    const stockInput = document.getElementById('stock');
+    const priceInput = document.getElementById('price');
+
+    if (barcodeInput) barcodeInput.value = product.barcode;
+    if (descriptionInput) descriptionInput.value = product.description;
+    if (stockInput) stockInput.value = product.stock;
+    if (priceInput) priceInput.value = product.price;
   }
 });
