@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const version = 1;
 
   let db;
+  let dbReady = false; // Indicador de disponibilidad de IndexedDB
 
   const request = indexedDB.open(dbName, version);
 
@@ -19,12 +20,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
   request.onsuccess = function(event) {
     db = event.target.result;
+    dbReady = true; // Marcamos que IndexedDB está lista
     console.log("IndexedDB opened successfully");
   };
 
   request.onerror = function(event) {
     console.error("Error opening IndexedDB", event.target.errorCode);
   };
+
+  // Función para esperar a que IndexedDB esté lista
+  async function waitForDB() {
+    while (!dbReady) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
 
   // Add this function definition before the existing script
   function showEditProductModal(barcode) {
@@ -201,6 +210,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Modal functions
   async function showInventoryDetails() {
+    await waitForDB(); // Esperar a que IndexedDB esté lista
     console.log("Showing inventory details modal");
     const modal = document.getElementById('inventoryDetailsModal');
     const detailsList = document.getElementById('inventoryDetailsList');
@@ -223,6 +233,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   async function showLowStockDetails() {
+    await waitForDB(); // Esperar a que IndexedDB esté lista
     console.log("Showing low stock details modal");
     const modal = document.getElementById('lowStockModal');
     const lowStockList = document.getElementById('lowStockList');
@@ -246,6 +257,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   async function showLastScannedDetails() {
+    await waitForDB(); // Esperar a que IndexedDB esté lista
     console.log("Showing last scanned details modal");
     const modal = document.getElementById('lastScanModal');
     const lastScanDetails = document.getElementById('lastScanDetails');
