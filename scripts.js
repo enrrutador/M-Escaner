@@ -192,91 +192,79 @@ document.addEventListener('DOMContentLoaded', function() {
         case 1: // Productos Bajos
           showLowStockDetails();
           break;
-        case 2: // Último Escaneo
-          showLastScanDetails();
+        case 2: // Último Escaneado
+          showLastScannedDetails();
           break;
       }
     });
   });
 
   // Modal functions
-  function showInventoryDetails() {
+  async function showInventoryDetails() {
     console.log("Showing inventory details modal");
     const modal = document.getElementById('inventoryDetailsModal');
     const detailsList = document.getElementById('inventoryDetailsList');
     
-    // Example data - replace with actual inventory data
-    const inventoryHTML = `
-      <div class="inventory-summary">
-        <h3>Resumen de Inventario</h3>
-        <p>Total de Productos: 1,234</p>
-        <p>Categorías: 8</p>
-        <p>Valor Total: $45,678</p>
-      </div>
-    `;
+    const products = await getAllProducts();
+    let inventoryHTML = '';
+    products.forEach(product => {
+      inventoryHTML += `
+        <div class="inventory-item">
+          <h4>${product.description}</h4>
+          <p>Código de Barras: ${product.barcode}</p>
+          <p>Stock: ${product.stock}</p>
+          <p>Precio: $${product.price}</p>
+        </div>
+      `;
+    });
     
     detailsList.innerHTML = inventoryHTML;
     modal.classList.add('active');
   }
 
-  function showLowStockDetails() {
+  async function showLowStockDetails() {
     console.log("Showing low stock details modal");
     const modal = document.getElementById('lowStockModal');
     const lowStockList = document.getElementById('lowStockList');
     
-    // Example data - replace with actual low stock data
-    const lowStockHTML = `
-      <div class="low-stock-items">
+    const products = await getAllProducts();
+    const lowStockProducts = products.filter(product => product.stock <= 5);
+    let lowStockHTML = '';
+    lowStockProducts.forEach(product => {
+      lowStockHTML += `
         <div class="low-stock-item">
-          <h4>Producto A</h4>
-          <p>Stock: 2 unidades</p>
-          <p class="status-badge low">Crítico</p>
+          <h4>${product.description}</h4>
+          <p>Código de Barras: ${product.barcode}</p>
+          <p>Stock: ${product.stock}</p>
+          <p>Precio: $${product.price}</p>
         </div>
-        <div class="low-stock-item">
-          <h4>Producto B</h4>
-          <p>Stock: 5 unidades</p>
-          <p class="status-badge warning">Bajo</p>
-        </div>
-      </div>
-    `;
+      `;
+    });
     
     lowStockList.innerHTML = lowStockHTML;
     modal.classList.add('active');
   }
 
-  function showLastScanDetails() {
-    console.log("Showing last scan details modal");
+  async function showLastScannedDetails() {
+    console.log("Showing last scanned details modal");
     const modal = document.getElementById('lastScanModal');
     const lastScanDetails = document.getElementById('lastScanDetails');
     
-    // Example data - replace with actual last scan data
-    const lastScanHTML = `
-      <div class="last-scan-info">
-        <h3>Último Producto Escaneado</h3>
-        <div class="barcode-display">
-          <svg id="lastScanBarcode"></svg>
+    const products = await getAllProducts();
+    const lastScannedProducts = products.slice(-4).reverse();
+    let lastScannedHTML = '';
+    lastScannedProducts.forEach(product => {
+      lastScannedHTML += `
+        <div class="last-scan-item">
+          <h4>${product.description}</h4>
+          <p>Código de Barras: ${product.barcode}</p>
+          <p>Stock: ${product.stock}</p>
+          <p>Precio: $${product.price}</p>
         </div>
-        <p>SKU: SKU-123456</p>
-        <p>Producto: Ejemplo Producto</p>
-        <p>Fecha: ${new Date().toLocaleDateString()}</p>
-        <p class="status-badge good">Escaneado Correctamente</p>
-      </div>
-    `;
+      `;
+    });
     
-    lastScanDetails.innerHTML = lastScanHTML;
-    
-    // Generate barcode
-    try {
-      JsBarcode("#lastScanBarcode", "SKU-123456", {
-        format: "CODE128",
-        width: 2,
-        height: 100,
-        displayValue: true
-      });
-    } catch (err) {
-      console.error("Error generating barcode:", err);
-    }
-    
+    lastScanDetails.innerHTML = lastScannedHTML;
     modal.classList.add('active');
   }
 
