@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', function() {
     db = event.target.result;
     dbReady = true; // Marcamos que IndexedDB está lista
     console.log("IndexedDB opened successfully");
+    updateProductCount(); // Actualizar la cantidad de productos al cargar la base de datos
   };
 
   request.onerror = function(event) {
@@ -32,6 +33,16 @@ document.addEventListener('DOMContentLoaded', function() {
   async function waitForDB() {
     while (!dbReady) {
       await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
+
+  // Función para actualizar la cantidad de productos en la interfaz
+  async function updateProductCount() {
+    await waitForDB(); // Esperar a que IndexedDB esté lista
+    const products = await getAllProducts();
+    const productCountElement = document.querySelector('.card-subtitle');
+    if (productCountElement) {
+      productCountElement.textContent = `${products.length} productos`;
     }
   }
 
@@ -323,6 +334,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (modal) {
         modal.classList.remove('active');
       }
+      updateProductCount(); // Actualizar la cantidad de productos después de guardar
     };
 
     request.onerror = function(event) {
