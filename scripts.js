@@ -192,7 +192,7 @@ document.addEventListener('DOMContentLoaded', function() {
         case 1: // Productos Bajos
           showLowStockDetails();
           break;
-        case 2: // Último Escaneado
+        case 2: // Últimos Escaneados
           showLastScannedDetails();
           break;
       }
