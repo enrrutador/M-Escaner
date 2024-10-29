@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Add this function definition before the existing script
+  // Función para mostrar el modal de edición de producto
   function showEditProductModal(barcode) {
     console.log("Showing edit product modal for barcode:", barcode);
     const modal = document.getElementById('editProductModal');
