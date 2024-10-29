@@ -313,6 +313,7 @@ document.addEventListener('DOMContentLoaded', function() {
     request.onsuccess = function(event) {
       console.log("Product saved successfully");
       showNotification('Producto guardado correctamente', 'success');
+      clearForm();
       const modal = document.getElementById('editProductModal');
       if (modal) {
         modal.classList.remove('active');
@@ -327,6 +328,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   document.getElementById('cancelEdit').addEventListener('click', function() {
     console.log("Cancel edit button clicked");
+    clearForm();
     const modal = document.getElementById('editProductModal');
     if (modal) {
       modal.classList.remove('active');
@@ -410,4 +412,17 @@ document.addEventListener('DOMContentLoaded', function() {
       alert('No hay productos con stock bajo.');
     }
   });
+
+  // Clear form fields
+  function clearForm() {
+    const barcodeInput = document.getElementById('barcode');
+    const descriptionInput = document.getElementById('description');
+    const stockInput = document.getElementById('stock');
+    const priceInput = document.getElementById('price');
+
+    if (barcodeInput) barcodeInput.value = '';
+    if (descriptionInput) descriptionInput.value = '';
+    if (stockInput) stockInput.value = '';
+    if (priceInput) priceInput.value = '';
+  }
 });
