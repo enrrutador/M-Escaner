@@ -1,6 +1,31 @@
 document.addEventListener('DOMContentLoaded', function() {
   console.log("DOM fully loaded and parsed");
 
+  // Initialize IndexedDB
+  const dbName = "InventoryDB";
+  const storeName = "products";
+  const version = 1;
+
+  let db;
+
+  const request = indexedDB.open(dbName, version);
+
+  request.onupgradeneeded = function(event) {
+    db = event.target.result;
+    if (!db.objectStoreNames.contains(storeName)) {
+      db.createObjectStore(storeName, { keyPath: "barcode" });
+    }
+  };
+
+  request.onsuccess = function(event) {
+    db = event.target.result;
+    console.log("IndexedDB opened successfully");
+  };
+
+  request.onerror = function(event) {
+    console.error("Error opening IndexedDB", event.target.errorCode);
+  };
+
   // Add this function definition before the existing script
   function showEditProductModal(barcode) {
     console.log("Showing edit product modal for barcode:", barcode);
@@ -264,12 +289,36 @@ document.addEventListener('DOMContentLoaded', function() {
   // Add these event handlers at the end of your existing script
   document.getElementById('saveProduct').addEventListener('click', function() {
     console.log("Save product button clicked");
-    // Save product logic here
-    const modal = document.getElementById('editProductModal');
-    if (modal) {
-      modal.classList.remove('active');
+    const barcodeInput = document.getElementById('barcode');
+    const descriptionInput = document.getElementById('description');
+
+    if (!barcodeInput || !descriptionInput) {
+      console.error("Barcode or description input not found");
+      return;
     }
-    showNotification('Producto guardado correctamente', 'success');
+
+    const product = {
+      barcode: barcodeInput.value,
+      description: descriptionInput.value
+    };
+
+    const transaction = db.transaction([storeName], "readwrite");
+    const store = transaction.objectStore(storeName);
+    const request = store.add(product);
+
+    request.onsuccess = function(event) {
+      console.log("Product saved successfully");
+      showNotification('Producto guardado correctamente', 'success');
+      const modal = document.getElementById('editProductModal');
+      if (modal) {
+        modal.classList.remove('active');
+      }
+    };
+
+    request.onerror = function(event) {
+      console.error("Error saving product", event.target.errorCode);
+      showNotification('Error al guardar el producto', 'error');
+    };
   });
 
   document.getElementById('cancelEdit').addEventListener('click', function() {
