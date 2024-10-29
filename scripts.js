@@ -23,6 +23,8 @@ document.addEventListener('DOMContentLoaded', function() {
     dbReady = true; // Marcamos que IndexedDB está lista
     console.log("IndexedDB opened successfully");
     updateProductCount(); // Actualizar la cantidad de productos al cargar la base de datos
+    updateLowStockCount(); // Actualizar la cantidad de productos con stock bajo al cargar la base de datos
+    updateLastScannedProduct(); // Actualizar el último producto escaneado al cargar la base de datos
   };
 
   request.onerror = function(event) {
@@ -43,6 +45,28 @@ document.addEventListener('DOMContentLoaded', function() {
     const productCountElement = document.querySelector('.card-subtitle');
     if (productCountElement) {
       productCountElement.textContent = `${products.length} productos`;
+    }
+  }
+
+  // Función para actualizar la cantidad de productos con stock bajo en la interfaz
+  async function updateLowStockCount() {
+    await waitForDB(); // Esperar a que IndexedDB esté lista
+    const products = await getAllProducts();
+    const lowStockProducts = products.filter(product => product.stock <= 5);
+    const lowStockCountElement = document.querySelectorAll('.card-subtitle')[1];
+    if (lowStockCountElement) {
+      lowStockCountElement.textContent = `${lowStockProducts.length} items`;
+    }
+  }
+
+  // Función para actualizar el último producto escaneado en la interfaz
+  async function updateLastScannedProduct() {
+    await waitForDB(); // Esperar a que IndexedDB esté lista
+    const products = await getAllProducts();
+    const lastScannedProduct = products[products.length - 1];
+    const lastScannedElement = document.querySelectorAll('.card-subtitle')[2];
+    if (lastScannedElement && lastScannedProduct) {
+      lastScannedElement.textContent = `${lastScannedProduct.barcode} ${lastScannedProduct.stock <= 5 ? '<span class="status-badge low">Alerta</span>' : '<span class="status-badge good">OK</span>'}`;
     }
   }
 
@@ -335,6 +359,8 @@ document.addEventListener('DOMContentLoaded', function() {
         modal.classList.remove('active');
       }
       updateProductCount(); // Actualizar la cantidad de productos después de guardar
+      updateLowStockCount(); // Actualizar la cantidad de productos con stock bajo después de guardar
+      updateLastScannedProduct(); // Actualizar el último producto escaneado después de guardar
     };
 
     request.onerror = function(event) {
