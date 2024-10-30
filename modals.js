@@ -84,3 +84,39 @@ export function setupModals() {
   window.showLowStockDetails = showLowStockDetails;
   window.showLastScannedDetails = showLastScannedDetails;
 }
+
+// Export the function directly
+export function showEditProductModal(barcode) {
+  console.log("Showing edit product modal for barcode:", barcode);
+  const modal = document.getElementById('editProductModal');
+  const barcodeInput = document.getElementById('barcode');
+  const barcodePreview = document.getElementById('barcodePreview');
+  
+  // Set the scanned barcode
+  if (barcodeInput) {
+    barcodeInput.value = barcode;
+  }
+
+  // Generate barcode preview
+  if (barcodePreview) {
+    // Clear previous barcode
+    barcodePreview.innerHTML = '<svg id="barcodeDisplay"></svg>';
+    
+    try {
+      JsBarcode("#barcodeDisplay", barcode, {
+        format: "CODE128",
+        width: 2,
+        height: 100,
+        displayValue: true
+      });
+    } catch (err) {
+      console.error("Error generating barcode preview:", err);
+      barcodePreview.innerHTML = '<p>Error generating barcode preview</p>';
+    }
+  }
+
+  // Show the modal
+  if (modal) {
+    modal.classList.add('active');
+  }
+}
