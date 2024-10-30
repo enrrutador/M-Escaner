@@ -1,9 +1,9 @@
-// scanner.js
 import { getProduct } from './indexeddb.js';
 import { showEditProductModal } from './modals.js';
-import { showNotification } from './notifications.js';
 
 export function setupScanner() {
+  const beep = new Audio("data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YWoGAACBhYqFbF1FVU1aZH2Sqa3wdnaBjpacopuYn6eipZ+RhoJ6hpGUeqxhTlFKSlBYY36GmZyQhHp1hI6apK2up7KzqJyYkZCJhH58R0xGR0RBPkRPVlVZXl9ubXh3gYOMjYmFf4eDgH58f4GBgoKIipCMmI6Ihn1tZV9jZ2dvb25qbmyhoJ2koZ6Wk5edm5KKkZSVkpKVm5eTkYt7l4zhSUJGSEIxP0hOUVZhY21wbG1wcnR2eHZwb3N5fHp0cG9ubGlvcXR3eHZwb3N5fHp0cG9ubGlvcXR3eHZwb3N5fHp0cG9ubGlvcXR3eHZwb3N5fHp0cG9ubGlvcXR3eHZwb3N5f");
+  
   Quagga.init({
     inputStream: {
       name: "Live",
@@ -34,7 +34,7 @@ export function setupScanner() {
     locate: true
   }, function(err) {
     if (err) {
-      console.error(err);
+      console.error("Error initializing Quagga:", err);
       return;
     }
     console.log("Quagga initialization succeeded");
@@ -54,16 +54,11 @@ export function setupScanner() {
 
     try {
       if (document.hasInteracted) {
-        const beep = new Audio("data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YWoGAACBhYqFbF1FVU1aZH2Sqa3wdnaBjpacopuYn6eipZ+RhoJ6hpGUeqxhTlFKSlBYY36GmZyQhHp1hI6apK2up7KzqJyYkZCJhH58R0xGR0RBPkRPVlVZXl9ubXh3gYOMjYmFf4eDgH58f4GBgoKIipCMmI6Ihn1tZV9jZ2dvb25qbmyhoJ2koZ6Wk5edm5KKkZSVkpKVm5eTkYt7l4zhSUJGSEIxP0hOUVZhY21wbG1wcnR2eHZwb3N5fHp0cG9ubGlvcXR3eHZwb3N5fHp0cG9ubGlvcXR3eHZwb3N5fHp0cG9ubGlvcXR3eHZwb3N5fHp0cG9ubGlvcXR3eHZwb3N5f");
         await beep.play();
       }
 
-      // Stop video stream and Quagga
-      const videoElement = document.getElementById('camera-feed');
-      if (videoElement.srcObject) {
-        videoElement.srcObject.getTracks().forEach(track => track.stop());
-      }
-      Quagga.stop();
+      // Stop camera and Quagga
+      stopCamera();
       
       // Hide scanner view
       document.querySelector('.scanner-view').classList.remove('active');
@@ -73,6 +68,16 @@ export function setupScanner() {
   });
 }
 
+// Utility function to stop camera and Quagga
+function stopCamera() {
+  const videoElement = document.getElementById('camera-feed');
+  if (videoElement.srcObject) {
+    videoElement.srcObject.getTracks().forEach(track => track.stop());
+  }
+  Quagga.stop();
+}
+
+// Fill the form with product details
 function fillForm(product) {
   const barcodeInput = document.getElementById('barcode');
   const descriptionInput = document.getElementById('description');
