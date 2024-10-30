@@ -1,7 +1,6 @@
-// modals.js
 import { getAllProducts } from './indexeddb.js';
 
-export function setupModals() {
+function setupModals() {
   // Modal functions
   async function showInventoryDetails() {
     const modal = document.getElementById('inventoryDetailsModal');
@@ -10,14 +9,7 @@ export function setupModals() {
     const products = await getAllProducts();
     let inventoryHTML = '';
     products.forEach(product => {
-      inventoryHTML += `
-        <div class="inventory-item">
-          <h4>${product.description}</h4>
-          <p>Código de Barras: ${product.barcode}</p>
-          <p>Stock: ${product.stock}</p>
-          <p>Precio: $${product.price}</p>
-        </div>
-      `;
+      inventoryHTML += generateProductHTML(product, 'inventory-item');
     });
     
     detailsList.innerHTML = inventoryHTML;
@@ -32,14 +24,7 @@ export function setupModals() {
     const lowStockProducts = products.filter(product => product.stock <= 5);
     let lowStockHTML = '';
     lowStockProducts.forEach(product => {
-      lowStockHTML += `
-        <div class="low-stock-item">
-          <h4>${product.description}</h4>
-          <p>Código de Barras: ${product.barcode}</p>
-          <p>Stock: ${product.stock}</p>
-          <p>Precio: $${product.price}</p>
-        </div>
-      `;
+      lowStockHTML += generateProductHTML(product, 'low-stock-item');
     });
     
     lowStockList.innerHTML = lowStockHTML;
@@ -54,14 +39,7 @@ export function setupModals() {
     const lastScannedProducts = products.slice(-4).reverse();
     let lastScannedHTML = '';
     lastScannedProducts.forEach(product => {
-      lastScannedHTML += `
-        <div class="last-scan-item">
-          <h4>${product.description}</h4>
-          <p>Código de Barras: ${product.barcode}</p>
-          <p>Stock: ${product.stock}</p>
-          <p>Precio: $${product.price}</p>
-        </div>
-      `;
+      lastScannedHTML += generateProductHTML(product, 'last-scan-item');
     });
     
     lastScanDetails.innerHTML = lastScannedHTML;
@@ -71,22 +49,28 @@ export function setupModals() {
   // Close modal handlers
   document.querySelectorAll('.modal-content button[id^="close"]').forEach(button => {
     button.addEventListener('click', function() {
-      console.log("Close modal button clicked");
       const modal = button.closest('.inventory-details-modal, .low-stock-modal, .last-scan-modal');
       if (modal) {
         modal.classList.remove('active');
       }
     });
   });
-
-  // Export functions
-  window.showInventoryDetails = showInventoryDetails;
-  window.showLowStockDetails = showLowStockDetails;
-  window.showLastScannedDetails = showLastScannedDetails;
 }
 
-// Export the function directly
-export function showEditProductModal(barcode) {
+// Utility function to generate product HTML
+function generateProductHTML(product, cssClass) {
+  return `
+    <div class="${cssClass}">
+      <h4>${product.description}</h4>
+      <p>Código de Barras: ${product.barcode}</p>
+      <p>Stock: ${product.stock}</p>
+      <p>Precio: $${product.price}</p>
+    </div>
+  `;
+}
+
+// Exported function to show edit product modal
+function showEditProductModal(barcode) {
   console.log("Showing edit product modal for barcode:", barcode);
   const modal = document.getElementById('editProductModal');
   const barcodeInput = document.getElementById('barcode');
@@ -99,7 +83,6 @@ export function showEditProductModal(barcode) {
 
   // Generate barcode preview
   if (barcodePreview) {
-    // Clear previous barcode
     barcodePreview.innerHTML = '<svg id="barcodeDisplay"></svg>';
     
     try {
@@ -115,8 +98,10 @@ export function showEditProductModal(barcode) {
     }
   }
 
-  // Show the modal
   if (modal) {
     modal.classList.add('active');
   }
 }
+
+// Exporting both functions
+export { setupModals, showEditProductModal };
