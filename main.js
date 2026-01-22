@@ -1,25 +1,25 @@
 // main.js
 import { initializeIndexedDB, waitForDB, updateProductCount, updateLowStockCount, updateLastScannedProduct } from './indexeddb.js';
 import { setupScanner } from './scanner.js';
-import { setupModals } from './modals.js';
+import { setupModals, showInventoryDetails, showLowStockDetails, showLastScannedDetails } from './modals.js';
 import { setupSearch } from './search.js';
 import { setupNotifications } from './notifications.js';
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
   console.log("DOM fully loaded and parsed");
 
   // Initialize IndexedDB
   initializeIndexedDB();
 
   // Event listeners
-  document.querySelector('.menu-button').addEventListener('click', function() {
+  document.querySelector('.menu-button').addEventListener('click', function () {
     console.log("Menu button clicked");
     document.querySelector('.menu').classList.toggle('active');
     document.querySelector('.content').classList.toggle('menu-active');
   });
 
   const floatingButton = document.querySelector('.floating-button');
-  floatingButton.addEventListener('click', async function() {
+  floatingButton.addEventListener('click', async function () {
     console.log("Floating button clicked");
     document.hasInteracted = true; // Mark that user has interacted
     if (Quagga && typeof Quagga.stop === 'function') {
@@ -29,31 +29,13 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('No previous Quagga instance running');
       }
     }
-    
+
     document.querySelector('.scanner-view').classList.add('active');
-    
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          facingMode: 'environment',
-          width: { min: 640 },
-          height: { min: 480 },
-          aspectRatio: { min: 1, max: 2 }
-        } 
-      });
-      const videoElement = document.getElementById('camera-feed');
-      if (videoElement) {
-        videoElement.srcObject = stream;
-      }
-      setupScanner();
-    } catch (err) {
-      console.error('Error accessing camera:', err);
-      showNotification('Error al acceder a la cámara', 'error');
-    }
+    setupScanner();
   });
 
   // Cancel scan button handler
-  document.getElementById('cancelScan').addEventListener('click', function() {
+  document.getElementById('cancelScan').addEventListener('click', function () {
     console.log("Cancel scan button clicked");
     const videoElement = document.getElementById('camera-feed');
     if (videoElement.srcObject) {
@@ -67,9 +49,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Card click handlers for modals
   document.querySelectorAll('.card').forEach((card, index) => {
-    card.addEventListener('click', function() {
+    card.addEventListener('click', function () {
       console.log("Card clicked with index:", index);
-      switch(index) {
+      switch (index) {
         case 0: // Inventario Total
           showInventoryDetails();
           break;
@@ -85,7 +67,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Close modal handlers
   document.querySelectorAll('.modal-content button[id^="close"]').forEach(button => {
-    button.addEventListener('click', function() {
+    button.addEventListener('click', function () {
       console.log("Close modal button clicked");
       const modal = button.closest('.inventory-details-modal, .low-stock-modal, .last-scan-modal');
       if (modal) {
@@ -95,7 +77,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   // Add these event handlers at the end of your existing script
-  document.getElementById('saveProduct').addEventListener('click', function() {
+  document.getElementById('saveProduct').addEventListener('click', function () {
     console.log("Save product button clicked");
     const barcodeInput = document.getElementById('barcode');
     const descriptionInput = document.getElementById('description');
@@ -118,7 +100,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const store = transaction.objectStore(storeName);
     const request = store.put(product);
 
-    request.onsuccess = function(event) {
+    request.onsuccess = function (event) {
       console.log("Product saved successfully");
       showNotification('Producto guardado correctamente', 'success');
       clearForm();
@@ -131,13 +113,13 @@ document.addEventListener('DOMContentLoaded', function() {
       updateLastScannedProduct(); // Actualizar el último producto escaneado después de guardar
     };
 
-    request.onerror = function(event) {
+    request.onerror = function (event) {
       console.error("Error saving product", event.target.errorCode);
       showNotification('Error al guardar el producto', 'error');
     };
   });
 
-  document.getElementById('cancelEdit').addEventListener('click', function() {
+  document.getElementById('cancelEdit').addEventListener('click', function () {
     console.log("Cancel edit button clicked");
     clearForm();
     const modal = document.getElementById('editProductModal');
@@ -146,7 +128,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  document.getElementById('generateBarcode').addEventListener('click', function() {
+  document.getElementById('generateBarcode').addEventListener('click', function () {
     console.log("Generate barcode button clicked");
     const barcodeInput = document.getElementById('barcode');
     const randomBarcode = Math.floor(Math.random() * 1000000000000).toString();
@@ -155,7 +137,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   // Handle ripple effect
-  document.addEventListener('click', function(e) {
+  document.addEventListener('click', function (e) {
     if (e.target.closest('.card, .floating-button, .menu-item')) {
       const ripple = document.createElement('div');
       ripple.className = 'ripple';
@@ -163,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function() {
       ripple.style.left = e.clientX - rect.left + 'px';
       ripple.style.top = e.clientY - rect.top + 'px';
       e.target.appendChild(ripple);
-      
+
       setTimeout(() => {
         ripple.remove();
       }, 600);
