@@ -1,12 +1,13 @@
-// scripts.js - versión 1.4 PRO
-// Consolidado, Robusto y con soporte para Linterna e IndexedDB
+// scripts.js - versión 1.5 PRO (Robust Camera Fix)
+// Consolidado, con manual getUserMedia y Quagga robusto
 
 (function () {
-    console.log("Iniciando Sistema de Inventario Pro v1.4...");
+    console.log("Iniciando Sistema de Inventario Pro v1.5...");
 
     var db;
     var dbReady = false;
     var STORE_NAME = "products";
+    var scannerActive = false;
 
     // --- 1. BASE DE DATOS ---
     function initDB() {
@@ -87,6 +88,7 @@
     function openDetails(type) {
         var modalId = "inventoryDetailsModal";
         var listId = "inventoryDetailsList";
+        var titleId = "";
         var filter = null;
 
         if (type === 'low') {
@@ -100,6 +102,7 @@
 
         var modal = document.getElementById(modalId);
         var container = document.getElementById(listId);
+        if (!modal || !container) return;
 
         waitForDB(function () {
             db.transaction([STORE_NAME], 'readonly').objectStore(STORE_NAME).getAll().onsuccess = function (e) {
@@ -108,8 +111,10 @@
                 if (type === 'last') filtered = filtered.slice(-10).reverse();
 
                 container.innerHTML = filtered.map(function (p) {
+                    var statusClass = (parseInt(p.stock) || 0) <= 5 ? "low" : "good";
                     return '<div class="product-card" style="background:#fff; padding:15px; border-radius:15px; margin-bottom:10px; box-shadow:0 2px 8px rgba(0,0,0,0.05); display:flex; justify-content:space-between; align-items:center;">' +
-                        '<div><h4 style="margin:0;">' + (p.description || "Sin nombre") + '</h4><small>' + p.barcode + ' | Stock: ' + p.stock + '</small></div>' +
+                        '<div><h4 style="margin:0;">' + (p.description || "Sin nombre") + '</h4>' +
+                        '<small>' + p.barcode + ' | <span class="status-badge ' + statusClass + '">Stock: ' + p.stock + '</span></small></div>' +
                         '<button onclick="showEditProductModal(\'' + p.barcode + '\')" style="background:var(--primary); color:white; border:none; padding:10px; border-radius:10px;">Editar</button>' +
                         '</div>';
                 }).join('') || '<p style="text-align:center; padding:20px;">No hay datos.</p>';
@@ -118,38 +123,80 @@
         });
     }
 
-    // --- 4. SCANNER ---
-    function startScanner() {
+    // --- 4. SCANNER (THE HEART) ---
+    async function startScanner() {
         if (typeof Quagga === 'undefined') return alert("Error: Librería no cargada");
 
-        Quagga.init({
-            inputStream: {
-                name: "Live",
-                type: "LiveStream",
-                target: document.getElementById('camera-feed'),
-                constraints: {
-                    facingMode: "environment",
-                    width: { min: 640 },
-                    height: { min: 480 }
-                }
-            },
-            decoder: { readers: ["ean_reader", "code_128_reader", "upc_reader", "code_39_reader"] }
-        }, function (err) {
-            if (err) { console.error(err); return alert("Error de cámara: Asegúrate de habilitar los permisos."); }
-            Quagga.start();
-        });
+        var videoTarget = document.getElementById('camera-feed');
+        if (!videoTarget) return;
 
-        Quagga.onDetected(function (res) {
-            var code = res.codeResult.code;
+        scannerActive = true;
+        document.querySelector('.scanner-view').classList.add('active');
+
+        try {
+            // "Despertar" la cámara primero manualmente (Fix para Safari/PWA)
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: "environment" }
+            });
+            videoTarget.srcObject = stream;
+            videoTarget.setAttribute('playsinline', true);
+            await videoTarget.play();
+
+            // Iniciar Quagga
+            Quagga.init({
+                inputStream: {
+                    name: "Live",
+                    type: "LiveStream",
+                    target: videoTarget,
+                    constraints: {
+                        facingMode: "environment",
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        aspectRatio: { ideal: 1.3333333333 }
+                    },
+                },
+                locator: { patchSize: "medium", halfSample: true },
+                numOfWorkers: navigator.hardwareConcurrency || 4,
+                decoder: {
+                    readers: ["ean_reader", "ean_8_reader", "code_128_reader", "code_39_reader", "upc_reader", "upc_e_reader"]
+                },
+                locate: true
+            }, function (err) {
+                if (err) {
+                    console.error("Quagga Init Error:", err);
+                    showNotification("Error de inicialización de scanner", "error");
+                    return;
+                }
+                if (scannerActive) Quagga.start();
+            });
+
+            Quagga.onDetected(function (res) {
+                if (res && res.codeResult) {
+                    var code = res.codeResult.code;
+                    console.log("Detectado:", code);
+                    // Reproducir beep si es posible
+                    try { new Audio("data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YWoGAACBhYqFbF1FVU1aZH2Sqa3wdnaBjpacopuYn6eipZ+RhoJ6hpGUeqxhTlFKSlBYY36GmZyQhHp1hI6apK2up7KzqJyYkZCJhH58R0xGR0RBPkRPVlVZXl9ubXh3gYOMjYmFf4eDgH58f4GBgoKIipCMmI6Ihn1tZV9jZ2dvb25qbmyhoJ2koZ6Wk5edm5KKkZSVkpKVm5eTkYt7l4zhSUJGSEIxP0hOUVZhY21wbG1wcnR2eHZwb3N5fHp0cG9ubGlvcXR3eHZwb3N5fHp0cG9ubGlvcXR3eHZwb3N5fHp0cG9ubGlvcXR3eHZwb3N5fHp0cG9ubGlvcXR3eHZwb3N5f").play(); } catch (e) { }
+
+                    stopScanner();
+                    window.showEditProductModal(code);
+                }
+            });
+
+        } catch (err) {
+            console.error("Cámara error:", err);
+            alert("Acceso a cámara denegado o no disponible.");
             stopScanner();
-            window.showEditProductModal(code);
-        });
+        }
     }
 
     function stopScanner() {
+        scannerActive = false;
         if (typeof Quagga !== 'undefined') Quagga.stop();
         var v = document.getElementById('camera-feed');
-        if (v && v.srcObject) v.srcObject.getTracks().forEach(function (t) { t.stop(); });
+        if (v && v.srcObject) {
+            v.srcObject.getTracks().forEach(function (t) { t.stop(); });
+            v.srcObject = null;
+        }
         document.querySelector('.scanner-view').classList.remove('active');
     }
 
@@ -159,8 +206,8 @@
             var track = v.srcObject.getVideoTracks()[0];
             if (track && track.getCapabilities && track.getCapabilities().torch) {
                 var s = track.getSettings();
-                track.applyConstraints({ advanced: [{ torch: !s.torch }] });
-            } else { alert("Linterna no soportada en este móvil."); }
+                track.applyConstraints({ advanced: [{ torch: !s.torch }] }).catch(alert);
+            } else { alert("Linterna no soportada o no accesible."); }
         }
     }
 
@@ -169,20 +216,26 @@
         initDB();
 
         // Menú
-        document.querySelector('.menu-button').onclick = function () {
-            document.querySelector('.menu').classList.toggle('active');
-            document.querySelector('.content').classList.toggle('menu-active');
-        };
+        var menuBtn = document.querySelector('.menu-button');
+        if (menuBtn) {
+            menuBtn.onclick = function () {
+                document.querySelector('.menu').classList.toggle('active');
+                document.querySelector('.content').classList.toggle('menu-active');
+            };
+        }
 
-        // Escaneo
-        document.querySelector('.floating-button').onclick = function () {
-            document.querySelector('.scanner-view').classList.add('active');
-            startScanner();
-        };
+        // Abrir Scanner
+        var floatBtn = document.querySelector('.floating-button');
+        if (floatBtn) {
+            floatBtn.onclick = startScanner;
+        }
 
         // Acciones Scanner
-        document.getElementById('cancelScan').onclick = stopScanner;
-        document.getElementById('flashlight').onclick = toggleFlash;
+        var cancelScanBtn = document.getElementById('cancelScan');
+        if (cancelScanBtn) cancelScanBtn.onclick = stopScanner;
+
+        var flashBtn = document.getElementById('flashlight');
+        if (flashBtn) flashBtn.onclick = toggleFlash;
 
         // Dashboard
         var cards = document.querySelectorAll('.card');
@@ -190,27 +243,33 @@
         if (cards[1]) cards[1].onclick = function () { openDetails('low'); };
         if (cards[2]) cards[2].onclick = function () { openDetails('last'); };
 
-        // Modales
-        document.getElementById('saveProduct').onclick = function () {
-            var p = {
-                barcode: document.getElementById('barcode').value,
-                description: document.getElementById('description').value,
-                stock: parseInt(document.getElementById('stock').value) || 0,
-                price: parseFloat(document.getElementById('price').value) || 0
-            };
-            if (!p.barcode || !p.description) return alert("Completa Código y Descripción");
+        // Modales - Guardar
+        var saveBtn = document.getElementById('saveProduct');
+        if (saveBtn) {
+            saveBtn.onclick = function () {
+                var p = {
+                    barcode: document.getElementById('barcode').value,
+                    description: document.getElementById('description').value,
+                    stock: parseInt(document.getElementById('stock').value) || 0,
+                    price: parseFloat(document.getElementById('price').value) || 0
+                };
+                if (!p.barcode || !p.description) return alert("Completa Código y Descripción");
 
-            var tx = db.transaction([STORE_NAME], "readwrite");
-            tx.objectStore(STORE_NAME).put(p).onsuccess = function () {
+                var tx = db.transaction([STORE_NAME], "readwrite");
+                tx.objectStore(STORE_NAME).put(p).onsuccess = function () {
+                    document.getElementById('editProductModal').classList.remove('active');
+                    updateDashboard();
+                    showNotification("¡Producto Guardado!", "success");
+                };
+            };
+        }
+
+        // Modales - Cancelar/Cerrar
+        if (document.getElementById('cancelEdit')) {
+            document.getElementById('cancelEdit').onclick = function () {
                 document.getElementById('editProductModal').classList.remove('active');
-                updateDashboard();
-                showNotification("¡Guardado!", "success");
             };
-        };
-
-        document.getElementById('cancelEdit').onclick = function () {
-            document.getElementById('editProductModal').classList.remove('active');
-        };
+        }
 
         document.querySelectorAll('button[id^="close"]').forEach(function (b) {
             b.onclick = function (e) {
@@ -219,12 +278,42 @@
             };
         });
 
+        // Generar Código Manual
+        var genBtn = document.getElementById('generateBarcode');
+        if (genBtn) {
+            genBtn.onclick = function () {
+                var random = "7" + Math.floor(Math.random() * 100000000000);
+                document.getElementById('barcode').value = random;
+                window.showEditProductModal(random);
+            }
+        }
+
         // Búsqueda
-        document.getElementById('searchButton').onclick = function () {
-            var q = document.getElementById('searchBar').value.toLowerCase();
-            if (!q) return;
-            openDetails('all'); // Re-usamos el modal de inventario pero lo filtraremos si quisiéramos
-        };
+        var sBtn = document.getElementById('searchButton');
+        if (sBtn) {
+            sBtn.onclick = function () {
+                var q = document.getElementById('searchBar').value.toLowerCase();
+                if (!q) return alert("Escribe algo para buscar");
+
+                waitForDB(function () {
+                    db.transaction([STORE_NAME], 'readonly').objectStore(STORE_NAME).getAll().onsuccess = function (e) {
+                        var filtered = e.target.result.filter(function (p) {
+                            return p.barcode.includes(q) || (p.description && p.description.toLowerCase().includes(q));
+                        });
+
+                        var modal = document.getElementById('inventoryDetailsModal');
+                        var container = document.getElementById('inventoryDetailsList');
+                        container.innerHTML = '<h3>Resultados de Búsqueda</h3>' + filtered.map(function (p) {
+                            return '<div class="product-card" style="background:#fff; padding:15px; border-radius:15px; margin-bottom:10px; box-shadow:0 2px 8px rgba(0,0,0,0.05); display:flex; justify-content:space-between; align-items:center;">' +
+                                '<div><h4 style="margin:0;">' + (p.description || "Sin nombre") + '</h4><small>' + p.barcode + '</small></div>' +
+                                '<button onclick="showEditProductModal(\'' + p.barcode + '\')" style="background:var(--primary); color:white; border:none; padding:10px; border-radius:10px;">Editar</button>' +
+                                '</div>';
+                        }).join('') || '<p style="text-align:center; padding:20px;">No se encontraron coincidencias.</p>';
+                        modal.classList.add('active');
+                    };
+                });
+            };
+        }
     }
 
     init();
