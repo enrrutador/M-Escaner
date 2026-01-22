@@ -6,7 +6,7 @@ export function setupSearch() {
     const searchQuery = document.getElementById('searchBar').value.trim().toLowerCase();
     if (searchQuery) {
       const products = await getAllProducts();
-      const filteredProducts = products.filter(product => 
+      const filteredProducts = products.filter(product =>
         product.barcode.toLowerCase().includes(searchQuery) ||
         product.description.toLowerCase().includes(searchQuery)
       );
@@ -42,6 +42,9 @@ export function setupSearch() {
       existingContainer.remove();
     }
 
-    document.body.appendChild(searchResultsContainer);
+    const contentArea = document.querySelector('.content');
+    if (contentArea) {
+      contentArea.insertBefore(searchResultsContainer, contentArea.children[1]); // Insert after search box
+    }
   }
 }

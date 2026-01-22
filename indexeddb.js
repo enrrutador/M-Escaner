@@ -1,6 +1,6 @@
 // indexeddb.js
 const dbName = "InventoryDB";
-const storeName = "products";
+export const storeName = "products";
 const version = 1;
 
 let db;
@@ -9,14 +9,14 @@ let dbReady = false; // Indicador de disponibilidad de IndexedDB
 export function initializeIndexedDB() {
   const request = indexedDB.open(dbName, version);
 
-  request.onupgradeneeded = function(event) {
+  request.onupgradeneeded = function (event) {
     db = event.target.result;
     if (!db.objectStoreNames.contains(storeName)) {
       db.createObjectStore(storeName, { keyPath: "barcode" });
     }
   };
 
-  request.onsuccess = function(event) {
+  request.onsuccess = function (event) {
     db = event.target.result;
     dbReady = true; // Marcamos que IndexedDB está lista
     console.log("IndexedDB opened successfully");
@@ -25,7 +25,7 @@ export function initializeIndexedDB() {
     updateLastScannedProduct(); // Actualizar el último producto escaneado al cargar la base de datos
   };
 
-  request.onerror = function(event) {
+  request.onerror = function (event) {
     console.error("Error opening IndexedDB", event.target.errorCode);
   };
 }
@@ -82,5 +82,16 @@ export async function getProduct(barcode) {
 
     request.onsuccess = event => resolve(event.target.result);
     request.onerror = event => reject('Error getting product:', event.target.error);
+  });
+}
+
+export async function saveProduct(product) {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([storeName], "readwrite");
+    const store = transaction.objectStore(storeName);
+    const request = store.put(product);
+
+    request.onsuccess = () => resolve();
+    request.onerror = (event) => reject(event.target.errorCode);
   });
 }
