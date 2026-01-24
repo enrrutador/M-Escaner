@@ -891,3 +891,36 @@ body {
     transform: translateY(0);
   }
 }
+.row-2 {
+  display: flex;
+  gap: 15px;
+}
+
+.row-2 > div {
+  flex: 1;
+}
+
+.input-group {
+  display: flex;
+  gap: 10px;
+}
+
+.input-group input {
+  flex: 1;
+}
+
+.icon-btn {
+  padding: 0 15px;
+  background: var(--light);
+  color: var(--dark);
+  font-size: 1.2rem;
+  margin-bottom: 20px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.icon-btn:hover {
+  background: #d1e5f0;
+}

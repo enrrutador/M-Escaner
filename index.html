@@ -119,15 +119,50 @@
     <div class="edit-product-modal" id="editProductModal">
       <div class="modal-content">
         <h2>Detalles del Producto</h2>
-        <label for="barcode">Código de Barras:</label>
-        <input type="text" id="barcode" name="barcode" readonly>
-        <button id="generateBarcode">Generar Código</button>
-        <label for="description">Descripción del Producto:</label>
+
+        <label for="barcode">Código de barras:</label>
+        <div class="input-group">
+          <input type="text" id="barcode" name="barcode">
+          <button id="generateBarcode" type="button" class="icon-btn" title="Generar nuevo código">↻</button>
+        </div>
+
+        <label for="description">Nombre:</label>
         <input type="text" id="description" name="description">
-        <label for="stock">Stock:</label>
-        <input type="number" id="stock" name="stock">
-        <label for="price">Precio:</label>
-        <input type="number" id="price" name="price">
+
+        <label for="category">Categoría:</label>
+        <input type="text" id="category" name="category" value="Ferretería">
+
+        <div class="row-2">
+          <div>
+            <label for="unit">Unidad:</label>
+            <input type="text" id="unit" name="unit">
+          </div>
+          <div>
+            <label for="stock">Stock:</label>
+            <input type="number" id="stock" name="stock">
+          </div>
+        </div>
+
+        <label for="depot">Depósito:</label>
+        <input type="text" id="depot" name="depot">
+
+        <label for="location">Ubicación en almacén:</label>
+        <input type="text" id="location" name="location">
+
+        <label for="status">Estado:</label>
+        <input type="text" id="status" name="status">
+
+        <div class="row-2">
+          <div>
+            <label for="entry_price">Precio de entrada:</label>
+            <input type="number" id="entry_price" name="entry_price">
+          </div>
+          <div>
+            <label for="price">Precio de venta:</label>
+            <input type="number" id="price" name="price">
+          </div>
+        </div>
+
         <div class="modal-actions">
           <button id="saveProduct">Guardar</button>
           <button id="cancelEdit">Cancelar</button>
