@@ -120,28 +120,23 @@
       <div class="modal-content">
         <h2>Detalles del Producto</h2>
 
+        <label for="description">Nombre:</label>
+        <input type="text" id="description" name="description">
+
         <label for="barcode">Código de barras:</label>
         <div class="input-group">
           <input type="text" id="barcode" name="barcode">
           <button id="generateBarcode" type="button" class="icon-btn" title="Generar nuevo código">↻</button>
         </div>
 
-        <label for="description">Nombre:</label>
-        <input type="text" id="description" name="description">
-
         <label for="category">Categoría:</label>
         <input type="text" id="category" name="category" value="Ferretería">
 
-        <div class="row-2">
-          <div>
-            <label for="unit">Unidad:</label>
-            <input type="text" id="unit" name="unit">
-          </div>
-          <div>
-            <label for="stock">Stock:</label>
-            <input type="number" id="stock" name="stock">
-          </div>
-        </div>
+        <label for="unit">Unidad:</label>
+        <input type="text" id="unit" name="unit">
+
+        <label for="stock">Stock:</label>
+        <input type="number" id="stock" name="stock">
 
         <label for="depot">Depósito:</label>
         <input type="text" id="depot" name="depot">
@@ -152,16 +147,11 @@
         <label for="status">Estado:</label>
         <input type="text" id="status" name="status">
 
-        <div class="row-2">
-          <div>
-            <label for="entry_price">Precio de entrada:</label>
-            <input type="number" id="entry_price" name="entry_price">
-          </div>
-          <div>
-            <label for="price">Precio de venta:</label>
-            <input type="number" id="price" name="price">
-          </div>
-        </div>
+        <label for="entry_price">Precio de entrada:</label>
+        <input type="number" id="entry_price" name="entry_price">
+
+        <label for="price">Precio de venta:</label>
+        <input type="number" id="price" name="price">
 
         <div class="modal-actions">
           <button id="saveProduct">Guardar</button>
