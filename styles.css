@@ -789,27 +789,25 @@ body {
 .inventory-details-modal.active,
 .low-stock-modal.active,
 .last-scan-modal.active {
-  display: flex;
-  opacity: 1;
+  display: flex !important;
+  opacity: 1 !important;
 }
 
-/* Product Card Style in Lists */
 .product-card {
-  background: #f8faff;
-  border-radius: 18px;
-  padding: 16px;
-  margin-bottom: 12px;
+  background: #fff;
+  padding: 15px;
+  border-radius: 15px;
+  margin-bottom: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border: 1px solid rgba(33, 150, 243, 0.1);
-  transition: all 0.3s ease;
+  transition: transform 0.2s ease;
 }
 
-.product-card:hover {
-  background: white;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-  transform: translateX(5px);
+background: white;
+box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+transform: translateX(5px);
 }
 
 .product-card.low-stock {
@@ -891,12 +889,13 @@ body {
     transform: translateY(0);
   }
 }
+
 .row-2 {
   display: flex;
   gap: 15px;
 }
 
-.row-2 > div {
+.row-2>div {
   flex: 1;
 }
 
