@@ -114,7 +114,7 @@
             gain.gain.setValueAtTime(0, context.currentTime);
             gain.gain.linearRampToValueAtTime(0.5, context.currentTime + 0.05);
             gain.gain.linearRampToValueAtTime(0, context.currentTime + 0.2);
-            osc.start();
+117:            osc.start();
             osc.stop(context.currentTime + 0.2);
             if (navigator.vibrate) navigator.vibrate(100);
         } catch (e) { }
@@ -414,10 +414,10 @@
 
         // Configuración optimizada con área de escaneo responsiva
         var config = {
-            fps: 10,
+            fps: 30,
             qrbox: function (viewfinderWidth, viewfinderHeight) {
                 var minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-                var qrboxSize = Math.floor(minEdge * 0.7);
+                var qrboxSize = Math.floor(minEdge * 0.6);
                 return {
                     width: qrboxSize,
                     height: qrboxSize
@@ -438,7 +438,26 @@
 
         html5QrcodeScanner = new Html5Qrcode("reader");
 
+        // Optional: track last decoded code to prevent duplicates
+        var lastDecodedCode = null;
+        var lastDecodedAt = 0;
+
+        var scanStartTime = 0;
+
         function onScanSuccess(decodedText, decodedResult) {
+            var now = Date.now();
+            if (decodedText === lastDecodedCode && (now - lastDecodedAt) < 200) {
+                return;
+            }
+            lastDecodedCode = decodedText;
+            lastDecodedAt = now;
+            console.log("Latency: " + (now - scanStartTime) + " ms");
+            var now = Date.now();
+            if (decodedText === lastDecodedCode && (now - lastDecodedAt) < 200) {
+                return;
+            }
+            lastDecodedCode = decodedText;
+            lastDecodedAt = now;
             console.log("✓ Código detectado:", decodedText);
             playBeep();
             showNotification("¡Código leído!", "success");
@@ -450,12 +469,13 @@
             // Ignorar errores normales de escaneo
         }
 
-        html5QrcodeScanner.start(
+465:        html5QrcodeScanner.start(
             { facingMode: "environment" },
             config,
             onScanSuccess,
             onScanError
         ).then(function () {
+        scanStartTime = performance.now();
             console.log("✓ Scanner iniciado correctamente");
         }).catch(function (err) {
             console.error("✗ Error al iniciar scanner:", err);
@@ -471,6 +491,7 @@
 
         if (html5QrcodeScanner) {
             html5QrcodeScanner.stop().then(function () {
+        scanStartTime = performance.now();
                 console.log("✓ Scanner detenido");
                 html5QrcodeScanner.clear();
                 html5QrcodeScanner = null;
