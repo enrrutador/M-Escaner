@@ -1,7 +1,11 @@
-﻿// scripts.js - versión 3.1 INDUSTRIAL + ESTÉTICA
+// scripts.js - versión 3.1 INDUSTRIAL + ESTÉTICA
+// Global scanner settings for real-time tuning (exposed to UI)
+var scannerSettings = { fps: 30, qrboxPercent: 60 };
 // Scanner profesional con html5-qrcode - Nivel industrial con diseño personalizado
 
 (function () {
+  
+  
     console.log("Iniciando Sistema de Inventario Pro v3.1 INDUSTRIAL...");
 
     var db;
@@ -395,8 +399,29 @@
         });
     }
 
-    // --- 4. SCANNER INDUSTRIAL CON ESTÉTICA PERSONALIZADA ---
-    function startScanner() {
+// --- 4. SCANNER INDUSTRIAL CON ESTÉTICA PERSONALIZADA ---
+function buildScannerConfig() {
+  return {
+    fps: scannerSettings.fps,
+    qrbox: function(viewfinderWidth, viewfinderHeight) {
+      var minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+      var qrboxSize = Math.floor(minEdge * (scannerSettings.qrboxPercent / 100));
+      return { width: qrboxSize, height: qrboxSize };
+    },
+    aspectRatio: 1.0,
+    formatsToSupport: [
+      Html5QrcodeSupportedFormats.EAN_13,
+      Html5QrcodeSupportedFormats.EAN_8,
+      Html5QrcodeSupportedFormats.CODE_128,
+      Html5QrcodeSupportedFormats.CODE_39,
+      Html5QrcodeSupportedFormats.UPC_A,
+      Html5QrcodeSupportedFormats.UPC_E
+    ],
+    showTorchButtonIfSupported: false,
+    showZoomSliderIfSupported: false
+  };
+}
+function startScanner() {
         if (typeof Html5Qrcode === 'undefined') {
             alert("Error: Librería de scanner no cargada");
             return;
@@ -412,29 +437,8 @@
         scanLine.id = 'custom-scan-line';
         readerDiv.appendChild(scanLine);
 
-        // Configuración optimizada con área de escaneo responsiva
-        var config = {
-            fps: 30,
-            qrbox: function (viewfinderWidth, viewfinderHeight) {
-                var minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-                var qrboxSize = Math.floor(minEdge * 0.6);
-                return {
-                    width: qrboxSize,
-                    height: qrboxSize
-                };
-            },
-            aspectRatio: 1.0,
-            formatsToSupport: [
-                Html5QrcodeSupportedFormats.EAN_13,
-                Html5QrcodeSupportedFormats.EAN_8,
-                Html5QrcodeSupportedFormats.CODE_128,
-                Html5QrcodeSupportedFormats.CODE_39,
-                Html5QrcodeSupportedFormats.UPC_A,
-                Html5QrcodeSupportedFormats.UPC_E
-            ],
-            showTorchButtonIfSupported: false,
-            showZoomSliderIfSupported: false
-        };
+        // Configuración dinámica desde buildScannerConfig (fps y ROI ajustables)
+        var config = buildScannerConfig();
 
         html5QrcodeScanner = new Html5Qrcode("reader");
 
@@ -452,12 +456,6 @@
             lastDecodedCode = decodedText;
             lastDecodedAt = now;
             console.log("Latency: " + (now - scanStartTime) + " ms");
-            var now = Date.now();
-            if (decodedText === lastDecodedCode && (now - lastDecodedAt) < 200) {
-                return;
-            }
-            lastDecodedCode = decodedText;
-            lastDecodedAt = now;
             console.log("✓ Código detectado:", decodedText);
             playBeep();
             showNotification("¡Código leído!", "success");
@@ -636,4 +634,44 @@
     }
 
     init();
-}) ();
+})();
+
+// Real-time UI controls for FPS and ROI (exposed for quick tuning)
+function updateScannerUI() {
+  var fpsEl = document.getElementById('fps-value');
+  var roiEl = document.getElementById('roi-value');
+  if (fpsEl) fpsEl.textContent = String(scannerSettings.fps);
+  if (roiEl) roiEl.textContent = String(scannerSettings.qrboxPercent) + '%';
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  var fpsInput = document.getElementById('scanner-fps');
+  var roiInput = document.getElementById('scanner-roi');
+  if (fpsInput) {
+    fpsInput.addEventListener('input', function (e) {
+      var v = parseInt(e.target.value, 10);
+      if (!isNaN(v)) {
+        scannerSettings.fps = v;
+        updateScannerUI();
+        if (typeof startScanner === 'function' && typeof stopScanner === 'function' && html5QrcodeScanner) {
+          stopScanner();
+          startScanner();
+        }
+      }
+    });
+  }
+  if (roiInput) {
+    roiInput.addEventListener('input', function (e) {
+      var v = parseInt(e.target.value, 10);
+      if (!isNaN(v)) {
+        scannerSettings.qrboxPercent = v;
+        updateScannerUI();
+        if (typeof startScanner === 'function' && typeof stopScanner === 'function' && html5QrcodeScanner) {
+          stopScanner();
+          startScanner();
+        }
+      }
+    });
+  }
+  updateScannerUI();
+});

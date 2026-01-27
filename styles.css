@@ -923,3 +923,7 @@ transform: translateX(5px);
 .icon-btn:hover {
   background: #d1e5f0;
 }
+.scanner-control-panel { position: fixed; bottom: 60px; right: 20px; background: rgba(0,0,0,.6); color: #fff; padding: 8px; border-radius: 8px; display: flex; gap: 12px; align-items: center; z-index: 9999; }
+.scanner-control-panel label { font-size: 12px; opacity: .9; }
+.scanner-control-panel input[type=range] { width: 120px; }
+.scanner-control-panel span { font-family: monospace; font-size: 12px; }
