@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <title>Inventory Scanner Pro</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-C3M8fKxC.css">
+</head>
+
+<body>
+  <div class="app-container">
+    <div class="menu-button">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="var(--dark)">
+        <rect y="4" width="24" height="2" rx="1" />
+        <rect y="11" width="24" height="2" rx="1" />
+        <rect y="18" width="24" height="2" rx="1" />
+      </svg>
+    </div>
+
+    <div class="menu">
+      <div class="menu-item" id="manageCategories">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="white" style="margin-right: 10px">
+          <path
+            d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 15h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 10.9 12 11.5 12 13h-2v-.5c0-1 .45-1.99 1.17-2.71l1.24-1.25a1.007 1.007 0 00-1.42-1.42l-1.25 1.24C8.99 9.55 8 10 8 11.17V13h2v-1.5c0-.55.45-1 1-1s1 .45 1 1V13h2v-1.5c0-.55.45-1 1-1s1 .45 1 1V15h2v-1.17c0-2.12-1.79-3.85-3.75-3.98z" />
+        </svg>
+        Categorías
+      </div>
+      <div class="menu-item" id="importExport">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="white" style="margin-right: 10px">
+          <path d="M5 20h14v-2H5v2zm7-18l-5.5 5.5h4v6h3v-6h4L12 2z" />
+        </svg>
+        Importar/Exportar
+      </div>
+      <div class="menu-item" id="viewReports">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="white" style="margin-right: 10px">
+          <path
+            d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 8h14v-2H7v2zm0 4h14v-2H7v2zm0-8h14V7H7v2zm0-4v2h14V7H7z" />
+        </svg>
+        Reportes
+      </div>
+      <div class="menu-item" id="viewHistory">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="white" style="margin-right: 10px">
+          <path d="M13 3a9 9 0 100 18 9 9 0 000-18zm1 13h-2v-6h2v6zm0-8h-2V7h2v1z" />
+        </svg>
+        Historial
+      </div>
+      <div class="menu-item" id="logout" style="display: none;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="white" style="margin-right: 10px">
+          <path
+            d="M16 13v-2H7V8l-5 4 5 4v-3h9zM20 3H12c-1.1 0-2 .9-2 2v4h2V5h8v14h-8v-4h-2v4c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" />
+        </svg>
+        Cerrar Sesión
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="search-filter-container">
+        <div class="search-box">
+          <input type="text" id="searchBar" placeholder="Buscar productos..." />
+        </div>
+        <button id="searchButton" class="search-button">
+          Buscar
+        </button>
+      </div>
+
+      <div class="card" data-category="Electrónica" data-status="good">
+        <div class="card-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="var(--primary)">
+            <path d="M3,3 H21 V21 H3 V3 M6,6 H18 V18 H6 V6" />
+          </svg>
+        </div>
+        <div class="card-content">
+          <div class="card-title">Inventario Total</div>
+          <div class="card-subtitle" id="totalProducts">Cargando...</div>
+        </div>
+      </div>
+
+      <div class="card" id="valueCard" style="animation-delay: 0.05s">
+        <div class="card-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="var(--success)">
+            <path
+              d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z" />
+          </svg>
+        </div>
+        <div class="card-content">
+          <div class="card-title">Valor Valorizado</div>
+          <div class="card-subtitle" id="totalInventoryValue">$ 0</div>
+        </div>
+      </div>
+
+      <div class="card" data-category="Alimentos" data-status="low" style="animation-delay: 0.1s">
+        <div class="card-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="var(--warning)">
+            <path d="M12,2 L15,8 L21,8 L16,13 L19,21 L12,17 L5,21 L8,13 L3,8 L9,8 L12,2" />
+          </svg>
+        </div>
+        <div class="card-content">
+          <div class="card-title">Productos Bajos</div>
+          <div class="card-subtitle" id="lowStockProducts">15 items <span class="status-badge low">Alerta</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-category="Ropa" data-status="good" style="animation-delay: 0.2s">
+        <div class="card-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="var(--success)">
+            <path d="M9,16.17L4.83,12l-1.42,1.41L9,19 21,7l-1.41-1.41L9,16.17z" />
+          </svg>
+        </div>
+        <div class="card-content">
+          <div class="card-title">Último Escaneado</div>
+          <div class="card-subtitle" id="lastScannedProduct">SKU-123456 <span class="status-badge good">OK</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="scanner-view">
+      <div class="scanner-overlay">
+        <div id="reader" style="width: 100%; height: 100%;"></div>
+      </div>
+      <div class="scanner-controls">
+        <button class="scanner-button" id="cancelScan">Cancelar</button>
+        <button class="scanner-button" id="flashlight">Linterna</button>
+        <button class="scanner-button" id="gallery">Galería</button>
+      </div>
+    </div>
+
+    <div class="edit-product-modal" id="editProductModal">
+      <div class="modal-content">
+        <h2>Detalles del Producto</h2>
+
+        <label for="description">Nombre:</label>
+        <input type="text" id="description" name="description">
+
+        <label for="barcode">Código de barras:</label>
+        <div class="input-group">
+          <input type="text" id="barcode" name="barcode">
+          <button id="generateBarcode" type="button" class="icon-btn" title="Generar nuevo código">↻</button>
+        </div>
+
+        <label for="category">Categoría:</label>
+        <input type="text" id="category" name="category" list="categoryListDatalist" value="Ferretería">
+        <datalist id="categoryListDatalist"></datalist>
+
+        <label for="unit">Unidad:</label>
+        <input type="text" id="unit" name="unit">
+
+        <label for="stock">Stock:</label>
+        <input type="number" id="stock" name="stock">
+
+        <label for="depot">Depósito:</label>
+        <input type="text" id="depot" name="depot">
+
+        <label for="location">Ubicación en almacén:</label>
+        <input type="text" id="location" name="location">
+
+        <label for="status">Estado:</label>
+        <input type="text" id="status" name="status">
+
+        <label for="entry_price">Precio de entrada:</label>
+        <input type="number" id="entry_price" name="entry_price">
+
+        <label for="price">Precio de venta:</label>
+        <input type="number" id="price" name="price">
+
+        <div class="modal-actions">
+          <button id="saveProduct">Guardar</button>
+          <button id="printBarcode" onclick="printBarcode()"
+            style="background:var(--dark); color:white;">Imprimir</button>
+          <button id="deleteProduct" onclick="deleteProduct()"
+            style="background:#ff4d4d; color:white;">Eliminar</button>
+          <button id="cancelEdit">Cancelar</button>
+        </div>
+        <div id="barcodePreview" class="barcode-preview"></div>
+      </div>
+    </div>
+
+    <div class="edit-category-modal" id="editCategoryModal">
+      <div class="modal-content">
+        <h2>Gestionar Categorías</h2>
+
+        <label for="newCategory">Nueva Categoría:</label>
+        <input type="text" id="newCategory" placeholder="Ingrese nueva categoría" />
+        <button id="addCategory" class="modal-button primary">Agregar</button>
+
+        <ul id="categoryList" class="category-list"></ul>
+
+        <div class="modal-actions">
+          <button id="closeCategoryModal" class="modal-button warning">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="import-export-modal" id="importExportModal">
+      <div class="modal-content">
+        <h2>Importar/Exportar Inventario</h2>
+        <div class="import-section">
+          <h3>Importar CSV</h3>
+          <input type="file" id="importFile" accept=".csv" />
+          <button id="importBtn">Importar</button>
+        </div>
+        <div class="export-section">
+          <h3>Exportar CSV</h3>
+          <button id="exportBtn">Exportar</button>
+        </div>
+        <div class="modal-actions">
+          <button id="closeImportExportModal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="reports-modal" id="reportsModal">
+      <div class="modal-content">
+        <h2>Reportes de Inventario</h2>
+        <canvas id="inventoryChart" width="400" height="200"></canvas>
+        <div class="modal-actions">
+          <button id="closeReportsModal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="login-modal" id="loginModal">
+      <div class="modal-content">
+        <h2>Iniciar Sesión</h2>
+        <form id="loginForm" method="post" action="/login">
+          <label for="username">Usuario:</label>
+          <input type="text" id="username" name="username" />
+
+          <label for="password">Contraseña:</label>
+          <input type="password" id="password" name="password" />
+
+          <div class="modal-actions">
+            <button id="loginBtn">Entrar</button>
+            <button id="closeLoginModal">Cerrar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="history-modal" id="historyModal">
+      <div class="modal-content">
+        <h2>Historial de Productos</h2>
+        <ul id="historyList"></ul>
+        <div class="modal-actions">
+          <button id="closeHistoryModal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="inventory-details-modal" id="inventoryDetailsModal">
+      <div class="modal-content">
+        <h2>Detalles de Inventario</h2>
+        <div id="inventoryDetailsList"></div>
+        <div class="modal-actions">
+          <button id="closeInventoryDetailsModal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="low-stock-modal" id="lowStockModal">
+      <div class="modal-content">
+        <h2>Productos con Stock Bajo</h2>
+        <div id="lowStockList"></div>
+        <div class="modal-actions">
+          <button id="closeLowStockModal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="last-scan-modal" id="lastScanModal">
+      <div class="modal-content">
+        <h2>Último Escaneo</h2>
+        <div id="lastScanDetails"></div>
+        <div class="modal-actions">
+          <button id="closeLastScanModal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="notification-container"></div>
+
+  <div class="floating-button">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+        <path d="M3,3 H21 V21 H3 V3 M6,6 H18 V18 H6 V6" />
+      </svg>
+    </div>
+  </div>
+  <div id="scanner-control-panel" class="scanner-control-panel" aria-label="Scanner controls" style="position: fixed; bottom: 90px; right: 20px; background: rgba(0,0,0,0.6); color:#fff; padding: 10px; border-radius: 8px; display:flex; gap:10px; align-items: center;">
+    <div style="display:flex; flex-direction:column; align-items:flex-start;">
+      <label style="font-size:12px; opacity:.9;">FPS</label>
+      <input id="scanner-fps" type="range" min="1" max="60" value="30" step="1" />
+      <span id="fps-value" style="font-family:monospace; font-size:12px;">30</span>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:flex-start;">
+      <label style="font-size:12px; opacity:.9;">ROI (%)</label>
+      <input id="scanner-roi" type="range" min="30" max="90" value="60" step="5" />
+      <span id="roi-value" style="font-family:monospace; font-size:12px;">60%</span>
+    </div>
+  </div>
+  <div id="scanner-control-panel" class="scanner-control-panel" aria-label="Scanner controls" style="position: fixed; bottom: 90px; right: 20px; background: rgba(0,0,0,0.6); color:#fff; padding: 10px; border-radius: 8px; display:flex; gap:10px; align-items: center;">
+    <div style="display:flex; flex-direction:column; align-items:flex-start;">
+      <label style="font-size:12px; opacity:.9;">FPS</label>
+      <input id="scanner-fps" type="range" min="1" max="60" value="30" step="1" />
+      <span id="fps-value" style="font-family:monospace; font-size:12px;">30</span>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:flex-start;">
+      <label style="font-size:12px; opacity:.9;">ROI (%)</label>
+      <input id="scanner-roi" type="range" min="30" max="90" value="60" step="5" />
+      <span id="roi-value" style="font-family:monospace; font-size:12px;">60%</span>
+    </div>
+  </div>
+
+  <script src="scripts.js?v=3.1"></script>
+</body>
+
+</html>
